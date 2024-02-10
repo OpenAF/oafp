@@ -121,7 +121,7 @@ jobs:
     if (isUnDef(args.path)) throw "Could not find oafp.source.js.hbs"
     log("Source found in: " + args.path + "/oafp.source.js.hbs")
 
-    if (args.path == "build") args.pack = "."
+    if (args.path == "src") args.pack = "."
     if (args.path == ".")     args.pack = ".."
 
     args.oaf = getOpenAFPath()
