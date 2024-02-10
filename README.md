@@ -18,6 +18,18 @@ oafp help=template
 
 > The 'oafp' command is usually installed in the OpenAF main folder.
 
+## Building
+
+On the source folder (/src) using build.yaml oJob:
+
+| Op | Description |
+|----|-------------|
+| build | Builds 'src/oafp.source.js' and compiles it into 'src/oafp.js'  |
+| pack | Builds, tests and creates the 'pack/' folder ready for packing into an oPack |
+| clean | Cleans all created artifacts and folders |
+| test | Builds and tests |
+| dev | Builds a 'src/oafp.source.js' that will dynamically load 'src/include/*' for dev proposes |
+
 ## Examples
 
 ```bash

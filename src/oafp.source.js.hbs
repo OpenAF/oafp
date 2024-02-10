@@ -142,12 +142,47 @@ var _res = "", noFurtherOutput = false
 if (_version) {
     _res = showVersion()
 } else {
+    // JSON base options
+    params.jsonprefix = _$(params.jsonprefix, "jsonprefix").isString().default(__)
+    params.jsondesc   = toBoolean(_$(params.jsondesc, "jsondesc").isString().default("false"))
+
     if (isDef(params.file)) {
         if (!(io.fileExists(params.file))) {
             _exit(-1, "ERROR: File not found: '" + params.file + "'")
         }
-        if (!_inputNoMem.has(params.type)) _res = io.readFileString(params.file)
+
+        if (!_inputNoMem.has(params.type)) {
+            if (params.type == "json" || isUnDef(params.type)) {
+                if (params.jsondesc) {
+                    var _s = new Set()
+                    io.readStreamJSON(params.file, path => {
+                        var _p = path.substring(2)
+                        if (isDef(params.jsonprefix)) {
+                            if (_p.startsWith(params.jsonprefix)) {
+                                _s.add(_p)
+                            }
+                        } else {
+                            _s.add(_p)
+                        }
+                        return false
+                    })
+                    _res = stringify(Array.from(_s), __, "")
+                } else {
+                    if (isDef(params.jsonprefix)) {
+                        var _r = io.readStreamJSON(params.file, path => path.substring(2).startsWith(params.jsonprefix))
+                        _res = stringify(_r, __, "")
+                    } else {
+                        _res = io.readFileString(params.file)
+                    }
+                }
+            } else {
+                _res = io.readFileString(params.file)
+            }
+        }
     } else {
+        if (params.jsondesc) _exit(-1, "ERROR: jsondesc only available for file input.")
+        if (params.jsonprefix) _exit(-1, "ERROR: jsonprefix only available for file input.")
+
         if (isDef(params.cmd)) {
             _res = _runCmd2Bytes(params.cmd, true)
         } else {
