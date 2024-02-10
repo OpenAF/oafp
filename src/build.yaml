@@ -28,7 +28,7 @@ todo:
     - Op Dev
 
 init:
-  version: 20240210
+  #version: 20240210
   header : |
     // (author: Nuno Aguiar, version: {{version}}, license: Apache 2.0, url: https://github.com/openaf/oafp)
     // ---
@@ -161,7 +161,7 @@ jobs:
   exec : |
     //var pack = io.readFileYAML(args.pack + "/.package.yaml")
     io.writeFileString(args.path + "/oafp.js", $t(args.init.header, {
-      version: args.init.version
+      version: ow.format.fromDate(new Date(), "yyyyMMdd")
     }) + io.readFileString(args.path + "/oafp.js") )
 
 # ---------------------
@@ -227,7 +227,7 @@ jobs:
   exec : |
     log("Generating package.yaml...")
     io.writeFileString(args.pack + "/pack/.package.yaml", $t(io.readFileString(args.path + "/package.yaml.hbs"), {
-      version: args.init.version
+      version: ow.format.fromDate(new Date(), "yyyyMMdd")
     }))
 
     $sh(args.oaf + "/opack genpack .")
