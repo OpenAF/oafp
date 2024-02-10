@@ -1,0 +1,116 @@
+author: Nuno Aguiar
+scripts:
+  preerase: ''
+  posterase: |
+    ow.loadFormat()
+    var isWin = ow.format.isWindows()
+
+    // If opack installed near OpenAF
+    if (io.fileExists(getOpenAFPath() + "oafp")) {
+      logWarn("Removing " + getOpenAFPath() + "oafp...")
+      io.rm(getOpenAFPath() + "oafp")
+    }
+
+    // If Linux and root, install in /usr/bin or /bin if oaf is there also
+    if (!isWin && ow.format.getUserName() == "root") {
+      if (io.fileExists("/usr/bin/oafp")) {
+        logWarn("Removing /usr/bin/oafp...")
+        io.rm("/usr/bin/oafp")
+      }
+      if (io.fileExists("/bin/oafp")) {
+        logWarn("Removing /bin/oafp...")
+        io.rm("/bin/oafp")
+      }
+    }
+
+    // If opack installed in user space
+    if (getOpenAFPath().startsWith(String(java.lang.System.getProperty("java.io.tmpdir")) + "/_oaf_")) {
+      if (io.rm("oafp")) logWarn("Removing oafp...")
+    }
+  preinstall: ''
+  postinstall: |
+    var installPath
+    ow.loadFormat()
+    var isWin = ow.format.isWindows()
+
+    if (outputPath.startsWith(getOpenAFPath())) {
+      // If opack installed near OpenAF
+      log("Installing 'oafp' in " + getOpenAFPath() + "...")
+      io.cp(outputPath + "/oafp.js", getOpenAFPath() + "oafp.js")
+      $sh(getOpenAFPath() + "oaf --sb " + getOpenAFPath() + "oafp.js").exec()
+      log("Renaming oafp.js to oafp...")
+      io.mv(getOpenAFPath() + "oafp.js", getOpenAFPath() + "oafp")
+      installPath = getOpenAFPath() + "oafp"
+
+      // If Linux and root, install in /usr/bin or /bin if oaf is there also
+      if (!isWin && ow.format.getUserName() == "root") {
+        var installIn = __
+        if (io.fileExists("/usr/bin/oaf")) installIn = "/usr/bin"
+        if (io.fileExists("/bin/oaf"))     installIn = "/bin"
+        if (isDef(installIn)) {
+          io.writeFileString(installIn + "/oafp", "#!/bin/sh\n" + installPath + " \"$@\"\n")
+          $sh("chmod a+x " + installIn + "/oafp").exec()
+        }
+      }
+    } else {
+      // If opack installed in user space
+      log("Creating 'oafp'...")
+      io.cp(outputPath + "/oafp.js", "oafp.js")
+      $sh(getOpenAFPath() + "oaf --sb oafp.js").exec()
+      log("Renaming oafp.js to oafp...")
+      io.mv("oafp.js", "oafp")
+      installPath = "oafp"
+    }
+    if (!isWin) $sh("chmod a+x " + installPath).exec()
+
+    // If windows, build script
+    if (isWin) {
+      log("Building oafp.bat...")
+      io.writeFileString(installPath + ".bat", "@echo off\nset thispath=%~dp0\nset DIR=%thispath:~0,-1%\nset OAF_DIR=\"%DIR%\"\nchcp 65001 > NUL\n%OAF_DIR%/oaf.bat -f %OAF_DIR%/oafp -e \"%*\"")
+    }
+
+    // Determine if it's static install
+    if (getOpenAFPath().startsWith(String(java.lang.System.getProperty("java.io.tmpdir")) + "/_oaf_")) {
+      log("Static install detected.")
+      $sh("ln -s " + installPath + " oafp").exec()
+      installPath = "oafp"
+    }
+
+    print("\n --> Run '" + (installPath.indexOf("/") < 0 ? "./"+installPath : installPath) + " -h' for usage details <--\n")
+keywords:
+- data
+- processor
+- yaml
+- json
+- xml
+- csv
+- ndjson
+- slon
+- md
+- visualisation
+- oafp
+- query
+- jmespath
+- nlinq
+- transformer
+- filter
+- parser
+- template
+- visualization
+- data-processing
+bugs:
+  url: https://github.com/OpenAF/openaf-opacks/issues
+repository:
+  type: http
+  url: https://openaf.io/opacks/oafproc.opack
+  backurl: https://openaf.io/opacks/oafproc.opack
+description: A command-line data processor for various input and output formats with query capabilities.
+name: oafproc
+main: oafp.js
+mainJob: ''
+license: https://github.com/OpenAF/openaf-opacks/blob/master/LICENSE
+version: '{{version}}'
+dependencies:
+  openaf: '>=20231222'
+files:
+filesHash:

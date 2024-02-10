@@ -1,0 +1,211 @@
+var params = processExpr(" ")
+// Author : Nuno Aguiar
+const oafp = (params) => {
+if (isUnDef(params) || isDef(params.____ojob)) return 
+
+// --- Util functions
+{{{srcUtilFns}}}
+// ---
+
+// Exit function
+const _exit = (code, msg) => {
+    if (isUnDef(msg)) msg = "exit: " + code
+    if (isUnDef(ow.oJob) && !toBoolean(params.noexit)) {
+        printErr(msg)
+        exit(code)
+    } else {
+        throw msg
+    }
+}
+
+const showHelp = () => {
+    __initializeCon()
+
+    var _ff
+    params.help = _$(params.help, "help").isString().default("")
+    switch(params.help.toLowerCase()) {
+    case "filters" : _ff = "docs/FILTERS.md"; break
+    case "template": _ff = "docs/TEMPLATE.md"; break
+    case "examples": _ff = "docs/EXAMPLES.md"; break
+    default        : _ff = "docs/USAGE.md"
+    }
+
+    var _f = (getOPackPath("oafproc") || ".") + "/" + _ff
+    if (io.fileExists(_f)) {
+        __ansiColorFlag = true
+		__conConsole = true
+        if (isDef(ow.format.string.pauseString) && toBoolean(params.pause))
+            ow.format.string.pauseString( ow.format.withMD( io.readFileString(_f) ) )
+        else
+            print(ow.format.withMD( io.readFileString(_f) ))
+    } else {
+        var _help
+        if (isDef(_help) && _ff == "docs/USAGE.md") {
+            __ansiColorFlag = true
+            __conConsole = true
+            if (isDef(ow.format.string.pauseString) && toBoolean(params.pause))
+                ow.format.string.pauseString( ow.format.withMD( _help ) )
+            else
+                print(ow.format.withMD( _help ))
+        } else {
+            print("Check https://github.com/OpenAF/openaf-opacks/blob/master/oafproc/" + _ff)
+        }
+    }
+
+    _exit(0)
+}
+
+const showVersion = () => {
+    var _ff = (getOPackPath("oafproc") || ".") + "/.package.yaml"
+    var oafpv = (io.fileExists(_ff) ? io.readFileYAML(_ff).version : "(not available)")
+    var _v = {
+        oafp: oafpv,
+        openaf: {
+            version: getVersion(),
+            distribution: getDistribution()
+        }
+    }
+    return stringify(_v, __, "")
+}
+
+ow.loadFormat()
+if (params["-h"] == "" || (isString(params.help) && params.help.length > 0)) showHelp()
+
+params.format = params.output || params.format, params.type = params.input || params.type
+
+// Check if file is provided
+if (isUnDef(params.file) && isUnDef(params.cmd)) {
+    let _found = __
+    for (let key in params) {
+        if (params[key] === "") {
+            _found = key
+            break;
+        }
+    }
+    params.file = _found
+}
+
+// --- File extensions list
+const _fileExtensions = new Map({{{srcFileExtensions}}})
+// --- add extra _fileExtensions here ---
+
+// --- List of input types that should not be stored in memory
+var _inputNoMem = new Set({{{srcFileExtensionsNoMem}}})
+// --- add extra _inputNoMem here ---
+
+// --- Input functions processing per line
+{{{srcInputLineFns}}}
+// --- add extra _inputLineFns here ---
+
+// --- Transform functions
+{{{srcTransformFns}}}
+// --- add extra _transformFns here ---
+
+// --- Output functions
+{{{srcOutputFns}}}
+// --- add extra _outputFns here ---
+
+// --- Input functions (input parsers)
+{{{srcInputFns}}}
+// --- add extra _inputFns here ---
+
+// Default format
+params.format = _$(params.format, "format").isString().default(__)
+
+// Initialize console detection
+__initializeCon()
+if (!String(java.lang.System.getProperty("os.name")).match(/Windows/)) __con.getTerminal().settings.set("sane")
+
+// Set options
+var options = { __format: params.format, __from: params.from, __sql: params.sql, __path: params.path, __csv: params.csv, __pause: params.pause, __key: params.__key }
+// ndjson options
+/*if (params.type == "ndjson") {
+    params.ndjsonjoin = toBoolean(_$(params.ndjsonjoin, "ndjsonjoin").isString().default(__))
+}*/
+// csv options
+if (isDef(params.inputcsv)) {
+    params.inputcsv = params.inputcsv.trim().startsWith("{") ? jsonParse(params.inputcsv, true) : af.fromSLON(params.inputcsv)
+}
+if (isDef(params.csv)) {
+    params.csv = params.csv.trim().startsWith("{") ? jsonParse(params.csv, true) : af.fromSLON(params.csv)
+}
+
+// Check version
+var _version = false
+if (params["-v"] == "" || (isString(params.version) && params.version.length > 0)) {
+    _version = true
+    showVersion()
+}
+
+// Read input from stdin or file
+var _res = "", noFurtherOutput = false
+if (_version) {
+    _res = showVersion()
+} else {
+    if (isDef(params.file)) {
+        if (!(io.fileExists(params.file))) {
+            _exit(-1, "ERROR: File not found: '" + params.file + "'")
+        }
+        if (!_inputNoMem.has(params.type)) _res = io.readFileString(params.file)
+    } else {
+        if (isDef(params.cmd)) {
+            _res = _runCmd2Bytes(params.cmd, true)
+        } else {
+            if (params.input != "pm") {
+                _res = []
+                io.pipeLn(r => {
+                    if (isDef(_inputLineFns[params.type])) {
+                        if (_inputLineFns[params.type](_transform(r), clone(options))) {
+                            _res.push(r)
+                        }
+                    } else { 
+                        _res.push(r)
+                    }
+                    return false
+                })
+                _res = _res.join('\n')
+            }
+        }
+    }
+}
+
+if (!noFurtherOutput) {
+    // Detect type if not provided
+    if (isUnDef(params.type)) {
+        // File name based
+        if (isDef(params.file)) {
+            let _ext = params.file.substring(params.file.lastIndexOf('.'))
+            if (_fileExtensions.has(_ext)) params.type = _fileExtensions.get(_ext)
+        }
+
+        // Content-based
+        if (isUnDef(params.type)) {
+            let _tres = _res.trim()
+            if (_tres.startsWith("{") || _tres.startsWith("[")) {
+                params.type = "json"
+            } else if (_tres.startsWith("<")) {
+                params.type = "xml"
+            } else {
+                if (isString(_tres) && _tres.length > 0) {
+                    if (_tres.substring(0, _tres.indexOf('\n')).split(",").length > 1) {
+                        params.type = "csv"
+                    } else if (_tres.substring(0, _tres.indexOf(': ') > 0)) {
+                        params.type = "yaml"
+                    }
+                } else {
+                    _exit(-1, "Please provide the input type.")
+                }
+            }
+        }
+    }
+
+    // Determine input type and execute
+    if (isDef(_inputFns.has(params.type))) {
+        _inputFns.get(params.type)(_res, options)
+    } else {
+        printErr("WARN: " + params.type + " input type not supported. Using json.")
+        _inputFns.get("json")(_res, options)
+    }
+}
+}
+oafp(params)

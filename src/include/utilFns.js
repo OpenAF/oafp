@@ -1,0 +1,66 @@
+// Util functions
+const _transform = r => {
+    var _ks = Object.keys(_transformFns)
+    for(var ikey = 0; ikey < _ks.length; ikey++) {
+        var key = _ks[ikey]
+        if (isDef(params[key])) r = _transformFns[key](r)
+    }
+    return r
+}
+const _$f = (r, options) => {
+    if (isString(r)) return _transform(r)
+
+    if (options.__path) {
+        r = $path(r, options.__path.trim())
+        delete options.__path
+    }
+    if (options.__from) {
+        r = $from(r).query(af.fromNLinq(options.__from.trim()))
+        delete options.__from
+    }
+    if (options.__sql) {
+        r = $sql(r, options.__sql.trim())
+        delete options.__sql
+    }
+    r = _transform(r)
+    
+    return r
+}
+const _$o = (r, options, lineByLine) => {
+    if (!isString(r)) {
+        if (lineByLine)
+            r = _$f([r], options)[0]
+        else
+            r = _$f(r, options)
+    } else {
+        if (r.trim().startsWith("{") && r.trim().endsWith("}")) {
+            r = _$f(jsonParse(r, __, __, true), options)
+        } else {
+            r = _$f(r, options)
+        }
+    }
+
+    if (isDef(params.outputkey)) r = $$({}).set(params.outputkey, r)
+
+    _clearTmpMsg()
+    if (_outputFns.has(options.__format)) {
+        _outputFns.get(options.__format)(r, options)
+    } else {
+        $o(r, options)
+    }
+}
+const _runCmd2Bytes = (cmd, toStr) => {
+    var data = af.fromString2Bytes("")
+    var ostream = af.newOutputStream()
+    $sh(cmd)
+    .cb((o, e, i) => {
+      ioStreamCopy(ostream, o)
+      var ba = ostream.toByteArray()
+      if (ba.length > 0) data = ba
+    })
+    .get()
+    return toStr ? af.fromBytes2String(data) : data
+}
+const _msg = "(processing data...)"
+const _showTmpMsg  = msg => printErrnl(_$(msg).default(_msg))
+const _clearTmpMsg = msg => printErrnl("\r" + " ".repeat(_$(msg).default(_msg).length) + "\r")

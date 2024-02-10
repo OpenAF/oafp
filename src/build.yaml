@@ -1,0 +1,235 @@
+# Author: Nuno Aguiar
+help:
+  text   : Build oafp
+  expects: 
+  - name     : op
+    desc     : Option to perform (e.g. build; clean; pack; test; dev)
+    example  : "build"
+    mandatory: true
+
+todo:
+- (optionOn   ): op
+  ((lowerCase)): true
+  ((todos    )):
+    build:
+    - Op Build
+    clean:
+    - Op Clean
+    pack:
+    - Op Clean
+    - Op Build
+    - Op Test
+    - Op Pack
+    test:
+    - Op Clean
+    - Op Build
+    - Op Test
+    dev  :
+    - Op Dev
+
+init:
+  version: 20240210
+  header : |
+    // (author: Nuno Aguiar, version: {{version}}, license: Apache 2.0, url: https://github.com/openaf/oafp)
+    // ---
+
+ojob:
+  opacks      :
+  - openaf: 20231222
+  - GoogleCompiler
+  catch       : printErrnl("[" + job.name + "] "); if (isDef(exception.javaException)) exception.javaException.printStackTrace(); else printErr(exception)
+  logToConsole: true   # to change when finished
+
+jobs:
+# ===============
+- name : Op Build
+  to   :
+  - Find oafp source
+  - Add default code
+  - Compile source
+  - Remove shebang
+  - Add header on compile
+
+# ==============
+- name : Op Pack
+  from :
+  - Find oafp source
+  exec : |
+    // Copy main file
+    log("Copying main file...")
+    io.mkdir(args.pack + "/pack")
+    io.cp(args.path + "/oafp.js", args.pack + "/pack/oafp.js")
+
+    // Copy source
+    log("Copying source...")
+    io.mkdir(args.pack + "/pack/src")
+    io.cp(args.path + "/oafp.source.js", args.pack + "/pack/src/oafp.source.js")
+
+    // Copy documentation
+    log("Copying documentation...")
+    io.mkdir(args.pack + "/pack/docs")
+    io.listFiles(args.path + "/docs").files.forEach(f => {
+      io.cp(f.filepath, args.pack + "/pack/docs/" + f.filename)
+    })
+
+    // Copy ojobs
+    log("Copying ojobs...")
+    io.listFiles(args.path + "/ojobs").files.forEach(f => {
+      io.cp(f.filepath, args.pack + "/pack/" + f.filename)
+    })
+  to   :
+  - Generate README.md
+  - Generate package.yaml
+
+# ===============
+- name : Op Clean
+  to   :
+  - Find oafp source
+  - Clean files
+
+# =============
+- name : Op Dev
+  to   :
+  - Find oafp source
+  - Add dev code
+  - Remove shebang
+  - Add shebang
+
+# ==============
+- name : Op Test
+  from :
+  - Find oafp source
+  lang : shell
+  typeArgs:
+    shellPrefix: test
+  exec : |
+    echo "Running tests..."
+    cd $path/tests
+    $oaf/ojob autoTest.yaml
+
+# -----------------------
+- name : Find oafp source
+  exec : |
+    if (io.fileExists("oafp.source.js.hbs")) {
+      args.path = "."
+    } else {
+      if (io.fileExists("src/oafp.source.js.hbs")) {
+        args.path = "src"
+      }
+    }
+
+    if (isUnDef(args.path)) throw "Could not find oafp.source.js.hbs"
+    log("Source found in: " + args.path + "/oafp.source.js.hbs")
+
+    if (args.path == "build") args.pack = "."
+    if (args.path == ".")     args.pack = ".."
+
+    args.oaf = getOpenAFPath()
+  
+# ------------------
+- name : Clean files
+  lang : shell
+  exec : |
+    echo "Cleaning artifacts..."
+    rm $path/oafp.js 2> /dev/null
+    rm $path/oafp.source.js 2> /dev/null
+  
+    echo "Removing pack folder..."
+    rm -rf $pack/pack
+
+    echo "Removing tests output..."
+    rm $path/tests/oafp-test.* 2> /dev/null
+
+    echo "Clean up done."
+
+# ---------------------
+- name : Remove shebang
+  exec : |
+    log("Removing shebang...")
+
+    $job("ojob find/replace", {
+      __key    : {
+        "var\\s+params\\s*=\\s*processExpr\\(\" \"\\)[;,]?": ""
+      },
+      useRegExp: true,
+      inputFile: args.path + "/oafp.js",
+      outputFile: args.path + "/oafp.js"
+    })
+
+# ----------------------------
+- name : Add header on compile
+  exec : |
+    //var pack = io.readFileYAML(args.pack + "/.package.yaml")
+    io.writeFileString(args.path + "/oafp.js", $t(args.init.header, {
+      version: args.init.version
+    }) + io.readFileString(args.path + "/oafp.js") )
+
+# ---------------------
+- name : Compile source
+  exec : |
+    log("Compiling source...")
+    $sh([getOpenAFPath() + "opack", "exec", "GoogleCompiler", "--language_out", "ECMASCRIPT_2019", "--env", "CUSTOM", "--strict_mode_input", "false", "--rewrite_polyfills", "false", "--js", args.path + "/oafp.source.js", "--js_output_file", args.path + "/oafp.js"])
+    .prefix("compiler")
+    .get()
+
+# -----------------------
+- name : Add default code
+  exec : |
+    args.data = {
+      srcFileExtensions     : stringify(io.readFileJSON(args.path + "/include/fileExtensions.json")),
+      srcFileExtensionsNoMem: stringify(io.readFileJSON(args.path + "/include/fileExtensionsNoMem.json")),
+      srcInputLineFns       : io.readFileString(args.path + "/include/inputLineFns.js"),
+      srcTransformFns       : io.readFileString(args.path + "/include/transformFns.js"),
+      srcOutputFns          : io.readFileString(args.path + "/include/outputFns.js"),
+      srcInputFns           : io.readFileString(args.path + "/include/inputFns.js"),
+      srcUtilFns            : io.readFileString(args.path + "/include/utilFns.js")
+    }
+
+    args.templateFile = args.path + "/oafp.source.js.hbs"
+    args.outputFile   = args.path + "/oafp.source.js"
+  to   :
+  - ojob template
+
+# -------------------
+- name : Add dev code
+  exec : |
+    args.data = {
+      srcFileExtensions     : "io.readFileJSON(\"include/fileExtensions.json\")",
+      srcFileExtensionsNoMem: "io.readFileJSON(\"include/fileExtensionsNoMem.json\")",
+      srcInputLineFns       : "loadDebug(\"include/inputLineFns.js\")",
+      srcTransformFns       : "loadDebug(\"include/transformFns.js\")",
+      srcOutputFns          : "loadDebug(\"include/outputFns.js\")",
+      srcInputFns           : "loadDebug(\"include/inputFns.js\")",
+      srcUtilFns            : "loadDebug(\"include/utilFns.js\")"
+    }
+
+    args.templateFile = args.path + "/oafp.source.js.hbs"
+    args.outputFile   = args.path + "/oafp.js"
+  to   :
+  - ojob template
+
+# ------------------
+- name : Add shebang
+  lang : shell
+  exec : |
+    echo "Adding shebang..."
+    {{oaf}}/oaf --sb $path/oafp.js
+
+# -------------------------
+- name : Generate README.md
+  exec : |
+    log("Generating README.md...")
+    io.writeFileString(args.pack + "/pack/README.md", $t(io.readFileString(args.path + "/README.md.hbs"), {
+    }))
+
+# ----------------------------
+- name : Generate package.yaml
+  exec : |
+    log("Generating package.yaml...")
+    io.writeFileString(args.pack + "/pack/.package.yaml", $t(io.readFileString(args.path + "/package.yaml.hbs"), {
+      version: args.init.version
+    }))
+
+    $sh(args.oaf + "/opack genpack .")
+    .pwd(args.pack + "/pack")
+    .exec()

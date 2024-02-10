@@ -1,0 +1,12 @@
+[
+    [".json", "json"],
+    [".ndjson", "ndjson"],
+    [".yaml", "yaml"],
+    [".xml", "xml"],
+    [".csv", "csv"],
+    [".ini", "ini"],
+    [".md", "md"],
+    [".xls", "xls"],
+    [".xlsx", "xls"],
+    [".sql", "sql"]
+]
