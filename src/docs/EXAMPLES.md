@@ -10,6 +10,21 @@
 find /some/data -name "*.json" -exec oafp {} output=json \; > data.ndjson
 ```
 
+### FILTER PATH: Manipulate text in a field
+
+**Command:**
+```bash
+# Get a json with the lyrics of a song
+curl -s https://api.lyrics.ovh/v1/Coldplay/Viva%20La%20Vida | oafp path="substring(lyrics,index_of(lyrics, '\n'),length(lyrics))"
+```
+
+**Results:**
+```
+I used to rule the world
+[...]
+Oooooh Oooooh Oooooh
+```
+
 ### FILTER PATH: Docker ps formatting
 
 **Command:**
