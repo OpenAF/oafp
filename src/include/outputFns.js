@@ -1,4 +1,8 @@
 var _outputFns = new Map([
+    ["?" , (r, options) => {
+        r = Array.from(_outputFns.keys()).filter(r => r != '?').sort()
+        $o(r, options)
+    }],
     ["pm", (r, options) => {
         $o(r, options)
     }],

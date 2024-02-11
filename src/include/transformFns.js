@@ -1,4 +1,10 @@
 var _transformFns = {
+    "transforms"    : _r => {
+        if (toBoolean(params.transforms)) {
+            var _t = Object.keys(_transformFns).filter(r => r != 'transforms').sort()
+            return _t
+        }
+    },
     "sortmapkeys"   : _r => {
         if (toBoolean(params.sortmapkeys) && isObject(_r)) {
             let _sortMapKeys = (aMap, moreLevels) => {

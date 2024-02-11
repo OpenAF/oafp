@@ -1,4 +1,8 @@
 var _inputFns = new Map([
+    ["?"    , (_res, options) => {
+        _res = Array.from(_inputFns.keys()).filter(r => r != '?').sort()
+        _$o(_res, options)
+    }],
     ["pm"   , (_res, options) => { 
         _showTmpMsg()
         if (isDef(__pm._map)) _res = __pm._map
