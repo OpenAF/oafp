@@ -25,7 +25,7 @@ var _inputFns = new Map([
         _$o(_r, options)
     }],
     ["ndjson", (_res, options) => {
-        params.ndjsonjoin = toBoolean(_$(params.ndjsonjoin, "ndjsonjoin").isString().default(__))
+        if (!isBoolean(params.ndjsonjoin)) params.ndjsonjoin = toBoolean(_$(params.ndjsonjoin, "ndjsonjoin").isString().default(__))
 
         _showTmpMsg()
         global.__ndjsonbuf = __
