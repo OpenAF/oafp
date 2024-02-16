@@ -86,6 +86,7 @@ jobs:
         git status
         git config user.name github-actions
         git config user.email github-actions@github.com
+        gh auth setup-git
         git commit -m "oafproc: automated sync with openaf/oafp"
         git push
 
