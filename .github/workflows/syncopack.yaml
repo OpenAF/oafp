@@ -82,7 +82,10 @@ jobs:
         rm -rf openaf-opacks/oafproc
         mv pack openaf-opacks/oafproc
         cd openaf-opacks
+        git add openaf-opacks/oafproc
         git status
+        git commit -m "oafproc: automated sync with openaf/oafp"
+        git push
 
     # # -------------
     # - name: Checkin
