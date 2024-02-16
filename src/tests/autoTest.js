@@ -186,4 +186,25 @@
       var _r = $sh([getOpenAFPath() + "/oaf", "-f", "../oafp.source.js", "-e", "input=json output=json flatmap=true file=" + _f]).getJson(0)
       ow.test.assert(_r.stdout, {"c.x":1,"c.y":1,"b.x":0,"b.y":0,"a.x":1,"a.y":-1}, "Problem with flatmap")
    }
+
+   // JSON Schema
+   exports.testJsonSchema = function() {
+      var _f = io.createTempFile("testJsonSchema", ".json")
+      var data1 = { a: 123, b: true, c: [ 1, 2, 3 ] }
+      var sch1  = {"$id":"https://example.com/schema.json","$schema":"http://json-schema.org/draft-07/schema#","required":[],"type":"object","properties":{"a":{"type":"number"},"b":{"type":"boolean"},"c":{"type":"array","items":{"type":"number"}}}}
+
+      io.writeFileString(_f, stringify(data1, __, ""))
+      var _r = $sh([getOpenAFPath() + "/oaf", "-f", "../oafp.source.js", "-e", "in=json jsonschemagen=true out=json file=" + _f]).get(0)
+      ow.test.assert(jsonParse(_r.stdout), sch1, "Problem with generating a jsonschema")
+
+      var _f2 = io.createTempFile("testJsonSchema2", ".json")
+      io.writeFileString(_f2, stringify(sch1, __, ""))
+      var _r2 = $sh([getOpenAFPath() + "/oaf", "-f", "../oafp.source.js", "-e", "in=jsonschema out=json file=" + _f2]).get(0)
+      ow.test.assert(isMap(jsonParse(_r2.stdout)), true, "Problem with generating data from a jsonschema")
+
+      var _f3 = io.createTempFile("testJsonSchema3", ".json")
+      io.writeFileString(_f3, _r2.stdout)
+      var _r3 = $sh([getOpenAFPath() + "/oaf", "-f", "../oafp.source.js", "-e", "in=json out=json jsonschema=" + _f2 + " file=" + _f3]).get(0)
+      ow.test.assert(jsonParse(_r3.stdout).valid, true, "Problem with validating generated data from a jsonschema")
+   }
 })()

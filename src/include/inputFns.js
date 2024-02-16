@@ -9,6 +9,14 @@ var _inputFns = new Map([
         if (isDef(__pm._list)) _res = __pm._list
         _$o(_res, options) 
     }],
+    ["jsonschema", (_res, options) => {
+        _showTmpMsg()
+        var _s = jsonParse(_res, __, __, true)
+        if (!isMap(_s)) _exit(-1, "jsonschema is only supported with a map.")
+        ow.loadObj()
+        var _d = ow.obj.schemaSampleGenerator(_s)
+        _$o(_d, options)
+    }],   
     ["yaml" , (_res, options) => {
         _showTmpMsg()
         var _r = af.fromYAML(_res)

@@ -5,6 +5,37 @@ var _transformFns = {
             return _t
         }
     },
+    "jsonschemagen" : _r => {
+        if (toBoolean(params.jsonschemagen)) {
+            ow.loadObj()
+            var _js = ow.obj.schemaGenerator(_r)
+            return _js
+        }
+    },
+    "jsonschemacmd" : r => {
+        return _transformFns["jsonschema"](r)
+    },
+    "jsonschema": r => {
+        if (!isMap(r)) _exit(-1, "jsonschema is only supported with a map.")
+        if (isUnDef(params.jsonschema) && isUnDef(params.jsonschemacmd)) _exit(-1, "You need to provide a jsonschema=someFile.json or jsonschemacmd=someCommand")
+        
+        ow.loadObj()
+        var _s
+        if (isDef(params.jsonschemacmd)) {
+            var _cmd = $sh(params.jsonschemacmd).getJson(0)
+            if (_cmd.exitcode == 0)
+                _s = _cmd.stdout
+            else
+                _exit(-1, "Error executing the command '" + params.jsonschemacmd + "': " + _cmd.stderr)
+        } else {
+            _s = io.readFileJSON(params.jsonschema)
+        }
+        if (!isMap(_s)) _exit(-1, "The schema provided is not a valid JSON schema.")
+        ow.obj.schemaInit({allErrors: true})
+        var validate = ow.obj.schemaCompile(_s)
+        var res = validate(r)
+        return { valid: res, errors: validate.errors}
+    },
     "sortmapkeys"   : _r => {
         if (toBoolean(params.sortmapkeys) && isObject(_r)) {
             let _sortMapKeys = (aMap, moreLevels) => {
