@@ -78,13 +78,13 @@ jobs:
       env :
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run : |
-        git clone https://github.com/openaf/openaf-opacks
+        gh repo clone OpenAF/openaf-opacks
         rm -rf openaf-opacks/oafproc
         mv pack openaf-opacks/oafproc
         cd openaf-opacks/oafproc
         git add .
         git status
-        /tmp/oaf/ojob ojob.io/git/githubEmail user=nmaguiar 
+        echo /tmp/oaf/ojob ojob.io/git/githubEmail user=nmaguiar 
         git commit -m "oafproc: automated sync with openaf/oafp"
         git push
 
