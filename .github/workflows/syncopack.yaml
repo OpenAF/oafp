@@ -84,7 +84,8 @@ jobs:
         cd openaf-opacks/oafproc
         git add .
         git status
-        echo /tmp/oaf/ojob ojob.io/git/githubEmail user=nmaguiar 
+        git config user.name github-actions
+        git config user.email github-actions@github.com
         git commit -m "oafproc: automated sync with openaf/oafp"
         git push
 
