@@ -179,5 +179,9 @@ var _transformFns = {
             return res
         }
         return _r
+    },
+    "splitlines": _r => { 
+        if (toBoolean(params.splitlines) && isString(_r)) return _r.split(/\r?\n/)
+        return _r
     }
 }

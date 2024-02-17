@@ -1,4 +1,21 @@
 var _inputLineFns = {
+    "lines": (r, options) => {
+        if (!isBoolean(params.linesjoin)) params.linesjoin = toBoolean(_$(params.linesjoin, "linesjoin").isString().default(__))
+
+        if (!params.linesjoin && isString(r)) {
+            if (r.trim().length == 0) {
+                noFurtherOutput = true
+                return
+            }
+            if (r.trim().length > 0) {
+                r = r.trim().split(/\r?\n/)
+            }
+            _$o(r, options, true)
+            noFurtherOutput = true
+        } else {
+            return true
+        }
+    },
     "ndjson": (r, options) => {
         if (!isBoolean(params.ndjsonjoin)) params.ndjsonjoin = toBoolean(_$(params.ndjsonjoin, "ndjsonjoin").isString().default(__))
         
