@@ -9,6 +9,9 @@ scripts:
     if (io.fileExists(getOpenAFPath() + "oafp")) {
       logWarn("Removing " + getOpenAFPath() + "oafp...")
       io.rm(getOpenAFPath() + "oafp")
+      $sh([getOpenAFPath() + "oaf", "-c", "load(getOpenAFJar()+'::js/genScripts.js')"])
+      .pwd(getOpenAFPath())
+      .exec()
     }
 
     // If Linux and root, install in /usr/bin or /bin if oaf is there also
