@@ -214,7 +214,7 @@ if (isString(params.libs)) params.libs = params.libs.split(",").map(r => r.trim(
 if (isDef(__flags.OAFP) && isArray(__flags.OAFP.libs) && isArray(params.libs)) 
     params.libs = __flags.OAFP.libs.concat(params.libs)
 else
-    params.libs = __flags.OAFP.libs
+    params.libs = (isDef(__flags.OAFP) ? __flags.OAFP.libs : [])
 if (isArray(params.libs)) {
     params.libs.forEach(lib => {
         try {
