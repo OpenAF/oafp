@@ -153,6 +153,41 @@ var _inputFns = new Map([
             _$o(r, options)
         }
     }],
+    ["db", (r, options) => {
+        if (isString(r)) {
+            _showTmpMsg()
+            if (!isString(params.indbjdbc)) _exit(-1, "indbjdbc URL is not defined.")
+            var _db
+            try {
+                if (isDef(params.indblib)) loadLib("jdbc-" + params.indblib + ".js")
+                _db = new DB(params.indbjdbc, params.indbuser, params.indbpass, params.indbtimeout)
+                _db.convertDates(true)
+                if (toBoolean(params.indbexec)) {
+                    var _r = _db.u(r)
+                    _$o({ affectedRows: _r }, options)
+                    _db.commit()
+                } else {
+                    var _r = _db.q(r)
+                    if (isMap(_r) && isArray(_r.results)) {
+                        _$o(_r.results, options)
+                    } else {
+                        _exit(-1, "Invalid DB result: " + stringify(_r))
+                    }
+                }
+            } catch(edb) {
+                printErr(edb.message)
+                if (isDef(_db)) _db.rollback()
+                _exit(-1, "Error executing SQL: " + edb.message)
+            } finally {
+                if (isDef(_db)) {
+                    _db.rollback()
+                    _db.close()
+                }
+            }
+        } else {
+            _exit(-1, "db is only supported with a SQL string.")
+        }
+    }],
     ["xls", (_res, options) => {
         _showTmpMsg()
         try {

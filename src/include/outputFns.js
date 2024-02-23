@@ -106,6 +106,70 @@ var _outputFns = new Map([
             print(af.fromBytes2String(af.toBase64Bytes(_o)))
         }
     }],
+    ["db", (r, options) => {
+        if (!isArray(r) || r.length < 1) _exit(-1, "db is only supported for filled arrays/lists")
+        params.dbtable = _$(params.dbtable, "outdbtable").isString().default("data")
+        params.dbnocreate = toBoolean(_$(params.dbnocreate, "outdbnocreate").isString().default("false"))
+        params.dbicase = toBoolean(_$(params.dbicase, "outdbicase").isString().default("false"))
+
+        ow.loadObj()
+        var _db
+        try {
+            if (!isString(params.dbjdbc)) _exit(-1, "dbjdbc URL is not defined.")
+            if (isDef(params.dblib)) loadLib("jdbc-" + params.dblib + ".js")
+            _db = new DB(params.dbjdbc, params.dbuser, params.dbpass, params.dbtimeout)
+
+            // Creating table
+            if (!params.dbnocreate) {
+                try {
+                    var _sql = ow.obj.fromObj2DBTableCreate(params.dbtable, r, __, !params.dbicase)
+                    _db.u(_sql)
+                    _db.commit() // needed for some jdbcs
+                } catch(idbe) {
+                    _db.rollback()
+                    _exit(-1, "Error creating table: " + idbe)
+                }
+            }
+
+            // Inserting into table
+            var okeys, ookeys = Object.keys(ow.obj.flatMap(r[0]))
+            if (!params.dbicase) 
+                okeys = "\"" + ookeys.join("\", \"") + "\""
+            else 
+                okeys = ookeys.join(",").toUpperCase()
+    
+            let _sqlH = ""
+            let _parseVal = aValue => {
+                var _value = ow.obj.flatMap(aValue)
+                var values = [];
+                for(var k in ookeys) {
+                    values.push(_value[ookeys[k]]);
+                }
+                var binds = ookeys.map(k => {
+                    var v = _value[k]
+                    return String(v)
+                })
+                var __h = "INSERT INTO " + (!params.dbicase ? "\"" + params.dbtable + "\"" : params.dbtable) + " (" + okeys + ") VALUES (" + binds.map(r => "?").join(", ") + ")"
+                if (__h.length > _sqlH.length) {
+                    _sqlH = String(__h)
+                }
+
+                return binds
+            }
+
+            var vals = r.map(_parseVal)
+            _db.usArray(_sqlH, vals, params.dbbatchsize)
+        } catch(dbe) {
+            if (isDef(_db)) _db.rollback()
+            printErr(dbe)
+            _exit(-1, "Error connecting to the database: " + dbe)
+        } finally {
+            if (isDef(_db)) {
+                _db.commit()
+                _db.close()
+            }
+        }
+    }],
     ["sql", (r, options) => {
         if (!isArray(r) || r.length < 1) _exit(-1, "sql is only supported for filled arrays/lists")
         params.sqltable = _$(params.sqltable, "sqltable").isString().default("data")
@@ -113,7 +177,7 @@ var _outputFns = new Map([
         params.sqlnocreate = toBoolean(_$(params.sqlnocreate, "sqlnocreate").isString().default("false"))
 
         ow.loadObj()
-       if (!params.sqlnocreate) print(ow.obj.fromObj2DBTableCreate(params.sqltable, r, __, !params.sqlicase)+";\n")
+        if (!params.sqlnocreate) print(ow.obj.fromObj2DBTableCreate(params.sqltable, r, __, !params.sqlicase)+";\n")
 
         var okeys, ookeys = Object.keys(ow.obj.flatMap(r[0]))
         if (!params.sqlicase) 
