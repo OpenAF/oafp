@@ -135,16 +135,6 @@ var _transformFns = {
         }
         return _r
     },
-    "sqlfilter": _r => {
-        if (isString(params.sqlfilter)) {
-            switch(params.sqlfilter.toLowerCase()) {
-            case "simple"  : __flags.SQL_QUERY_METHOD = "nlinq"; break
-            case "advanced": __flags.SQL_QUERY_METHOD = "h2"; break
-            default        : __flags.SQL_QUERY_METHOD = "auto"
-            }
-        }
-        return _r
-    },
     "llmprompt": _r => {
         if (isString(params.llmprompt)) {
             params.llmenv     = _$(params.llmenv, "llmenv").isString().default("OAFP_MODEL")

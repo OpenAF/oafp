@@ -19,7 +19,15 @@ const _$f = (r, options) => {
         delete options.__from
     }
     if (options.__sql) {
-        r = $sql(r, options.__sql.trim())
+        var method = "auto"
+        if (isString(params.sqlfilter)) {
+            switch(params.sqlfilter.toLowerCase()) {
+            case "simple"  : method = "nlinq"; break
+            case "advanced": method = "h2"; break
+            default        : method = "auto"
+            }
+        }
+        if (isArray(r) && r.length > 0) r = $sql(r, options.__sql.trim(), method)
         delete options.__sql
     }
     r = _transform(r)
