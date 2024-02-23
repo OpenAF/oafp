@@ -35,6 +35,7 @@ const _$f = (r, options) => {
     return r
 }
 const _$o = (r, options, lineByLine) => {
+    if (toBoolean(params.color)) __conConsole = true
     if (!isString(r)) {
         if (lineByLine)
             r = _$f([r], options)[0]
