@@ -30,8 +30,13 @@ var _outputFns = new Map([
                         let d = (isDef(_r["@timestamp"]) ? _r["@timestamp"] : __)
                         let l = (isDef(_r.level) ? _r.level : __)
                         let m = (isDef(_r.message) ? _r.message : __)
+                        let lineC
+                        if (isDef(l)) {
+                            if (l.toLowerCase().indexOf("err") >= 0)  lineC = "RED,BOLD"
+                            if (l.toLowerCase().indexOf("warn") >= 0) lineC = "YELLOW"
+                        }
                         if (isDef(d) && d.length > 24) d = d.substring(0, 23) + "Z"
-                        if (isDef(m) || isDef(d)) print(ansiColor("BOLD", d) + (isDef(l) ? " | " + l : "") + " | " + m)
+                        if (isDef(m) || isDef(d)) print(ansiColor("BOLD", d) + (isDef(l) ? " | " + ansiColor(lineC, l) : "") + " | " + ansiColor(lineC, m))
                     }
                 })
             }

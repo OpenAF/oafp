@@ -368,10 +368,10 @@ if (!noFurtherOutput) {
     }
 
     // Determine input type and execute
-    if (isDef(_inputFns.has(params.type))) {
+    if (isDef(params.type) && _inputFns.has(params.type)) {
         _inputFns.get(params.type)(_res, options)
     } else {
-        printErr("WARN: " + params.type + " input type not supported. Using json.")
+        if (isString(params.type)) printErr("WARN: " + params.type + " input type not supported. Using json.")
         _inputFns.get("json")(_res, options)
     }
 }

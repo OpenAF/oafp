@@ -8,12 +8,13 @@ const _transform = r => {
     return r
 }
 const _$f = (r, options) => {
-    if (isString(r)) return _transform(r)
-
     if (options.__path) {
         r = $path(r, options.__path.trim())
         delete options.__path
     }
+
+    if (isString(r)) return _transform(r)
+
     if (options.__from) {
         r = $from(r).query(af.fromNLinq(options.__from.trim()))
         delete options.__from
