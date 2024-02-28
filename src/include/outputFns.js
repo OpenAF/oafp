@@ -119,6 +119,7 @@ var _outputFns = new Map([
         params.ch = _fromJSSLON(params.ch)
         if (isMap(params.ch)) {
             if (isUnDef(params.ch.type)) _exit(-1, "ch.type is not defined.")
+            if (isDef(params.ch.lib)) loadLib(params.ch.lib)
             if (params.ch.type == "remote") {
                 $ch("oafp::outdata").createRemote(params.ch.url)
             } else {

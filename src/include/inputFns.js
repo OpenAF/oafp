@@ -217,6 +217,7 @@ var _inputFns = new Map([
         params.inch = _fromJSSLON(params.inch)
         if (isMap(params.inch)) {
             if (isUnDef(params.inch.type)) _exit(-1, "inch.type is not defined.")
+            if (isDef(params.inch.lib)) loadLib(params.inch.lib)
             if (params.inch.type == "remote") {
                 $ch("oafp::indata").createRemote(params.inch.url)
             } else {
