@@ -98,35 +98,33 @@ Using the same unix “pipe” mechanism it’s possible to apply different cate
 | search_values(arr, 'text') | all | Returns an array of entries where 'text' was found as part of an object property value. | search_values(files, '.git') |
 | sort(array) | base | Sorts the provided array | "sort(@)" |
 | sort_by(array, expression) | base | Sorts the provided array by the provided expression | sort_by(files[], &size) |
-| split() |  |  |  |
-| split(x, 'sep') | 20240209 |  |  |
-| split_re() |  |  |  |
-| split_sep() | 20240217 |  |  |
+| split(str, 'sep') | 20240209 | Equivalent to the split Javascript's function for a string given a separator | split(@, '\n') |
+| split_re(str, 're') |  | Equivalent to the split Javascript's function for a string given a regular expression separator | split_re(@, '\\s+')  |
+| split_sep(str, sep, arrEnc) | 20240217 | Given a string, a separator regexp and an array of pairs of enclosure chars | split_sep(@, '\\s+', from_slon('[['{'|'}']|['('|')']]'))  |
 | starts_with(string, array) | base | Returns true if a field has the provided prefix | files[?starts_with(filename, 'openaf.jar')] |
-| sub() | 20240217 |  |  |
-| substring(a, ini, end) | all |  |  |
+| sub() | 20240217 | Substracts two numbers | sub(`2`, `2`) |
+| substring(str, ini, end) | all | Given a string will return a sub-string starting on the initial index until the ending index | substring(@, index_of('test'), 5) |
 | sum(array) | base | Sums the numberic field of a provided array | sum(files[].size) |
-| t() |  |  |  |
-| tF() |  |  |  |
-| template(a, 'template') | 20240209 |  |  |
-| templateF(x, 'template') | 20240209 |  |  |
-| timeago(x) | 20240209 |  |  |
+| t(obj, 'template') |  | Applies the Handlebars 'template' to the provided array or map | t(@, '{{filename}} ({{size}})') |
+| tF(obj, 'template') |  | Applies the Handlebars 'template', with all OpenAF helpers, to the provided array or map | tF(@, '{{\$env 'TITLE'}}: {{filename}}')  |
+| template(a, 'template') | 20240209 | Applies the Handlebars 'template' to the provided array or map | t(@, '{{filename}} ({{size}})') |
+| templateF(x, 'template') | 20240209 | Applies the Handlebars 'template', with all OpenAF helpers, to the provided array or map | tF(@, '{{\$env 'TITLE'}}: {{filename}}')  |
+| timeago(num) | 20240209 | Given a ms timestamp will return a human readable string of how log ago that timestamp occurred. | files[].{path:filepath,howLongAgo:timeago(lastModified)} |
 | to_array(any) | base | Transforms any input into an array | to_array(`true`) |
-| to_bytesAbbr(x) | 20240209 |  |  |
-| to_date(x) | 20240209 |  |  |
-| to_datef() |  |  |  |
-| to_isoDate(x) | 20240209 |  |  |
-| to_json() | 20240215 |  |  |
-| to_map(arr, 'field') | all |  |  |
-| to_numAbbr(x) | 20240209 |  |  |
+| to_bytesAbbr(x) | 20240209 | Given an absolute number of bytes will return a string with unit abbreviation. | to_bytesAbbr(`12345678`) |
+| to_date(x) | 20240209 | Tries to convert a value to a date | to_date(createDate) |
+| to_datef(str, 'pattern') |  | Uses a Java date format to convert a string into a date | to_datef(createDate, 'yyyyMMdd') |
+| to_isoDate(x) | 20240209 | Tries to convert a string into an ISO date format string | to_isoDate( to_datef(createDate, 'yyyyMMdd') ) |
+| to_json() | 20240215 | Given an object will return the JSON string representation of it. | to_json(@) |
+| to_map(arr, 'field') | all | Given an array it will return a map where each entry is a property using the provided field with a map as value. | to_map(files, 'filename') |
+| to_numAbbr(num) | 20240209 | Given an absolute number will return a string with SI abbreviation | to_numAbbr(`12345678`) |
 | to_number(any) | base | Transforms any input into a number | to_number(`123`) |
-| to_slon() | 20240215 |  |  |
+| to_slon(obj) | 20240215 | Given an object will return the SLON representation of it. | to_slon(@) |
 | to_string(any) | base | Transforms any input into a string | to_string(`123`) |
-| trim() | 20240216 |  |  |
-| trim(x) | 20240209 |  |  |
+| trim(str) | 20240209 | Given a string will return a trimmed version of it | trim(@) |
 | type(any) | base | Returns the type of any input | type(to_number(`123`)) |
-| unique(arr) | all |  |  |
-| upper_case(x) | 20240209 |  |  |
+| unique(arr) | all | Given an array will return a new de-duplicated array. | unique([]) |
+| upper_case(str) | 20240209 | Given a string returns the uppercase converted version | upper_case('AbC') |
 | values(a) | base | Returns an array with all the values of a map | values(files[0]) |
 
 Example:
