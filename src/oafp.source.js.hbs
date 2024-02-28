@@ -249,6 +249,25 @@ params.format = _$(params.format, "format").isString().default(__)
 __initializeCon()
 if (!String(java.lang.System.getProperty("os.name")).match(/Windows/)) __con.getTerminal().settings.set("sane")
 
+// Check for OpenAF's sec buckets
+
+if (isDef(params.secKey)) {
+    if (toBoolean(params.secEnv)) {
+        params.secRepo = "system"
+        params.secBucket = "envs"
+    }
+    params.secRepo = _$(params.secRepo, "secRepo").isString().default(getEnv("OAFP_SECREPO"))
+    params.secBucket = _$(params.secBucket, "secBucket").isString().default(getEnv("OAFP_SECBUCKET"))
+    params.secPass = _$(params.secPass, "secPass").isString().default(getEnv("OAFP_SECPASS"))
+    params.secMainPass = _$(params.secMainPass, "secMainPass").isString().default(getEnv("OAFP_SECMAINPASS"))
+    params.secFile = _$(params.secFile, "secFile").isString().default(getEnv("OAFP_SECFILE"))
+
+    let res = $sec(params.secRepo, params.secBucket, params.secPass, params.secMainPass, params.secFile).get(secKey)
+    if (isDef(res)) {
+        Object.keys(res).forEach(r => params[r] = res[r])
+    }
+}
+
 // Set options
 var options = { __format: params.format, __from: params.from, __sql: params.sql, __path: params.path, __csv: params.csv, __pause: params.pause, __key: params.__key }
 // ndjson options
@@ -257,10 +276,13 @@ var options = { __format: params.format, __from: params.from, __sql: params.sql,
 }*/
 // csv options
 if (isDef(params.inputcsv)) {
-    params.inputcsv = params.inputcsv.trim().startsWith("{") ? jsonParse(params.inputcsv, true) : af.fromSLON(params.inputcsv)
+    params.inputcsv = _fromJSSLON(params.inputcsv)
+}
+if (isDef(params.incsv)) {
+    params.incsv = _fromJSSLON(params.incsv)
 }
 if (isDef(params.csv)) {
-    params.csv = params.csv.trim().startsWith("{") ? jsonParse(params.csv, true) : af.fromSLON(params.csv)
+    params.csv = _fromJSSLON(params.csv)
 }
 
 // Check version

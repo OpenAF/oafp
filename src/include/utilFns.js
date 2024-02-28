@@ -72,6 +72,16 @@ const _runCmd2Bytes = (cmd, toStr) => {
     .get()
     return toStr ? af.fromBytes2String(data) : data
 }
+const _fromJSSLON = aString => {
+	if (!isString(aString) || aString == "" || isNull(aString)) return ""
+
+	aString = aString.trim()
+	if (aString.startsWith("{")) {
+		return jsonParse(aString, __, __, true)
+	} else {
+		return af.fromSLON(aString)
+	}
+}
 const _msg = "(processing data...)"
 const _showTmpMsg  = msg => printErrnl(_$(msg).default(_msg))
 const _clearTmpMsg = msg => printErrnl("\r" + " ".repeat(_$(msg).default(_msg).length) + "\r")

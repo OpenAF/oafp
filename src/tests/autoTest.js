@@ -207,4 +207,24 @@
       var _r3 = $sh([getOpenAFPath() + "/oaf", "-f", "../oafp.source.js", "-e", "in=json out=json jsonschema=" + _f2 + " file=" + _f3]).get(0)
       ow.test.assert(jsonParse(_r3.stdout).valid, true, "Problem with validating generated data from a jsonschema")
    }
+
+   // CSV 
+   exports.testCSV = function() {
+      var _f = io.createTempFile("testCSV", ".csv")
+      var data1 = [ 
+         {id: 1, status: true, text: "abc", number: 123},
+         {id: 2, status: false, text: "def", number: 456},
+         {id: 3, status: true, text: "ghi", number: 789}
+      ]
+      var out1 = "id|status|text|number\r\n1|true|abc|123\r\n2|false|def|456\r\n3|true|ghi|789"
+
+      io.writeFileString(_f, stringify(data1, __, ""))
+      var _r = $sh([getOpenAFPath() + "/oaf", "-f", "../oafp.source.js", "-e", "in=json out=csv csv=\"(withDelimiter: '|')\" file=" + _f]).get(0)
+      ow.test.assert(_r.stdout.trim(), out1, "Problem with json to csv")
+
+      var _f2 = io.createTempFile("testCSV2", ".csv")
+      io.writeFileString(_f2, _r.stdout)
+      var _r2 = $sh([getOpenAFPath() + "/oaf", "-f", "../oafp.source.js", "-e", "in=csv inputcsv=\"(withDelimiter: '|')\" correcttypes=true out=json file=" + _f2]).get(0)
+      ow.test.assert(compare(jsonParse(_r2.stdout), data1), true, "Problem with csv to json")
+   }
 })()

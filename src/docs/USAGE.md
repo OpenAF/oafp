@@ -212,6 +212,8 @@ List of options to use with the _inputcsv_ input option (when input type=csv) an
 > Example of options provided in JSON: csv="{withHeader:false,withDelimiter:'|'}"
 > Example of options provided in SLON: inputcsv="(withHeader: false, quoteMode: ALL)"
 
+> You can also use _incsv_ as a shortcut for _inputcsv_
+
 ---
 
 ## 🧾 Base64 input/output options
