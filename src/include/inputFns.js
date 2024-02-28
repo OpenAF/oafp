@@ -211,6 +211,29 @@ var _inputFns = new Map([
             _$o(r, options)
         }
     }],
+    ["ch", (r, options) => {
+        _showTmpMsg()
+        if (isUnDef(params.inch)) _exit(-1, "inch is not defined.")
+        params.inch = _fromJSSLON(params.inch)
+        if (isMap(params.inch)) {
+            if (isUnDef(params.inch.type)) _exit(-1, "inch.type is not defined.")
+            if (params.inch.type == "remote") {
+                $ch("oafp::indata").createRemote(params.inch.url)
+            } else {
+                $ch("oafp::indata").create(params.inch.type, params.inch.options)
+            }
+
+            var _r = _fromJSSLON(r)
+            if (toBoolean(params.inchall) || r.trim().length == 0) {
+                _$o($ch("oafp::indata").getAll(isMap(_r) ? _r : __), options)
+            } else {
+                _$o($ch("oafp::indata").get(isMap(_r) ? _r : __), options)
+            }
+            $ch("oafp::indata").destroy()
+        } else {
+            _exit(-1, "inch is not a valid map.")
+        }
+    }],
     ["db", (r, options) => {
         if (isString(r)) {
             _showTmpMsg()

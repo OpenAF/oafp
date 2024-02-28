@@ -51,6 +51,7 @@ List of data input types that can be auto-detected (through the file extension o
 | base64  | A base64 text format |
 | db      | A JDBC query to a database |
 | md      | A Markdown format |
+| ch      | An OpenAF channel format |
 | mdtable | A Markdown table format |
 | jsonschema | Given a JSON schema format tries to generate sample data for it |
 | lines   | A given string/text to be processed line by line |
@@ -115,6 +116,7 @@ List of available formats to use with the _output_ option:
 | html     | An HTML format |
 | db       | Output to a JDBC database |
 | md       | A Markdown format |
+| ch       | An OpenAF channel format |
 | mdtable  | A Markdown table format (only for list outputs) |
 | openmetrics | Converts a map or list to OpenMetrics format |
 | base64   | A base64 text format | 
@@ -192,6 +194,20 @@ List of options to use when _input=db_ (SQL query):
 > JDBC oracle: jdbc:oracle:thin:@[host]:[port]:[database]
 > JDBC postgreSQL: jdbc:postgresql://[host]:[port]/[database]
 > JDBC H2: jdbc:h2:[file]   
+
+---
+
+## 🧾 CH input options
+
+List of options to use when _input=ch_:
+
+| Option | Type | Description |
+|--------|------|-------------|
+| inch   | String | A JSON/SLON configuration string with type and options/url |
+| inchall | Boolean | A boolean flag to determine if the input map will be used for a getAll query |
+
+> Example of options provided in JSON: inch="{type:'mvs',options:{file:'data.db'}}"
+> Example of optiosn provided in SLON: inch="(type: remote, url: 'http://some.host:1234/chname')"
 
 ---
 
@@ -280,6 +296,21 @@ List of options to use when _output=db_:
 > JDBC oracle: jdbc:oracle:thin:@[host]:[port]:[database]
 > JDBC postgreSQL: jdbc:postgresql://[host]:[port]/[database]
 > JDBC H2: jdbc:h2:[file]   
+
+---
+
+## 🧾 CH output options
+
+List of options to use when _output=ch_:
+
+| Option | Type | Description |
+|--------|------|-------------|
+| ch   | String | A JSON/SLON configuration string with type and options/url |
+| chkey | String | A comma delimited list of map keys to build a key from each array value |
+| chunset | Boolean | If true the input data will be used to unset data on the output channel instead of set |
+
+> Example of options provided in JSON: ch="{type:'mvs',options:{file:'data.db'}}"
+> Example of optiosn provided in SLON: ch="(type: remote, url: 'http://some.host:1234/chname')"
 
 ---
 

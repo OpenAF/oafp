@@ -111,6 +111,30 @@ var _outputFns = new Map([
             print(af.fromBytes2String(af.toBase64Bytes(_o)))
         }
     }],
+    ["ch", (r, options) => {
+        if (isUnDef(params.ch))    _exit(-1, "For output=ch you need to provide a ch=\"(type: ...)\"")
+        if (isUnDef(params.chkey)) _exit(-1, "For output=ch you need to provide a chkey=\"key1, key2\"")
+
+        var _r = (isMap(r) ? [ r ] : r)
+        params.ch = _fromJSSLON(params.ch)
+        if (isMap(params.ch)) {
+            if (isUnDef(params.ch.type)) _exit(-1, "ch.type is not defined.")
+            if (params.ch.type == "remote") {
+                $ch("oafp::outdata").createRemote(params.ch.url)
+            } else {
+                $ch("oafp::outdata").create(params.ch.type, params.ch.options)
+            }
+
+            if (toBoolean(params.chunset)) {
+                $ch("oafp::outdata").unsetAll(params.chkey.split(",").map(r => r.trim()), _r)
+            } else {
+                $ch("oafp::outdata").setAll(params.chkey.split(",").map(r => r.trim()), _r)
+            }
+            $ch("oafp::outdata").destroy()
+        } else {
+            _exit(-1, "Invalid ch parameter")
+        }
+    }],
     ["db", (r, options) => {
         if (!isArray(r) || r.length < 1) _exit(-1, "db is only supported for filled arrays/lists")
         params.dbtable = _$(params.dbtable, "outdbtable").isString().default("data")
