@@ -294,108 +294,120 @@ if (params["-v"] == "" || (isString(params.version) && params.version.length > 0
 
 // Read input from stdin or file
 var _res = "", noFurtherOutput = false
-if (_version) {
-    _res = showVersion()
-} else {
-    // JSON base options
-    params.jsonprefix = _$(params.jsonprefix, "jsonprefix").isString().default(__)
-    params.jsondesc   = toBoolean(_$(params.jsondesc, "jsondesc").isString().default("false"))
 
-    if (isDef(params.file)) {
-        if (!(io.fileExists(params.file))) {
-            _exit(-1, "ERROR: File not found: '" + params.file + "'")
-        }
+var _run = () => {
+    if (_version) {
+        _res = showVersion()
+    } else {
+        // JSON base options
+        params.jsonprefix = _$(params.jsonprefix, "jsonprefix").isString().default(__)
+        params.jsondesc   = toBoolean(_$(params.jsondesc, "jsondesc").default("false"))
 
-        if (!_inputNoMem.has(params.type)) {
-            if (params.type == "json" || isUnDef(params.type)) {
-                if (params.jsondesc) {
-                    var _s = new Set()
-                    io.readStreamJSON(params.file, path => {
-                        var _p = path.substring(2)
-                        if (isDef(params.jsonprefix)) {
-                            if (_p.startsWith(params.jsonprefix)) {
+        if (isDef(params.file)) {
+            if (!(io.fileExists(params.file))) {
+                _exit(-1, "ERROR: File not found: '" + params.file + "'")
+            }
+
+            if (!_inputNoMem.has(params.type)) {
+                if (params.type == "json" || isUnDef(params.type)) {
+                    if (params.jsondesc) {
+                        var _s = new Set()
+                        io.readStreamJSON(params.file, path => {
+                            var _p = path.substring(2)
+                            if (isDef(params.jsonprefix)) {
+                                if (_p.startsWith(params.jsonprefix)) {
+                                    _s.add(_p)
+                                }
+                            } else {
                                 _s.add(_p)
                             }
+                            return false
+                        })
+                        _res = stringify(Array.from(_s), __, "")
+                    } else {
+                        if (isDef(params.jsonprefix)) {
+                            var _r = io.readStreamJSON(params.file, path => path.substring(2).startsWith(params.jsonprefix))
+                            _res = stringify(_r, __, "")
                         } else {
-                            _s.add(_p)
+                            _res = io.readFileString(params.file)
+                        }
+                    }
+                } else {
+                    _res = io.readFileString(params.file)
+                }
+            }
+        } else {
+            if (params.jsondesc) _exit(-1, "ERROR: jsondesc only available for file input.")
+            if (params.jsonprefix) _exit(-1, "ERROR: jsonprefix only available for file input.")
+
+            if (isDef(params.cmd)) {
+                _res = _runCmd2Bytes(params.cmd, true)
+            } else {
+                if (params.input != "pm") {
+                    _res = []
+                    io.pipeLn(r => {
+                        if (isDef(_inputLineFns[params.type])) {
+                            if (_inputLineFns[params.type](_transform(r), clone(options))) {
+                                _res.push(r)
+                            }
+                        } else { 
+                            _res.push(r)
                         }
                         return false
                     })
-                    _res = stringify(Array.from(_s), __, "")
-                } else {
-                    if (isDef(params.jsonprefix)) {
-                        var _r = io.readStreamJSON(params.file, path => path.substring(2).startsWith(params.jsonprefix))
-                        _res = stringify(_r, __, "")
-                    } else {
-                        _res = io.readFileString(params.file)
-                    }
+                    _res = _res.join('\n')
                 }
-            } else {
-                _res = io.readFileString(params.file)
             }
         }
-    } else {
-        if (params.jsondesc) _exit(-1, "ERROR: jsondesc only available for file input.")
-        if (params.jsonprefix) _exit(-1, "ERROR: jsonprefix only available for file input.")
+    }
 
-        if (isDef(params.cmd)) {
-            _res = _runCmd2Bytes(params.cmd, true)
-        } else {
-            if (params.input != "pm") {
-                _res = []
-                io.pipeLn(r => {
-                    if (isDef(_inputLineFns[params.type])) {
-                        if (_inputLineFns[params.type](_transform(r), clone(options))) {
-                            _res.push(r)
-                        }
-                    } else { 
-                        _res.push(r)
-                    }
-                    return false
-                })
-                _res = _res.join('\n')
+    if (!noFurtherOutput) {
+        // Detect type if not provided
+        if (isUnDef(params.type)) {
+            // File name based
+            if (isDef(params.file)) {
+                let _ext = params.file.substring(params.file.lastIndexOf('.'))
+                if (_fileExtensions.has(_ext)) params.type = _fileExtensions.get(_ext)
             }
+
+            // Content-based
+            if (isUnDef(params.type)) {
+                let _tres = _res.trim()
+                if (_tres.startsWith("{") || _tres.startsWith("[")) {
+                    params.type = "json"
+                } else if (_tres.startsWith("<")) {
+                    params.type = "xml"
+                } else {
+                    if (isString(_tres) && _tres.length > 0) {
+                        if (_tres.substring(0, _tres.indexOf('\n')).split(",").length > 1) {
+                            params.type = "csv"
+                        } else if (_tres.substring(0, _tres.indexOf(': ') > 0)) {
+                            params.type = "yaml"
+                        }
+                    } else {
+                        _exit(-1, "Please provide the input type.")
+                    }
+                }
+            }
+        }
+
+        // Determine input type and execute
+        if (isDef(params.type) && _inputFns.has(params.type)) {
+            _inputFns.get(params.type)(_res, options)
+        } else {
+            if (isString(params.type)) printErr("WARN: " + params.type + " input type not supported. Using json.")
+            _inputFns.get("json")(_res, options)
         }
     }
 }
 
-if (!noFurtherOutput) {
-    // Detect type if not provided
-    if (isUnDef(params.type)) {
-        // File name based
-        if (isDef(params.file)) {
-            let _ext = params.file.substring(params.file.lastIndexOf('.'))
-            if (_fileExtensions.has(_ext)) params.type = _fileExtensions.get(_ext)
-        }
-
-        // Content-based
-        if (isUnDef(params.type)) {
-            let _tres = _res.trim()
-            if (_tres.startsWith("{") || _tres.startsWith("[")) {
-                params.type = "json"
-            } else if (_tres.startsWith("<")) {
-                params.type = "xml"
-            } else {
-                if (isString(_tres) && _tres.length > 0) {
-                    if (_tres.substring(0, _tres.indexOf('\n')).split(",").length > 1) {
-                        params.type = "csv"
-                    } else if (_tres.substring(0, _tres.indexOf(': ') > 0)) {
-                        params.type = "yaml"
-                    }
-                } else {
-                    _exit(-1, "Please provide the input type.")
-                }
-            }
-        }
+if (isNumber(params.loop)) {
+    while(1) {
+        _run()
+        sleep(params.loop * 1000, true)
     }
-
-    // Determine input type and execute
-    if (isDef(params.type) && _inputFns.has(params.type)) {
-        _inputFns.get(params.type)(_res, options)
-    } else {
-        if (isString(params.type)) printErr("WARN: " + params.type + " input type not supported. Using json.")
-        _inputFns.get("json")(_res, options)
-    }
+} else {
+    _run()
 }
 }
 oafp(params)

@@ -25,6 +25,7 @@ Takes an input, usually a data structure such as json, and transforms it to an e
 | outputkey | If defined the map/list output will be prefix with the provided key |
 | pause  | If 'true' will try to pause contents in alternative to _less -r_ |
 | color  | If 'true' will force colored output if available |
+| loop   | If defined will loop the processing by the number of seconds provided |
 | -v     | Changes the input to a map with the tool's version info |
 | version | Alternative way to change the input to a map with the tool's version |
 
@@ -117,6 +118,7 @@ List of available formats to use with the _output_ option:
 | db       | Output to a JDBC database |
 | md       | A Markdown format |
 | ch       | An OpenAF channel format |
+| chart    | A line-chart like chart (usefull together with 'loop') |
 | mdtable  | A Markdown table format (only for list outputs) |
 | openmetrics | Converts a map or list to OpenMetrics format |
 | base64   | A base64 text format | 
@@ -311,6 +313,19 @@ List of options to use when _output=ch_:
 
 > Example of options provided in JSON: ch="{type:'mvs',options:{file:'data.db'}}"
 > Example of optiosn provided in SLON: ch="(type: remote, url: 'http://some.host:1234/chname')"
+
+---
+
+## 🧾 Chart output options
+
+List of options to use when _output=chart_:
+
+| Option | Type | Description |
+|--------|------|-------------|
+| chart  | String | Chart definition in the format "<unit> <path:color:legend>... [-min:0] [-max:100]". Unit is either 'int', 'dec1', 'dec2', 'dec3', 'dec', 'bytes' or 'si'. Path is equivalent to the 'path' filter (quotes should be used for non-basic 'path' expressions). |
+| chartcls | Boolean | If true the screen will be cleared for each execution |
+
+> Example: ```oafp cmd="curl -s http://api.open-notify.org/iss-now.json" out=chart chartcls=true chart="dec3 iss_position.latitude:blue:lat iss_position.longitude:red:long" loop=5```
 
 ---
 

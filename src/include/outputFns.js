@@ -111,6 +111,38 @@ var _outputFns = new Map([
             print(af.fromBytes2String(af.toBase64Bytes(_o)))
         }
     }],
+    ["chart", (r, options) => {
+        if (isUnDef(params.chart)) _exit(-1, "For output=chart you need to provide a chart=\"<units> [<path[:color][:legend]>...]\"")
+        if (isUnDef(splitBySepWithEnc)) _exit(-1, "Output=chart is not supported in this version of OpenAF")
+
+        let parts = splitBySepWithEnc(params.chart, " ", [["\"","\""],["'","'"]])
+        let nparts = []
+        if (parts.length > 1) {
+            for(let i = 0; i < parts.length; i++) {
+                if (i == 0) {
+                    nparts.push(parts[i])
+                } else {
+                    let _n = splitBySepWithEnc(parts[i], ":", [["\"","\""],["'","'"]]).map((_p, j) => {
+                        if (j == 0) {
+                            if (!_p.startsWith("-")) {
+                                global["_oafp_fn_" + i] = () => $path(r, _p)
+                                return "_oafp_fn_" + i
+                            } else {
+                                return _p
+                            }
+                        } else {
+                            return _p
+                        }
+                    }).join(":")
+                    nparts.push(_n)
+                }
+            }
+
+            if (toBoolean(params.chartcls)) cls()
+            print(printChart("oafp " + nparts.join(" ")))
+        }
+
+    }],
     ["ch", (r, options) => {
         if (isUnDef(params.ch))    _exit(-1, "For output=ch you need to provide a ch=\"(type: ...)\"")
         if (isUnDef(params.chkey)) _exit(-1, "For output=ch you need to provide a chkey=\"key1, key2\"")
