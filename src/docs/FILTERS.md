@@ -56,7 +56,7 @@ Using the same unix “pipe” mechanism it’s possible to apply different cate
 | concat(x, y) | 20240209 | Concats arrays or strings | concat('abc', '123') |
 | contains(string/array, any) | base | Returns true of false if a string field contains a specific value | files[?contains(filename, 'openaf.jar') == `true` |
 | count_by(arr, 'field') | all | Returns a count by array with the '_count' per value of the provided 'field' | count_by([], 'isFile') |
-| date_diff(field, 'unit', nullval) | | Given a date field will return the numeric difference to now for the provided unit (e.g. seconds, minutes, hours, days, months, weeks, years). Optionally a nullval will be used if no difference can be calculated | date_diff(modifiedDate, 'days', '-1') |
+| date_diff(field, 'unit', nullval) | 20240228 | Given a date field will return the numeric difference to now for the provided unit (e.g. seconds, minutes, hours, days, months, weeks, years). Optionally a nullval will be used if no difference can be calculated | date_diff(modifiedDate, 'days', '-1') |
 | delete(map, 'field') | all | Remove a field from the provided map | delete(data, 'timestamp')  |
 | div(a, b) | 20240217 | Divides two numbers.  | div(6, 2) |
 | ends_with(string, array) | base | Returns true if a field has the provided suffix | files[?ends_with(filename, '.jar')] |
@@ -65,7 +65,7 @@ Using the same unix “pipe” mechanism it’s possible to apply different cate
 | format(x, 'format') | 20240209 | OpenAF's function $f (similar to printf) with type conversion | format(to_number(`123.12`), '%05.0f') |
 | formatn(x, 'format') | 20240209 | OpenAF's function $ft (similar to printf) without type conversion | format(string, '%10s')  |
 | from_bytesAbbr(x) | 20240209 | Given a string with a byte abbreviation will convert to bytes | from_bytesAbbr('12GB') |
-| from_datef(date, 'format') |  | Converts a date type into a string given a 'format' (equivalent to OpenAF's ow.format.fromDate) | from_datef(to_datef('20240202', 'yyyyMMdd'), 'yyyy') |
+| from_datef(date, 'format') | 20240228 | Converts a date type into a string given a 'format' (equivalent to OpenAF's ow.format.fromDate) | from_datef(to_datef('20240202', 'yyyyMMdd'), 'yyyy') |
 | from_json(str) | 20240215 | Converts a json string representation into an object | from_json('{a:123}')" |
 | from_ms(x, 'format') | 20240209 | Shortcut for OpenAF's ow.format.elapsedTime4ms function. The format is represented as a SLON/JSON string | from_ms(`12000`,'(abrev:true)') |
 | from_siAbbr(x) | 20240209 | Given a string with SI numeric abbreviation will convert it to the absolute value | from_siAbbr('100m') |
@@ -99,21 +99,21 @@ Using the same unix “pipe” mechanism it’s possible to apply different cate
 | sort(array) | base | Sorts the provided array | "sort(@)" |
 | sort_by(array, expression) | base | Sorts the provided array by the provided expression | sort_by(files[], &size) |
 | split(str, 'sep') | 20240209 | Equivalent to the split Javascript's function for a string given a separator | split(@, '\n') |
-| split_re(str, 're') |  | Equivalent to the split Javascript's function for a string given a regular expression separator | split_re(@, '\\s+')  |
+| split_re(str, 're') | 20240228 | Equivalent to the split Javascript's function for a string given a regular expression separator | split_re(@, '\\s+')  |
 | split_sep(str, sep, arrEnc) | 20240217 | Given a string, a separator regexp and an array of pairs of enclosure chars | split_sep(@, '\\s+', from_slon('[['{'|'}']|['('|')']]'))  |
 | starts_with(string, array) | base | Returns true if a field has the provided prefix | files[?starts_with(filename, 'openaf.jar')] |
 | sub() | 20240217 | Substracts two numbers | sub(`2`, `2`) |
 | substring(str, ini, end) | all | Given a string will return a sub-string starting on the initial index until the ending index | substring(@, index_of('test'), 5) |
 | sum(array) | base | Sums the numberic field of a provided array | sum(files[].size) |
-| t(obj, 'template') |  | Applies the Handlebars 'template' to the provided array or map | t(@, '{{filename}} ({{size}})') |
-| tF(obj, 'template') |  | Applies the Handlebars 'template', with all OpenAF helpers, to the provided array or map | tF(@, '{{\$env 'TITLE'}}: {{filename}}')  |
+| t(obj, 'template') | 20240228 | Applies the Handlebars 'template' to the provided array or map | t(@, '{{filename}} ({{size}})') |
+| tF(obj, 'template') | 20240228 | Applies the Handlebars 'template', with all OpenAF helpers, to the provided array or map | tF(@, '{{\$env 'TITLE'}}: {{filename}}')  |
 | template(a, 'template') | 20240209 | Applies the Handlebars 'template' to the provided array or map | t(@, '{{filename}} ({{size}})') |
 | templateF(x, 'template') | 20240209 | Applies the Handlebars 'template', with all OpenAF helpers, to the provided array or map | tF(@, '{{\$env 'TITLE'}}: {{filename}}')  |
 | timeago(num) | 20240209 | Given a ms timestamp will return a human readable string of how log ago that timestamp occurred. | files[].{path:filepath,howLongAgo:timeago(lastModified)} |
 | to_array(any) | base | Transforms any input into an array | to_array(`true`) |
 | to_bytesAbbr(x) | 20240209 | Given an absolute number of bytes will return a string with unit abbreviation. | to_bytesAbbr(`12345678`) |
 | to_date(x) | 20240209 | Tries to convert a value to a date | to_date(createDate) |
-| to_datef(str, 'pattern') |  | Uses a Java date format to convert a string into a date | to_datef(createDate, 'yyyyMMdd') |
+| to_datef(str, 'pattern') | 20240228 | Uses a Java date format to convert a string into a date | to_datef(createDate, 'yyyyMMdd') |
 | to_isoDate(x) | 20240209 | Tries to convert a string into an ISO date format string | to_isoDate( to_datef(createDate, 'yyyyMMdd') ) |
 | to_json() | 20240215 | Given an object will return the JSON string representation of it. | to_json(@) |
 | to_map(arr, 'field') | all | Given an array it will return a map where each entry is a property using the provided field with a map as value. | to_map(files, 'filename') |
