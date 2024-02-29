@@ -389,6 +389,10 @@ var _inputFns = new Map([
 
         _$o(jsonParse(res, __, __, isString(res)), options)
     }],
+    ["slon", (_res, options) => {
+        _showTmpMsg()
+        _$o(af.fromSLON(_res), options)
+    }],
     ["json", (_res, options) => {
         _showTmpMsg()
         _$o(jsonParse(_res, __, __, isString(_res)), options)

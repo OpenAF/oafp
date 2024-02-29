@@ -380,6 +380,8 @@ var _run = () => {
                 let _tres = _res.trim()
                 if (_tres.startsWith("{") || _tres.startsWith("[")) {
                     params.type = "json"
+                } else if (_tres.startsWith("(")) {
+                    params.type = "slon"
                 } else if (_tres.startsWith("<")) {
                     params.type = "xml"
                 } else {
