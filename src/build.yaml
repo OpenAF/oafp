@@ -3,11 +3,14 @@ help:
   text   : Build oafp
   expects: 
   - name     : op
-    desc     : Option to perform (e.g. build; clean; pack; test; dev)
+    desc     : Option to perform (e.g. dev; clean; pack; build; test)
     example  : "build"
-    mandatory: true
+    mandatory: false
 
 todo:
+- (ask        ):
+    op: option.['dev'|'clean'|'pack'|'build'|'test']
+  ((question )): "Option to perform:"
 - (optionOn   ): op
   ((lowerCase)): true
   ((todos    )):
@@ -39,6 +42,7 @@ ojob:
   - GoogleCompiler
   catch       : printErrnl("[" + job.name + "] "); if (isDef(exception.javaException)) exception.javaException.printStackTrace(); else printErr(exception)
   logToConsole: true   # to change when finished
+  shareArgs   : true
 
 jobs:
 # ===============
