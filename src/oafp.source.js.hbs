@@ -83,7 +83,7 @@ const showHelp = () => {
 
 const showVersion = () => {
     var _ff = (getOPackPath("oafproc") || ".") + "/.package.yaml"
-    var oafpv = (io.fileExists(_ff) ? io.readFileYAML(_ff).version : "(not available)")
+    var oafpv = (io.fileExists(_ff) ? io.readFileYAML(_ff).version : "(not available/embedded)")
     var _v = {
         oafp: {
             version: oafpv,
