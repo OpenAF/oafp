@@ -117,7 +117,7 @@ Using the same unix “pipe” mechanism it’s possible to apply different cate
 | to_date(x) | 20240209 | Tries to convert a value to a date | to_date(createDate) |
 | to_datef(str, 'pattern') | 20240228 | Uses a Java date format to convert a string into a date | to_datef(createDate, 'yyyyMMdd') |
 | to_isoDate(x) | 20240209 | Tries to convert a string into an ISO date format string | to_isoDate( to_datef(createDate, 'yyyyMMdd') ) |
-| to_json() | 20240215 | Given an object will return the JSON string representation of it. | to_json(@) |
+| to_json(obj, 'space') | 20240215 | Given an object will return the JSON string representation of it with the provided spacing | to_json(@, '') |
 | to_map(arr, 'field') | all | Given an array it will return a map where each entry is a property using the provided field with a map as value. | to_map(files, 'filename') |
 | to_numAbbr(num) | 20240209 | Given an absolute number will return a string with SI abbreviation | to_numAbbr(`12345678`) |
 | to_number(any) | base | Transforms any input into a number | to_number(`123`) |
