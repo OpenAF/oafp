@@ -25,7 +25,7 @@ const _$f = (r, options) => {
             switch(params.sqlfilter.toLowerCase()) {
             case "simple"  : method = "nlinq"; break
             case "advanced": method = "h2"; break
-            default        : method = "auto"
+            default        : method = __
             }
         }
         if (isArray(r) && r.length > 0) r = $sql(r, options.__sql.trim(), method)

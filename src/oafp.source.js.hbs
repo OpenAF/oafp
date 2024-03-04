@@ -3,6 +3,15 @@ var params = processExpr(" ")
 const oafp = (params) => {
 if (isUnDef(params) || isDef(params.____ojob)) return 
 
+// Ensure params are interpreted as lower case
+Object.keys(params).forEach(pk => {
+    var npk = pk.toLowerCase()
+    if (pk != npk && isUnDef(params[npk])) {
+        params[npk] = params[pk]
+        delete params[pk]
+    }    
+})
+
 // --- Util functions
 {{{srcUtilFns}}}
 // ---
@@ -406,6 +415,12 @@ var _run = () => {
             _inputFns.get("json")(_res, options)
         }
     }
+}
+
+// Verify debug
+if (isDef(params["-debug"])) {
+    //__initializeCon()
+    printErr("DEBUG: " + stringify(params, __, ""))
 }
 
 if (isNumber(params.loop)) {
