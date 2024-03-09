@@ -27,6 +27,7 @@ Takes an input, usually a data structure such as json, and transforms it to an e
 | pause  | If 'true' will try to pause contents in alternative to _less -r_ |
 | color  | If 'true' will force colored output if available |
 | loop   | If defined will loop the processing by the number of seconds provided |
+| loopcls | If 'true' and loop is defined it will clear the screen on each loop cycle |
 | -v     | Changes the input to a map with the tool's version info |
 | version | Alternative way to change the input to a map with the tool's version |
 

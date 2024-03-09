@@ -425,6 +425,7 @@ if (isDef(params["-debug"])) {
 
 if (isNumber(params.loop)) {
     while(1) {
+        if (toBoolean(params.loopcls)) cls()
         _run()
         sleep(params.loop * 1000, true)
     }
