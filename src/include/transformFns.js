@@ -5,6 +5,31 @@ var _transformFns = {
             return _t
         }
     },
+    "cmlt"    : r => {
+        if (toBoolean(params.cmlt)) {
+            var _r = (isArray(r) ? r : [ r ])
+            params.cmltch = _$(params.cmltch, "cmltch").default("(type: simple)")
+            let cmltch = _fromJSSLON(params.cmltch)
+            if (isMap(cmltch)) {
+                if (isUnDef(cmltch.type)) _exit(-1, "cmltch.type is not defined.")
+                if (isDef(cmltch.lib)) loadLib(cmltch.lib)
+                if ($ch().list().indexOf("oafp::cmltdata") < 0) {
+                    if (cmltch.type == "remote") {
+                        $ch("oafp::cmltdata").createRemote(cmltch.url)
+                    } else {
+                        $ch("oafp::cmltdata").create(cmltch.type, cmltch.options)
+                    }
+                    let _sz = Number(_$(params.cmltsize, "cmltsize").isNumber().default(100)) - 1
+                    if (_sz > 0) $ch("oafp::cmltdata").subscribe(ow.ch.utils.getHousekeepSubscriber("oafp::cmltdata", _sz))
+                }
+
+                _r.forEach(_rt => $ch("oafp::cmltdata").set({ t: nowNano() }, _rt))
+                return $ch("oafp::cmltdata").getAll()
+            } else {
+                _exit(-1, "Invalid cmltch parameter")
+            }
+        }
+    },
     "jsonschemagen" : _r => {
         if (toBoolean(params.jsonschemagen)) {
             ow.loadObj()

@@ -278,7 +278,18 @@ if (isDef(params.secKey)) {
 }
 
 // Set options
-var options = { __format: params.format, __from: params.from, __sql: params.sql, __path: params.path, __csv: params.csv, __pause: params.pause, __key: params.__key }
+var options = { 
+    __format: params.format, 
+    __from: params.from, 
+    __ifrom: params.ifrom, 
+    __isql: params.isql, 
+    __sql: params.sql, 
+    __path: params.path, 
+    __opath: params.opath,
+    __csv: params.csv, 
+    __pause: params.pause, 
+    __key: params.__key 
+}
 // ndjson options
 /*if (params.type == "ndjson") {
     params.ndjsonjoin = toBoolean(_$(params.ndjsonjoin, "ndjsonjoin").isString().default(__))

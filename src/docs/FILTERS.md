@@ -1,5 +1,15 @@
 # OpenAF processor filters
 
+The OpenAF processor filters are applied in the following order:
+
+**input data** -> _path=..._ -> **apply transformers to data** -> _from=..._ -> _sql=..._ -> **output data** 
+
+---
+
+For more advanced cases they can also be applied in the following order:
+
+**input data** -> _ifrom=..._ -> _isql=..._ -> _path=..._ -> **apply transformers to data** -> _from=..._ -> _sql=..._ -> _opath=..._ -> **output data** 
+
 ## 🪚 Path
 
 The _path=_ filter tool is based on the JMESPath library. To see all the available options please refer to http://jmespath.org. Here are some examples:

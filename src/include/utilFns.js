@@ -8,12 +8,29 @@ const _transform = r => {
     return r
 }
 const _$f = (r, options) => {
+    if (options.__ifrom) {
+        r = $from(r).query(af.fromNLinq(options.__ifrom.trim()))
+        delete options.__ifrom
+    }
+    if (options.__isql) {
+        var method = __
+        if (isString(params.sqlfilter)) {
+            switch(params.sqlfilter.toLowerCase()) {
+            case "simple"  : method = "nlinq"; break
+            case "advanced": method = "h2"; break
+            default        : method = __
+            }
+        }
+        if (isArray(r) && r.length > 0) r = $sql(r, options.__isql.trim(), method)
+        delete options.__isql
+    }
     if (options.__path) {
         r = $path(r, options.__path.trim())
         delete options.__path
     }
 
     if (isString(r)) return _transform(r)
+    r = _transform(r)
 
     if (options.__from) {
         r = $from(r).query(af.fromNLinq(options.__from.trim()))
@@ -31,7 +48,10 @@ const _$f = (r, options) => {
         if (isArray(r) && r.length > 0) r = $sql(r, options.__sql.trim(), method)
         delete options.__sql
     }
-    r = _transform(r)
+    if (options.__opath) {
+        r = $path(r, options.__opath.trim())
+        delete options.__opath
+    }
     
     return r
 }
