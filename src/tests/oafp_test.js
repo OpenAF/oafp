@@ -1,10 +1,11 @@
 ;(function() {
-    exports.oafplib = function(params, _$o, $o) {
+    exports.oafplib = function(params, _$o, $o, oafp) {
         var _r = {
             fileExtensions: [ { ext: ".test", type: "test" } ],
             input         : [ { 
                 type: "test", 
                 fn: (r, options) => {
+                    oafp._showTmpMsg()
                     _$o({ test: 'test input' }, options)
                 }
             } ],
