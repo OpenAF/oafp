@@ -386,13 +386,17 @@ var _inputFns = new Map([
 
         _showTmpMsg()
         var res = $llm(isDef(params.llmoptions) ? params.llmoptions : $sec("system", "envs").get(params.llmenv))
+        if (isDef(params.llmconversation) && io.fileExists(params.llmconversation)) 
+            res.getGPT().setConversation( io.readFileJSON(params.llmconversation) )
+        let __res
         if (params.output == "md" || params.output == "mdtable" || params.output == "raw") {
-            res = res.prompt(_res)
+            __res = res.prompt(_res)
         } else {
-            res = res.promptJSON(_res)
+            __res = res.promptJSON(_res)
         }
+        if (isDef(params.llmconversation)) io.writeFileJSON( params.llmconversation, res.getGPT().getConversation(), "" )
 
-        _$o(jsonParse(res, __, __, isString(res)), options)
+        _$o(jsonParse(__res, __, __, isString(__res)), options)
     }],
     ["slon", (_res, options) => {
         _showTmpMsg()

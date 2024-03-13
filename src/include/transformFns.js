@@ -166,6 +166,8 @@ var _transformFns = {
             params.llmoptions = _$(params.llmoptions, "llmoptions").isString().default(__)
 
             var res = $llm(isDef(params.llmoptions) ? params.llmoptions : $sec("system", "envs").get(params.llmenv) )
+            if (isDef(params.llmconversation) && io.fileExists(params.llmconversation)) 
+                res.getGPT().setConversation(io.readFileJSON(params.llmconversation))
             var type = "json", shouldStr = true
             if (isString(params.input)) {
                 if (params.input == "md") {
@@ -186,12 +188,14 @@ var _transformFns = {
             res = res.withContext(shouldStr ? stringify(_r,__,true) : _r, (isDef(params.llmcontext) ? params.llmcontext : `${type} input data`))
             if (isString(params.output)) {
                 if (params.output == "md" || params.output == "mdtable" || params.output == "raw") {
-                    res = res.prompt(params.llmprompt)
-                    return res
+                    let _res = res.prompt(params.llmprompt)
+                    if (isDef(params.llmconversation)) io.writeFileJSON( params.llmconversation, res.getGPT().getConversation(), "" )
+                    return _res
                 }
             }
-            res = res.promptJSON(params.llmprompt)
-            return res
+            let _res = res.promptJSON(params.llmprompt)
+            if (isDef(params.llmconversation)) io.writeFileJSON( params.llmconversation, res.getGPT().getConversation(), "" )
+            return _res
         }
         return _r
     },
