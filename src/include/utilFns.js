@@ -104,6 +104,34 @@ const _fromJSSLON = aString => {
 		return af.fromSLON(aString)
 	}
 }
+const _chartPathParse = (r, frmt,prefix) => {
+    prefix = _$(prefix).isString().default("_oafp_fn_")
+    let parts = splitBySepWithEnc(frmt, " ", [["\"","\""],["'","'"]])
+    let nparts = []
+    if (parts.length > 1) {
+        for(let i = 0; i < parts.length; i++) {
+            if (i == 0) {
+                nparts.push(parts[i])
+            } else {
+                let _n = splitBySepWithEnc(parts[i], ":", [["\"","\""],["'","'"]]).map((_p, j) => {
+                    if (j == 0) {
+                        if (!_p.startsWith("-")) {
+                            global[prefix + i] = () => $path(r, _p)
+                            return prefix + i
+                        } else {
+                            return _p
+                        }
+                    } else {
+                        return _p
+                    }
+                }).join(":")
+                nparts.push(_n)
+            }
+        }
+        return nparts.join(" ")
+    }
+    return ""
+}
 const _msg = "(processing data...)"
-const _showTmpMsg  = msg => printErrnl(_$(msg).default(_msg))
-const _clearTmpMsg = msg => printErrnl("\r" + " ".repeat(_$(msg).default(_msg).length) + "\r")
+const _showTmpMsg  = msg => { if (params.out != 'grid' && !toBoolean(params.loopcls) && !toBoolean(params.chartcls)) printErrnl(_$(msg).default(_msg)) } 
+const _clearTmpMsg = msg => { if (params.out != 'grid' && !toBoolean(params.loopcls) && !toBoolean(params.chartcls)) printErrnl("\r" + " ".repeat(_$(msg).default(_msg).length) + "\r") }
