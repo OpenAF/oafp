@@ -51,6 +51,13 @@ var _outputFns = new Map([
             var _arr = r
             if (isMap(r)) _arr = [ r ]
             if (isArray(_arr)) {
+                if (isUnDef(params.logtheme) && isDef(getEnv("OAFP_LOGTHEME"))) params.logtheme = getEnv("OAFP_LOGTHEME")
+                let _lt = _fromJSSLON(_$(params.logtheme, "logtheme").isString().default(""))
+                _lt = merge({
+                    errorLevel: "RED,BOLD",
+                    warnLevel : "YELLOW",
+                    timestamp : "BOLD"
+                }, _lt)
                 _arr.forEach(_r => {
                     if (isMap(_r)) {
                         let d = (isDef(_r["@timestamp"]) ? _r["@timestamp"] : __)
@@ -58,11 +65,11 @@ var _outputFns = new Map([
                         let m = (isDef(_r.message) ? _r.message : __)
                         let lineC
                         if (isDef(l)) {
-                            if (l.toLowerCase().indexOf("err") >= 0)  lineC = "RED,BOLD"
-                            if (l.toLowerCase().indexOf("warn") >= 0) lineC = "YELLOW"
+                            if (l.toLowerCase().indexOf("err") >= 0)  lineC = _lt.errorLevel
+                            if (l.toLowerCase().indexOf("warn") >= 0) lineC = _lt.warnLevel
                         }
                         if (isDef(d) && d.length > 24) d = d.substring(0, 23) + "Z"
-                        if (isDef(m) || isDef(d)) print(ansiColor("BOLD", d) + (isDef(l) ? " | " + ansiColor(lineC, l) : "") + " | " + ansiColor(lineC, m))
+                        if (isDef(m) || isDef(d)) print(ansiColor(_lt.timestamp, d) + (isDef(l) ? " | " + ansiColor(lineC, l) : "") + " | " + ansiColor(lineC, m))
                     }
                 })
             }

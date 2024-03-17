@@ -30,6 +30,91 @@ var _transformFns = {
             }
         }
     },
+    "diff": _r => {
+        var _d = _fromJSSLON(params.diff)
+        if (isMap(_d)) {
+            if (isUnDef(_d.filea) || isUnDef(_d.fileb) || isUnDef(_d.a) || isUnDef(_d.b)) _exit(-1, "diff.a path and diff.b path are required.")
+
+            loadDiff()
+            let _d1 = $path(_r, _d.a), _d2 = $path(_r, _d.b), _dt = __
+            if (toBoolean(params.color)) {
+                if (isUnDef(params.difftheme) && isDef(getEnv("OAFP_DIFFTHEME"))) params.difftheme = getEnv("OAFP_DIFFTHEME")
+                _dt = _fromJSSLON(_$(params.difftheme, "difftheme").isString().default(""))
+                _dt = merge({
+                    added  : "GREEN",
+                    removed: "RED",
+                    common : "FAINT",
+                    linenum: "ITALIC",
+                    linediv: "FAINT",
+                    linesep: "|"
+                }, _dt)
+            }
+
+            let _f = (s, e1) => {
+                if (toBoolean(params.color)) {
+                    if (isUnDef(e1)) e1 = ""
+                    var _o = new Set()
+                    if (isArray(s)) {
+                        let _c = 1
+                        let _ssl = toBoolean(params.diffnlines), _mnl = 0
+                        if (_ssl) {
+                            s.forEach(v => {
+                                _mnl += v.value.split("\n").length
+                            })
+                            _mnl = String(_mnl).length+1
+                        }
+                        let _sl = inc => {
+                            let _o
+                            if (_ssl && e1 != "") {
+                                _o = ansiColor(_dt.linenum, (inc > 0 ? $ft("% " + _mnl + "d", _c) : " ".repeat(_mnl)) ) + ansiColor(_dt.linediv, `${_dt.linesep}`)
+                            } else {
+                                _o = ""
+                            }
+                            _c += inc
+                            return _o
+                        }
+                        s.forEach((sr, i) => {
+                            var _v = sr.value
+                            if (isString(_v)) {
+                                if (e1 != "") {
+                                    _v = _v.split(e1)
+                                    if (_v[_v.length - 1] == "") _v.pop()
+                                } else {
+                                    _v = [ _v ]
+                                }
+                            }
+                            _o.add( (sr.added   ? _v.map(_l => _sl(1) + ansiColor(_dt.added,   (e1 != "" ? "+" : "") + _l) ).join(ansiColor("RESET", e1)) :
+                                     sr.removed ? _v.map(_l => _sl(0) + ansiColor(_dt.removed, (e1 != "" ? "-" : "") + _l) ).join(ansiColor("RESET", e1)) :
+                                                  _v.map(_l => _sl(1) + ansiColor(_dt.common,  (e1 != "" ? " " : "") + _l) ).join(ansiColor("RESET", e1)) ))
+                        })
+                    }
+                    return Array.from(_o).join(ansiColor("RESET", e1))
+                }
+                
+                return $from(s).select({count:__,added:false,removed:false,value:[]})
+            }
+            
+            if (isString(_d1) || isString(_d2)) {
+                if (toBoolean(params.diffwords)) {
+                    return _f(JsDiff.diffWords(_d1, _d2, _d.options))
+                } else if (toBoolean(params.diffwordswithspace)) {
+                    return _f(JsDiff.diffWordsWithSpace(_d1, _d2, _d.options))
+                } else if (toBoolean(params.difflines)) {
+                    return _f(JsDiff.diffLines(_d1, _d2, _d.options), "\n")
+                } else if (toBoolean(params.diffsentences)) {
+                    return _f(JsDiff.diffSentences(_d1, _d2, _d.options), "\n")
+                } else {
+                    return _f(JsDiff.diffChars(_d1, _d2, _d.options))
+                }
+            } else {
+                if (isArray(_d1) && isArray(_d2) && !toBoolean(params.color)) {
+                    return _f(JsDiff.diffArrays(_d1, _d2, _d.options))
+                } else {
+                    return _f(JsDiff.diffJson(_d1, _d2, _d.options), "\n")
+                }
+            }
+        }
+    },
     "jsonschemagen" : _r => {
         if (toBoolean(params.jsonschemagen)) {
             ow.loadObj()
