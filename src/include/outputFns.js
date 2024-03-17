@@ -1,13 +1,13 @@
 var _outputFns = new Map([
     ["?" , (r, options) => {
         r = Array.from(_outputFns.keys()).filter(r => r != '?').sort()
-        $o(r, options)
+        _o$o(r, options)
     }],
     ["pm", (r, options) => {
-        $o(r, options)
+        _o$o(r, options)
     }],
     ["key", (r, options) => {
-        $o(r, options)
+        _o$o(r, options)
     }],
     ["html", (r, options) => {
         let html, tmpf, res = false
@@ -32,21 +32,21 @@ var _outputFns = new Map([
         if (res) {
             sleep(params.htmlwait, true)
         } else {
-            print(html)
+            _print(html)
         }
     }],
     ["ctable", (r, options) => {
-        $o(r, options)
+        _o$o(r, options)
     }],
     ["stable", (r, options) => {
-        $o(r, options)
+        _o$o(r, options)
     }],
     ["table", (r, options) => {
-        $o(r, options)
+        _o$o(r, options)
     }],
     ["log", (r, options) => {
         if (isString(r) && toBoolean(params.logprintall)) {
-            print(r.replace(/\n$/, ""))
+            _print(r.replace(/\n$/, ""))
         } else {
             var _arr = r
             if (isMap(r)) _arr = [ r ]
@@ -69,7 +69,7 @@ var _outputFns = new Map([
                             if (l.toLowerCase().indexOf("warn") >= 0) lineC = _lt.warnLevel
                         }
                         if (isDef(d) && d.length > 24) d = d.substring(0, 23) + "Z"
-                        if (isDef(m) || isDef(d)) print(ansiColor(_lt.timestamp, d) + (isDef(l) ? " | " + ansiColor(lineC, l) : "") + " | " + ansiColor(lineC, m))
+                        if (isDef(m) || isDef(d)) _print(ansiColor(_lt.timestamp, d) + (isDef(l) ? " | " + ansiColor(lineC, l) : "") + " | " + ansiColor(lineC, m))
                     }
                 })
             }
@@ -77,31 +77,31 @@ var _outputFns = new Map([
     }],
     ["raw", (r, options) => {
         if (isString(r))
-            print(r)
+            _print(r)
         else
-            sprint(r)
+            _print(stringify(r))
     }],
     ["ini", (r, options) => {
         if (!isString(r)) {
             ow.loadJava()
             var ini = new ow.java.ini()
-            print( ini.put(r).save() )
+            _print( ini.put(r).save() )
         }
     }],
     ["mdyaml", (r, options) => {
         if (isArray(r)) {
             r.forEach((_y, i) => {
-                $o(_y, merge(options, { __format: "yaml" }))
-                if (i < r.length - 1) print("---\n")
+                _o$o(_y, merge(options, { __format: "yaml" }))
+                if (i < r.length - 1) _print("---\n")
             })
         } else {
-            $o(r, merge(options, { __format: "yaml" }))
+            _o$o(r, merge(options, { __format: "yaml" }))
         }
     }],
     ["mdtable", (r, options) => {
         if (isArray(r)) {
             ow.loadTemplate()
-            print( ow.template.md.table(r) )
+            _print( ow.template.md.table(r) )
         }
     }],
     ["template", (r, options) => {
@@ -111,7 +111,7 @@ var _outputFns = new Map([
             ow.template.addOpenAFHelpers()
             ow.template.addFormatHelpers()
             if (isUnDef(params.template)) _exit(-1, "For output=handlebars you need to provide a template=someFile.hbs")
-            tprint(io.readFileString(params.template), r)
+            _print($t(io.readFileString(params.template), r))
         }
     }],
     ["openmetrics", (r, options) => {
@@ -124,12 +124,12 @@ var _outputFns = new Map([
                 if (line.indexOf("_id=\"") >= 0) line = line.replace(/,_id=\"\d+\",/, ",")
                 return line
             }).join("\n")
-            $o(_out, options)
+            _o$o(_out, options)
         }
     }],
     ["pjson", (r, options) => {
         options.__format = "prettyjson"
-        $o(r, options)
+        _o$o(r, options)
     }],
     ["base64", (r, options) => {
         var _o = ""
@@ -139,9 +139,9 @@ var _outputFns = new Map([
             _o = stringify(r)
 
         if (toBoolean(params.base64gzip)) {
-            print(af.fromBytes2String(af.toBase64Bytes(io.gzip(af.fromString2Bytes(_o)))))
+            _print(af.fromBytes2String(af.toBase64Bytes(io.gzip(af.fromString2Bytes(_o)))))
         } else {
-            print(af.fromBytes2String(af.toBase64Bytes(_o)))
+            _print(af.fromBytes2String(af.toBase64Bytes(_o)))
         }
     }],
     ["grid" , (r, options) => {
@@ -175,7 +175,7 @@ var _outputFns = new Map([
                 })
             })
             let _out = ow.format.string.grid(_f, __, __, " ", true)
-            print(_out)
+            _print(_out)
         } else {
             _exit(-1, "Invalid grid parameter: '" + stringify(params.grid, __, "") + "'")
         }
@@ -187,7 +187,7 @@ var _outputFns = new Map([
         let fmt = _chartPathParse(r, params.chart)
         if (fmt.length > 0) {
             if (toBoolean(params.chartcls)) cls()
-            print(printChart("oafp " + fmt))
+            _print(printChart("oafp " + fmt))
         }
 
     }],
@@ -288,7 +288,7 @@ var _outputFns = new Map([
         params.sqlnocreate = toBoolean(_$(params.sqlnocreate, "sqlnocreate").isString().default("false"))
 
         ow.loadObj()
-        if (!params.sqlnocreate) print(ow.obj.fromObj2DBTableCreate(params.sqltable, r, __, !params.sqlicase)+";\n")
+        if (!params.sqlnocreate) _print(ow.obj.fromObj2DBTableCreate(params.sqltable, r, __, !params.sqlicase)+";\n")
 
         var okeys, ookeys = Object.keys(ow.obj.flatMap(r[0]))
         if (!params.sqlicase) 
@@ -312,7 +312,7 @@ var _outputFns = new Map([
             return _sql
         }
 
-        print(r.map(_parseVal).join("\n"))
+        _print(r.map(_parseVal).join("\n"))
     }],
     ["xls", (r, options) => {
         if (!isString(r)) {

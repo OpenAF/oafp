@@ -58,7 +58,13 @@ const _$f = (r, options) => {
 const _$o = (r, options, lineByLine) => {
     var nOptions = clone(options)
 
-    if (toBoolean(params.color)) __conConsole = true
+    if (toBoolean(params.color)) {
+        __conConsole = true
+    } else {
+        if (isDef(params.color)) {
+            __conAnsi = false
+        }
+    }
     if (!isString(r)) {
         if (lineByLine)
             r = _$f([r], nOptions)[0]
@@ -79,7 +85,8 @@ const _$o = (r, options, lineByLine) => {
     if (_outputFns.has(nOptions.__format)) {
         _outputFns.get(nOptions.__format)(r, nOptions)
     } else {
-        $o(r, nOptions)
+        if (isUnDef(nOptions.__format)) nOptions.__format = "tree"
+        _o$o(r, nOptions, __)
     }
 }
 const _runCmd2Bytes = (cmd, toStr) => {
@@ -131,6 +138,19 @@ const _chartPathParse = (r, frmt,prefix) => {
         return nparts.join(" ")
     }
     return ""
+}
+const _print = (m) => {
+    if ("undefined" === typeof params.outfile) {
+        print(m)
+    } else {
+        if ("undefined" === typeof global.__oafp_streams) global.__oafp_streams = {}
+        if ("undefined" !== typeof global.__oafp_streams[params.outfile]) {
+            ioStreamWrite(global.__oafp_streams[params.outfile].s, m)
+        }
+    }
+}
+const _o$o = (a, b, c) => {
+    _print($o(a, b, c, true))
 }
 const _msg = "(processing data...)"
 const _showTmpMsg  = msg => { if (params.out != 'grid' && !toBoolean(params.loopcls) && !toBoolean(params.chartcls)) printErrnl(_$(msg).default(_msg)) } 

@@ -9,7 +9,7 @@ Object.keys(params).forEach(pk => {
     if (pk != npk && isUnDef(params[npk])) {
         params[npk] = params[pk]
         delete params[pk]
-    }    
+    }
 })
 
 // --- Util functions
@@ -64,7 +64,7 @@ const showHelp = () => {
         if (isDef(ow.format.string.pauseString) && toBoolean(params.pause))
             ow.format.string.pauseString( ow.format.withMD( io.readFileString(_f) + _customHelp ) )
         else
-            print(ow.format.withMD( io.readFileString(_f) + _customHelp ))
+            _print(ow.format.withMD( io.readFileString(_f) + _customHelp ))
     } else {
         if (isDef(global._oafphelp) && isDef(global._oafphelp[_ff])) {
             __ansiColorFlag = true
@@ -72,7 +72,7 @@ const showHelp = () => {
             if (isDef(ow.format.string.pauseString) && toBoolean(params.pause))
                 ow.format.string.pauseString( ow.format.withMD( global._oafphelp[_ff] + _customHelp ) )
             else
-                print(ow.format.withMD( global._oafphelp[_ff] + _customHelp))
+                _print(ow.format.withMD( global._oafphelp[_ff] + _customHelp))
         } else {
             if (isString(_oafhelp_libs[params.help])) {
                 __ansiColorFlag = true
@@ -80,9 +80,9 @@ const showHelp = () => {
                 if (isDef(ow.format.string.pauseString) && toBoolean(params.pause))
                     ow.format.string.pauseString( ow.format.withMD( _oafhelp_libs[params.help] ) )
                 else
-                    print(ow.format.withMD( _oafhelp_libs[params.help] ))
+                    _print(ow.format.withMD( _oafhelp_libs[params.help] ))
             } else {
-                print("Check https://github.com/OpenAF/oafp/blob/master/src/" + _ff)
+                _print("Check https://github.com/OpenAF/oafp/blob/master/src/" + _ff)
             }
         }
     }
@@ -229,14 +229,16 @@ if (isArray(params.libs)) {
         try {
             var _req = require("oafp_" + lib + ".js")
             if (isDef(_req.oafplib)) {
-                var res = _req.oafplib(clone(params), _$o, $o, {
+                var res = _req.oafplib(clone(params), _$o, _o$o, {
                     _runCmd2Bytes: _runCmd2Bytes,
                     _fromJSSLON: _fromJSSLON,
                     _msg: _msg,
                     _showTmpMsg: _showTmpMsg,
                     _clearTmpMsg: _clearTmpMsg,
                     _chartPathParse: _chartPathParse,
-                    _exit: _exit
+                    _exit: _exit,
+                    _print: _print,
+                    _o$o: _o$o
                 })
                 if (isMap(res)) {
                     if (isArray(res.fileExtensions))      res.fileExtensions.forEach(r => _addSrcFileExtensions(r.ext, r.type))
@@ -322,6 +324,13 @@ if (params["-v"] == "" || (isString(params.version) && params.version.length > 0
 
 // Read input from stdin or file
 var _res = "", noFurtherOutput = false
+
+// Check for output streams
+if (isDef(params.outfile)) {
+    if ("undefined" === typeof global.__oafp_streams) global.__oafp_streams = {}
+    if ("undefined" === typeof global.__oafp_streams[params.outfile])
+        global.__oafp_streams[params.outfile] = { s: io.writeFileStream(params.outfile) }
+}
 
 var _run = () => {
     if (_version) {
@@ -471,12 +480,22 @@ if (isDef(params["-debug"])) {
 
 if (isNumber(params.loop)) {
     while(1) {
-        if (toBoolean(params.loopcls)) cls()
+        if (toBoolean(params.loopcls)) {
+            if (isDef(params.outfile)) {
+                global.__oafp_streams[params.outfile].close()
+                global.__oafp_streams[params.outfile] = io.writeFileStream(params.outfile)
+            } else {
+                cls()
+            }
+        }
         _run()
         sleep(params.loop * 1000, true)
     }
 } else {
     _run()
 }
+
+// Close streams
+if (isDef(global.__oafp_streams)) Object.keys(global.__oafp_streams).forEach(s => global.__oafp_streams[s].s.close())
 }
 oafp(params)
