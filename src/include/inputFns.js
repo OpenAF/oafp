@@ -368,6 +368,21 @@ var _inputFns = new Map([
             _exit(-1, "hsperf is only supported with either 'file' or 'cmd' defined.")
         }
     }],
+    ["rawhex", (_res, options) => {
+        var _r
+        params.inrawhexline = _$(params.inrawhexline, "inrawhexline").isNumber().default(__)
+        _showTmpMsg()
+        if (isDef(params.file) || isDef(params.cmd)) {
+            _r = isDef(params.cmd) ? _runCmd2Bytes(params.cmd) : io.readFileBytes(params.file)
+        } else {
+            _r = af.fromString2Bytes(_res)
+        }
+        var __r = ow.format.string.toHexArray(_r, params.inrawhexline)
+        __r.forEach(r => {
+            r.characters = r.characters.replace(/[\x00-\x1F\x80-\xFF]/g, '.')
+        })
+        _$o(__r, options)
+    }],
     ["base64", (_res, options) => {
         var _r
         _showTmpMsg()
