@@ -20,6 +20,32 @@ todo:
 
 - oafp::jsonSchema
 
+# --------------------------------
+- (test     ): oafp::JSON2Template
+  ((func   )): |
+    return $sh([getOpenAFPath() + "/oaf", "-f", "../oafp.source.js", "-e", "data=\"(t: 'x={{x}},y={{y}}', x: -1, y: 1)\" out=template templatepath=t"])
+           .sh([getOpenAFPath() + "/oaf", "-f", "../oafp.source.js", "-e", "data=\"(t: 'x={{x}},y={{y}}', d: (x: -1, y: 1))\" out=template templatedata=d templatepath=t"])
+           .get()
+  ((asserts)):
+  - path : "[0].trim(stdout)"
+    value: "x=-1,y=1"
+    msg  : "Problem with JSON2Template (1)"
+  - path : "[1].trim(stdout)"
+    value: "x=-1,y=1"
+    msg  : "Problem with JSON2Template (2)"
+# --------------------------------
+
+# ------------------------------
+- (test     ): oafp::JSON2NDJSON
+  ((func   )): |
+    return $sh([getOpenAFPath() + "/oaf", "-f", "../oafp.source.js", "-e", "data=\"[(x:1,y:-1)|(a:1,b:2)]\" in=slon out=ndjson"])
+           .get()
+  ((asserts)):
+  - value: "{\"x\":1,\"y\":-1}\n{\"a\":1,\"b\":2}\n"
+    path : "[0].stdout"
+    msg  : "Problem with JSON2NDJSON"
+# ------------------------------
+
 - Results
 
 
@@ -29,8 +55,8 @@ include:
 ojob:
   async : false
   opacks:
-  - oJob-common
-  - openaf: 20231222
+  - oJob-common: 20240330
+  - openaf     : 20231222
   catch       : printErrnl("[" + job.name + "] "); if (isDef(exception.javaException)) exception.javaException.printStackTrace(); else printErr(exception)
   logToConsole: true 
 
