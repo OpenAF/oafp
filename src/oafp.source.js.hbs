@@ -469,6 +469,7 @@ var _run = () => {
             if (isString(params.type)) printErr("WARN: " + params.type + " input type not supported. Using json.")
             _inputFns.get("json")(_res, options)
         }
+        delete params.__origr
     }
 }
 

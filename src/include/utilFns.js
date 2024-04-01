@@ -8,6 +8,7 @@ const _transform = r => {
     return r
 }
 const _$f = (r, options) => {
+    params.__origr = r
     if (options.__ifrom) {
         r = $from(r).query(af.fromNLinq(options.__ifrom.trim()))
         delete options.__ifrom
