@@ -287,5 +287,50 @@ var _transformFns = {
     "splitlines": _r => { 
         if (toBoolean(params.splitlines) && isString(_r)) return _r.split(/\r?\n/)
         return _r
+    },
+    "regression": _r => {
+        if (isString(params.regression)) {
+            ow.loadAI()
+            var rg = ow.ai.regression()
+            let regressionpath    = _$(params.regressionpath, "regressionpath").isString().default("@")
+            let regressionoptions = _fromJSSLON(_$(params.regressionoptions, "regressionoptions").isString().default("{order:2,precision:5}"))
+            let _data = $path(_r, regressionpath)
+            if (isArray(_data)) {
+                if (isString(params.regressionx)) {
+                    let _datax = $path(_r, params.regressionx)
+                    _data = _data.map((v, i) => ([ _datax[i], v ]))
+                } else {
+                    _data = _data.map((v, i) => ([ i+1, v ]))
+                }
+                let _rr
+                switch(params.regression) {
+                case "exp"   : _rr = rg.exponential(_data, regressionoptions); break
+                case "poly"  : _rr = rg.polynomial(_data, regressionoptions); break
+                case "power" : _rr = rg.power(_data, regressionoptions); break
+                case "log"   : _rr = rg.logarithmic(_data, regressionoptions); break
+                case "linear": 
+                default      : _rr = rg.linear(_data, regressionoptions); break
+                }
+
+                if (isDef(_rr) && isDef(_rr.points)) {
+                    if (isString(params.regressionforecast)) {
+                        var _f = $path(_r, params.regressionforecast)
+                        if (isArray(_f)) {
+                            _f.forEach(x => {
+                                _rr.points.push(_rr.predict(x))
+                            })
+                        } else {
+                            _exit(-1, "Invalid array of x for regression forecast")
+                        }
+                    }
+                    return _rr.points.map(p => ({ x: p[0], y: p[1] }))
+                } else {
+                    return _rr
+                }
+            } else {
+                _exit(-1, "Invalid data for regression analysis")
+            }
+        }
+        return _r
     }
 }
