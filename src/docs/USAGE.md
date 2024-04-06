@@ -133,6 +133,7 @@ List of available formats to use with the _output_ option:
 | md       | A Markdown format |
 | ch       | An OpenAF channel format |
 | chart    | A line-chart like chart (usefull together with 'loop') |
+| schart   | A static line-chart like chart (for a fixed list/array of values) |
 | grid     | A multiple output ascii grid (usefull together with 'loop') |
 | mdtable  | A Markdown table format (only for list outputs) |
 | openmetrics | Converts a map or list to OpenMetrics/Prometheus compatible format |
@@ -413,7 +414,21 @@ List of options to use when _out=chart_:
 | chart  | String | Chart definition in the format "<unit> <path:color:legend>... [-min:0] [-max:100]". Unit is either 'int', 'dec1', 'dec2', 'dec3', 'dec', 'bytes' or 'si'. Path is equivalent to the 'path' filter (quotes should be used for non-basic 'path' expressions). |
 | chartcls | Boolean | If true the screen will be cleared for each execution |
 
-> Example: ```oafp cmd="curl -s http://api.open-notify.org/iss-now.json" out=chart chartcls=true chart="dec3 iss_position.latitude:blue:lat iss_position.longitude:red:long" loop=5```
+Example: 
+```oafp cmd="curl -s http://api.open-notify.org/iss-now.json" out=chart chartcls=true chart="dec3 iss_position.latitude:blue:lat iss_position.longitude:red:long" loop=5```
+
+---
+
+## 🧾 SChart output options
+
+List of options to use when _out=schart_:
+
+| Option | Type | Description |
+|--------|------|-------------|
+| schart  | String | Chart definition in the format "<unit> <path:color:legend>... [-min:0] [-max:100]". Unit is either 'int', 'dec1', 'dec2', 'dec3', 'dec', 'bytes' or 'si'. Path is equivalent to the 'path' filter (quotes should be used for non-basic 'path' expressions). |
+
+Example: 
+```oafp data="[(x:1,y:2)|(x:2,y:5)|(x:1,y:4)|(x:2,y:5)|(x:1,y:5)]" in=slon out=schart schart="int '[].x':red:x '[].y':blue:y -min:0 -vsize:8"```
 
 ---
 

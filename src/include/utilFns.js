@@ -112,10 +112,11 @@ const _fromJSSLON = aString => {
 		return af.fromSLON(aString)
 	}
 }
-const _chartPathParse = (r, frmt,prefix) => {
+const _chartPathParse = (r, frmt, prefix, isStatic) => {
     prefix = _$(prefix).isString().default("_oafp_fn_")
     let parts = splitBySepWithEnc(frmt, " ", [["\"","\""],["'","'"]])
     let nparts = []
+    $ch("__oaf::chart").create()
     if (parts.length > 1) {
         for(let i = 0; i < parts.length; i++) {
             if (i == 0) {
@@ -124,7 +125,27 @@ const _chartPathParse = (r, frmt,prefix) => {
                 let _n = splitBySepWithEnc(parts[i], ":", [["\"","\""],["'","'"]]).map((_p, j) => {
                     if (j == 0) {
                         if (!_p.startsWith("-")) {
-                            global[prefix + i] = () => $path(r, _p)
+                            global[prefix + i] = () => {
+                                if (isString(isStatic)) {
+                                    var _d = $ch("__oaf::chart").get({ name: isStatic })
+                                    if (isUnDef(_d)) _d = []; else _d = _d.data
+                                    var _dr = $path(r, _p)
+                                    if (isArray(_dr)) {
+                                        _dr.forEach((y, _i) => {
+                                            if (isArray(_d[_i])) {
+                                                _d[_i].push(y)
+                                            } else {
+                                                _d[_i] = [ y ]
+                                            }
+                                        })
+                                        let last = _d.pop()
+                                        $ch("__oaf::chart").set({ name: isStatic }, { name: isStatic, data: _d })
+                                        return last[0]
+                                    }
+                                } else {
+                                   return $path(r, _p)
+                                }
+                            }
                             return prefix + i
                         } else {
                             return _p

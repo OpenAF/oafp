@@ -204,6 +204,15 @@ var _outputFns = new Map([
         }
 
     }],
+    ["schart", (r, options) => {
+        if (isUnDef(params.schart)) _exit(-1, "For output=schart you need to provide a chart=\"<units> [<path[:color][:legend]>...]\"")
+        if (isUnDef(splitBySepWithEnc)) _exit(-1, "Output=schart is not supported in this version of OpenAF")
+
+        let fmt = _chartPathParse(r, params.schart, "_oafp_sfn_", "soafp")
+        if (fmt.length > 0) {
+            _print(printChart("soafp " + fmt))
+        }
+    }],
     ["ch", (r, options) => {
         if (isUnDef(params.ch))    _exit(-1, "For output=ch you need to provide a ch=\"(type: ...)\"")
         if (isUnDef(params.chkey)) _exit(-1, "For output=ch you need to provide a chkey=\"key1, key2\"")
