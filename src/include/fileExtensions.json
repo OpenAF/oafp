@@ -8,5 +8,6 @@
     [".md", "md"],
     [".xls", "xls"],
     [".xlsx", "xls"],
-    [".sql", "sql"]
+    [".sql", "sql"],
+    [".toml", "toml"]
 ]

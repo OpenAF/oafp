@@ -425,6 +425,11 @@ var _inputFns = new Map([
         if (isUnDef(res.getModels)) _exit(-1, "OpenAF support for llm model listing API not found.")
         _$o(res.getModels(), options)
     }],
+    ["toml", (_res, options) => {
+        _showTmpMsg()
+        if (isUnDef(af.fromTOML)) _exit(-1, "TOML support not found.")
+        _$o(af.fromTOML(_res), options)
+    }],
     ["slon", (_res, options) => {
         _showTmpMsg()
         _$o(af.fromSLON(_res), options)

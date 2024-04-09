@@ -88,6 +88,16 @@ var _outputFns = new Map([
             _print( ini.put(r).save() )
         }
     }],
+    ["toml", (r, options) => {
+        if (isUnDef(af.toTOML)) _exit(-1, "TOML support not found.")
+        if (isMap(r)) {
+            _print( af.toTOML(r) )
+        } else if (isArray(r)) {
+            _print( af.toTOML({ list: r}) )
+        } else {
+            return __
+        }
+    }],
     ["mdyaml", (r, options) => {
         if (isArray(r)) {
             r.forEach((_y, i) => {
