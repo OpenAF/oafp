@@ -219,7 +219,7 @@ var _outputFns = new Map([
 
     }],
     ["schart", (r, options) => {
-        if (isUnDef(params.schart)) _exit(-1, "For output=schart you need to provide a chart=\"<units> [<path[:color][:legend]>...]\"")
+        if (isUnDef(params.schart)) _exit(-1, "For output=schart you need to provide a schart=\"<units> [<path[:color][:legend]>...]\"")
         if (isUnDef(splitBySepWithEnc)) _exit(-1, "Output=schart is not supported in this version of OpenAF")
 
         let fmt = _chartPathParse(r, params.schart, "_oafp_sfn_", "soafp")

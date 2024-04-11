@@ -349,7 +349,7 @@ var _res = "", noFurtherOutput = false
 if (isDef(params.outfile)) {
     if ("undefined" === typeof global.__oafp_streams) global.__oafp_streams = {}
     if ("undefined" === typeof global.__oafp_streams[params.outfile])
-        global.__oafp_streams[params.outfile] = { s: io.writeFileStream(params.outfile) }
+        global.__oafp_streams[params.outfile] = { s: io.writeFileStream(params.outfile, toBoolean(params.outfileappend)) }
 }
 
 var _run = () => {
@@ -504,7 +504,7 @@ if (isNumber(params.loop)) {
         if (toBoolean(params.loopcls)) {
             if (isDef(params.outfile)) {
                 global.__oafp_streams[params.outfile].close()
-                global.__oafp_streams[params.outfile] = io.writeFileStream(params.outfile)
+                global.__oafp_streams[params.outfile] = io.writeFileStream(params.outfile, toBoolean(params.outfileappend))
             } else {
                 cls()
             }

@@ -167,7 +167,7 @@ const _print = (m) => {
     } else {
         if ("undefined" === typeof global.__oafp_streams) global.__oafp_streams = {}
         if ("undefined" !== typeof global.__oafp_streams[params.outfile]) {
-            ioStreamWrite(global.__oafp_streams[params.outfile].s, m)
+            ioStreamWrite(global.__oafp_streams[params.outfile].s, m + (toBoolean(params.outfileappend) ? "\n" : ""))
         }
     }
 }
