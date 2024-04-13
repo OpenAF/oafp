@@ -200,11 +200,11 @@ jobs:
     args.data = {
       srcFileExtensions     : "io.readFileJSON(\"include/fileExtensions.json\")",
       srcFileExtensionsNoMem: "io.readFileJSON(\"include/fileExtensionsNoMem.json\")",
-      srcInputLineFns       : "loadDebug(\"include/inputLineFns.js\")",
-      srcTransformFns       : "loadDebug(\"include/transformFns.js\")",
-      srcOutputFns          : "loadDebug(\"include/outputFns.js\")",
-      srcInputFns           : "loadDebug(\"include/inputFns.js\")",
-      srcUtilFns            : "loadDebug(\"include/utilFns.js\")"
+      srcInputLineFns       : "!__loadedLibs['include/inputLineFns.js'] && loadDebug(\"include/inputLineFns.js\");__loadedLibs['include/inputLineFns.js']=true",
+      srcTransformFns       : "!__loadedLibs['include/transformFns.js'] && loadDebug(\"include/transformFns.js\");__loadedLibs['include/transformFns.js']=true",
+      srcOutputFns          : "!__loadedLibs['include/outputFns.js'] && loadDebug(\"include/outputFns.js\");__loadedLibs['include/outputFns.js']=true",
+      srcInputFns           : "!__loadedLibs['include/inputFns.js'] && loadDebug(\"include/inputFns.js\");__loadedLibs['include/inputFns.js']=true",
+      srcUtilFns            : "!__loadedLibs['include/utilFns.js'] && loadDebug(\"include/utilFns.js\");__loadedLibs['include/utilFns.js']=true"
     }
 
     args.templateFile = args.path + "/oafp.source.js.hbs"

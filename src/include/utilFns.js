@@ -172,8 +172,9 @@ const _print = (m) => {
     }
 }
 const _o$o = (a, b, c) => {
-    _print($o(a, b, c, true))
+    var _s = $o(a, b, c, true)
+    if (isDef(_s)) _print(_s)
 }
 const _msg = "(processing data...)"
-const _showTmpMsg  = msg => { if (params.out != 'grid' && !toBoolean(params.loopcls) && !toBoolean(params.chartcls)) printErrnl(_$(msg).default(_msg)) } 
-const _clearTmpMsg = msg => { if (params.out != 'grid' && !toBoolean(params.loopcls) && !toBoolean(params.chartcls)) printErrnl("\r" + " ".repeat(_$(msg).default(_msg).length) + "\r") }
+const _showTmpMsg  = msg => { if (params.out != 'grid' && !params.__inception && !toBoolean(params.loopcls) && !toBoolean(params.chartcls)) printErrnl(_$(msg).default(_msg)) } 
+const _clearTmpMsg = msg => { if (params.out != 'grid' && !params.__inception && !toBoolean(params.loopcls) && !toBoolean(params.chartcls)) printErrnl("\r" + " ".repeat(_$(msg).default(_msg).length) + "\r") }
