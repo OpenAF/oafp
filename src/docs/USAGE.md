@@ -94,6 +94,7 @@ These options will change the parsed input data included any filters provided.
 | denormalize | String | Reverses 'normalize' given a JSON/SLON map with a normalize schema (see OpenAF's ow.ai.normalize.withSchema) |
 | diff | String | A JSON/SLON map with a 'a' path and a 'b' path to compare and provide diff data |
 | flatmap | Boolean | If true a map structure will be flat to just one level |
+| getlist | Number | If true will try to find the first array on the input value (if number will stop only after the number of checks) |
 | jsonschema | String | The JSON schema file to use for validation returning a map with a boolean valid and errors if exist |
 | jsonschemacmd | String | Alternative option to 'jsonschema' to retrieve the JSON schema data to use for validation returning a map with a boolean valid and errors if exist |
 | jsonschemagen | Boolean | If true will taken the provided input map as an example to generate an output json schema |

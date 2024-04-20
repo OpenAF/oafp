@@ -369,5 +369,21 @@ var _transformFns = {
         ow.loadAI()
         var _kmeans = ow.ai.cluster({ type: "kmeans", numberOfClusters: Number(params.kmeans) })
         return _kmeans.classify(_r)
+    },
+    "getlist": _r => {
+        if (isObject(_r) && (toBoolean(params.getlist) || isNumber(params.getlist)) ) {
+            var found = false, _nr, num = isNumber(params.getlist) ? params.getlist : 1
+            traverse(_r, (aK, aV, aP, aO) => {
+                if (!found && isArray(aV)) {
+                    num--
+                    if (num == 0) found = true
+                    _nr = aV
+                }
+            })
+            if (found)
+                return _nr
+            else
+                return _r
+        }
     }
 }
