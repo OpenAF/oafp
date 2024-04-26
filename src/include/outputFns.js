@@ -209,6 +209,23 @@ var _outputFns = new Map([
             _exit(-1, "Invalid grid parameter: '" + stringify(params.grid, __, "") + "'")
         }
     }],
+    ["envs", (r, options) => {
+        var res = ow.loadObj().flatMap(r, "_")
+        var crt = k => params.envsprefix + k.replace(/[^a-zA-Z0-9_]/g, '_')
+        var vcrt = v => String(v).indexOf(" ") >= 0 ? "\"" + v + "\"" : v
+
+        if (isUnDef(params.envscmd)) params.envscmd = (ow.format.isWindows() ? "set" : "export")
+        params.envscmd = String(params.envscmd)
+
+        if (isUnDef(params.envsprefix)) params.envsprefix = "_OAFP_"
+        params.envsprefix = String(params.envsprefix)
+
+        var out = new Set()
+        for (var k in res) {
+            out.add(params.envscmd + (params.envscmd.length > 0 ? " " : "") + crt(k) + "=" + vcrt(res[k]))
+        }
+        _print(Array.from(out).join("\n"))
+    }],
     ["cmd", (r, options) => {
         if (!isString(params.outcmd)) _exit(-1, "For out=cmd you need to provide a outcmd=\"...\"")
 

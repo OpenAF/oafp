@@ -182,7 +182,7 @@ var _transformFns = {
     "searchvalues"  : _r => (isObject(_r) ? searchValues(_r, params.searchvalues) : _r),
     "maptoarray"    : _r => (toBoolean(params.maptoarray) && isMap(_r) ? $m4a(_r, params.maptoarraykey) : _r),
     "arraytomap"    : _r => (toBoolean(params.arraytomap) && isArray(_r) ? $a4m(_r, params.arraytomapkey, toBoolean(params.arraytomapkeepkey)) : _r),
-    "flatmap"       : _r => (toBoolean(params.flatmap) && isObject(_r) ? ow.loadObj().flatMap(_r, params.flatmapkey) : _r),
+    "flatmap"       : _r => (toBoolean(params.flatmap) && isObject(_r) ? ow.loadObj().flatMap(_r, params.flatmapsep) : _r),
     "merge"         : _r => {
         if (toBoolean(params.merge) && isArray(_r) && _r.length > 1) {
             var _rr
