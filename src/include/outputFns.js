@@ -414,6 +414,13 @@ var _outputFns = new Map([
 
         _print(r.map(_parseVal).join("\n"))
     }],
+    ["xml", (r, options) => {
+        _o$o(r, options)
+    }],
+    ["pxml", (r, options) => {
+        var _r = af.fromObj2XML(r, true)
+        _print('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n' + new XMLList(_r))
+    }],
     ["xls", (r, options) => {
         if (!isString(r)) {
             try {
