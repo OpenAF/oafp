@@ -210,7 +210,12 @@ var _outputFns = new Map([
         }
     }],
     ["envs", (r, options) => {
-        var res = ow.loadObj().flatMap(r, "_")
+        var res
+        if (isArray(r)) {
+            res = r.map(_r => isObject(_r) ? ow.loadObj().flatMap(_r, "_") : _r)
+        } else {
+            res = ow.loadObj().flatMap(r, "_")
+        }
         var crt = k => params.envsprefix + k.replace(/[^a-zA-Z0-9_]/g, '_')
         var vcrt = v => String(v).indexOf(" ") >= 0 ? "\"" + v + "\"" : v
 
