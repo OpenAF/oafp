@@ -393,6 +393,12 @@ var _inputFns = new Map([
         }
         _$o(_r, options)
     }],
+    ["gb64json", (_res, options) => {
+        var _r
+        _showTmpMsg()
+        _r = af.fromBytes2String(io.gunzip(af.fromBase64(_res, true)))
+        _$o(_r, options)
+    }],
     ["oafp", (_res, options) => {
         params.__inception = true
         var _r = _fromJSSLON(_res)
