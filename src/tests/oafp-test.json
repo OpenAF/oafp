@@ -1,0 +1,278 @@
+{
+  "count": 18,
+  "pass": 18,
+  "fail": 0,
+  "asserts": 30,
+  "profile": [
+    {
+      "name": "oafp::JSON2JSON",
+      "hits": {
+        "v": "1"
+      },
+      "sum": {
+        "v": "1570"
+      },
+      "last": {
+        "v": "1570"
+      },
+      "max": 1570,
+      "min": 1570,
+      "avg": null
+    },
+    {
+      "name": "oafp::JSON2YAML",
+      "hits": {
+        "v": "1"
+      },
+      "sum": {
+        "v": "1791"
+      },
+      "last": {
+        "v": "1791"
+      },
+      "max": 1791,
+      "min": 1791,
+      "avg": null
+    },
+    {
+      "name": "oafp::YAML2YAML",
+      "hits": {
+        "v": "1"
+      },
+      "sum": {
+        "v": "918"
+      },
+      "last": {
+        "v": "918"
+      },
+      "max": 918,
+      "min": 918,
+      "avg": null
+    },
+    {
+      "name": "oafp::YAML2JSON",
+      "hits": {
+        "v": "1"
+      },
+      "sum": {
+        "v": "916"
+      },
+      "last": {
+        "v": "916"
+      },
+      "max": 916,
+      "min": 916,
+      "avg": null
+    },
+    {
+      "name": "oafp::JSON2Base64",
+      "hits": {
+        "v": "1"
+      },
+      "sum": {
+        "v": "1758"
+      },
+      "last": {
+        "v": "1758"
+      },
+      "max": 1758,
+      "min": 1758,
+      "avg": null
+    },
+    {
+      "name": "oafp::JSON2Base64Gzip",
+      "hits": {
+        "v": "1"
+      },
+      "sum": {
+        "v": "1762"
+      },
+      "last": {
+        "v": "1762"
+      },
+      "max": 1762,
+      "min": 1762,
+      "avg": null
+    },
+    {
+      "name": "oafp::CSV2JSON",
+      "hits": {
+        "v": "1"
+      },
+      "sum": {
+        "v": "1537"
+      },
+      "last": {
+        "v": "1537"
+      },
+      "max": 1537,
+      "min": 1537,
+      "avg": null
+    },
+    {
+      "name": "oafp::merge",
+      "hits": {
+        "v": "1"
+      },
+      "sum": {
+        "v": "908"
+      },
+      "last": {
+        "v": "908"
+      },
+      "max": 908,
+      "min": 908,
+      "avg": null
+    },
+    {
+      "name": "oafp::sortMapKeys",
+      "hits": {
+        "v": "1"
+      },
+      "sum": {
+        "v": "905"
+      },
+      "last": {
+        "v": "905"
+      },
+      "max": 905,
+      "min": 905,
+      "avg": null
+    },
+    {
+      "name": "oafp::correctTypes",
+      "hits": {
+        "v": "1"
+      },
+      "sum": {
+        "v": "899"
+      },
+      "last": {
+        "v": "899"
+      },
+      "max": 899,
+      "min": 899,
+      "avg": null
+    },
+    {
+      "name": "oafp::searchKeys",
+      "hits": {
+        "v": "1"
+      },
+      "sum": {
+        "v": "2393"
+      },
+      "last": {
+        "v": "2393"
+      },
+      "max": 2393,
+      "min": 2393,
+      "avg": null
+    },
+    {
+      "name": "oafp::searchValues",
+      "hits": {
+        "v": "1"
+      },
+      "sum": {
+        "v": "1784"
+      },
+      "last": {
+        "v": "1784"
+      },
+      "max": 1784,
+      "min": 1784,
+      "avg": null
+    },
+    {
+      "name": "oafp::mapToArray",
+      "hits": {
+        "v": "1"
+      },
+      "sum": {
+        "v": "1298"
+      },
+      "last": {
+        "v": "1298"
+      },
+      "max": 1298,
+      "min": 1298,
+      "avg": null
+    },
+    {
+      "name": "oafp::arrayToMap",
+      "hits": {
+        "v": "1"
+      },
+      "sum": {
+        "v": "2667"
+      },
+      "last": {
+        "v": "2667"
+      },
+      "max": 2667,
+      "min": 2667,
+      "avg": null
+    },
+    {
+      "name": "oafp::flatMap",
+      "hits": {
+        "v": "1"
+      },
+      "sum": {
+        "v": "906"
+      },
+      "last": {
+        "v": "906"
+      },
+      "max": 906,
+      "min": 906,
+      "avg": null
+    },
+    {
+      "name": "oafp::jsonSchema",
+      "hits": {
+        "v": "1"
+      },
+      "sum": {
+        "v": "2557"
+      },
+      "last": {
+        "v": "2557"
+      },
+      "max": 2557,
+      "min": 2557,
+      "avg": null
+    },
+    {
+      "name": "oafp::JSON2Template",
+      "hits": {
+        "v": "1"
+      },
+      "sum": {
+        "v": "1950"
+      },
+      "last": {
+        "v": "1950"
+      },
+      "max": 1950,
+      "min": 1950,
+      "avg": null
+    },
+    {
+      "name": "oafp::JSON2NDJSON",
+      "hits": {
+        "v": "1"
+      },
+      "sum": {
+        "v": "681"
+      },
+      "last": {
+        "v": "681"
+      },
+      "max": 681,
+      "min": 681,
+      "avg": null
+    }
+  ]
+}
