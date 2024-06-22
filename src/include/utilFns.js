@@ -201,6 +201,7 @@ const _chartPathParse = (r, frmt, prefix, isStatic) => {
 const _print = (m) => {
     if ("undefined" !== typeof m) {
         if ("undefined" === typeof params.outfile) {
+            if (toBoolean(params.loopcls)) cls()
             print(m)
         } else {
             if ("undefined" === typeof global.__oafp_streams) global.__oafp_streams = {}

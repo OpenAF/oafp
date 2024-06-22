@@ -534,8 +534,6 @@ if (isNumber(params.loop)) {
             if (isDef(params.outfile)) {
                 global.__oafp_streams[params.outfile].close()
                 global.__oafp_streams[params.outfile] = io.writeFileStream(params.outfile, toBoolean(params.outfileappend))
-            } else {
-                cls()
             }
         }
         _run()
