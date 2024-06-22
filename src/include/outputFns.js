@@ -282,12 +282,13 @@ var _outputFns = new Map([
     }],
     ["chart", (r, options) => {
         if (isUnDef(params.chart)) _exit(-1, "For out=chart you need to provide a chart=\"<units> [<path[:color][:legend]>...]\"")
-        if (isUnDef(splitBySepWithEnc)) _exit(-1, "Output=chart is not supported in this version of OpenAF")
+        if (isUnDef(splitBySepWithEnc)) _exit(-1, "output=chart is not supported in this version of OpenAF")
 
         let fmt = _chartPathParse(r, params.chart)
         if (fmt.length > 0) {
+            var _out = printChart("oafp " + fmt)
             if (toBoolean(params.chartcls)) cls()
-            _print(printChart("oafp " + fmt))
+            _print(_out)
         }
 
     }],

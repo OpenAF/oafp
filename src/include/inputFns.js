@@ -409,6 +409,12 @@ var _inputFns = new Map([
         _r = af.fromBytes2String(io.gunzip(af.fromBase64(_res, true)))
         _$o(_r, options)
     }],
+    ["oaf", (_res, options) => {
+        if (!isString(_res)) _exit(-1, "oaf is only supported with a string.")
+        _showTmpMsg()
+        var _r = af.eval(_res)
+        _$o(_r, options)
+    }],
     ["oafp", (_res, options) => {
         params.__inception = true
         var _r = _fromJSSLON(_res)
