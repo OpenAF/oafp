@@ -175,6 +175,23 @@ var _outputFns = new Map([
 
         _print(af.fromBytes2String(af.toBase64Bytes(io.gzip(af.fromString2Bytes(_o)))))
     }],
+    ["jwt", (r, options) => {
+        if (isMap(r)) {
+            if (isUnDef(params.jwtsecret) && isUnDef(params.jwtprivkey)) _exit(-1, "For out=jwt you need to provide a jwtsecret or a jwtprivkey")
+            //if (isDef(params.jwtalg)) _exit(-1, "For out=jwt you need to provide a jwtalg")
+            ow.loadServer()
+            
+            if (isDef(params.jwtprivkey)) {
+                ow.loadJava()
+                var c = new ow.java.cipher()
+                _print(ow.server.jwt.sign(c.readKey4File(params.jwtprivkey, true, params.jwtalg), r))
+            } else {
+                _print(ow.server.jwt.sign(params.jwtsecret, r))
+            }
+        } else {
+            _exit(-1, "For out=jwt input needs to be a map.")
+        }
+    }],   
     ["grid" , (r, options) => {
         if (isUnDef(params.grid)) _exit(-1, "For out=grid you need to provide a grid=...")
         let _f = _fromJSSLON(_$(params.grid, "grid").isString().$_())
