@@ -9,5 +9,6 @@
     [".xls", "xls"],
     [".xlsx", "xls"],
     [".sql", "sql"],
-    [".toml", "toml"]
+    [".toml", "toml"],
+    [".jwt", "jwt"]
 ]
