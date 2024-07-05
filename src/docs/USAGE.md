@@ -606,6 +606,16 @@ List of options to use when _out=log_:
 
 ---
 
+### 🧾 MD output options
+
+List of options to use when _out=md_:
+
+| Option | Type | Description |
+|--------|------|-------------|
+| mdtemplate | Boolean | If true will apply a template output without any input data |
+
+---
+
 ### 🧾 OpenMetrics output options
 
 List of options to use when _out=openmetrics_:
