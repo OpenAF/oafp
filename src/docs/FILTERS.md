@@ -82,6 +82,7 @@ Using the same unix “pipe” mechanism it’s possible to apply different cate
 | from_siAbbr(x) | 20240209 | Given a string with SI numeric abbreviation will convert it to the absolute value | from_siAbbr('100m') |
 | from_slon(obj) | 20240215 | Converts a slon string representation into an object | from_slon('(abc: 123)') |
 | from_timeAbbr(x) | 20240209 | Converts a time abbreviation into ms | from_timeAbbr('12s') |
+| from_toml(str) | 20240502 | Given a TOML format string tries to convert it to an object | from_toml(@) |
 | get(nameOrPath) | 20240305 | Given a path to the original object or a name set by 'set' or 'setp' returns the corresponding value | packages[].{name: name, version: version, parentVersion: get('version') } |
 | geta(nameOrPath, arrayIndex) | 20240415 | Given a path to the original objet or name set by 'set' or 'setp' returns the arrayIndex element of the corresponding returning array | ranges(length(get('arr')),`0`,`1`).map(&{ elem: geta('arr',@).elem }, @) |
 | getc(name) | 20240428 | Returns the current value of a counter name user with inc/dec | [].{ idx: inc('my_counter'), code: concat('c', get('my_counter')), name: name} |
@@ -111,6 +112,8 @@ Using the same unix “pipe” mechanism it’s possible to apply different cate
 | now(diff) | 20240302 | Returns the current unix timestamp number with a negative diff (or positive for dates in the future) |
 | nvl(field, value) | 20240216 | Returns the provided value in case a field value is undefined or null | nvl(nullField, 'n/a') |
 | progress(value, max, min, size, indicator, space) | 20240712 | Returns a progress string to represent a value, between a max and a min, using an indicator char and space chars within a size limit | { val: v, p: progress(v, 100, 0, 10, __, __) } |
+| range(size) | 20240502 | Produces an array with exactly 'size' members from 1 to 'size' | range(`15`) |
+| ranges(size, start, step) | 20240502 | Produces an array with exactly 'size' members starting in 'start' and adding 'step' for the next member | ranges(`15`,`8`,`2`) |
 | replace(str, 're', 'flags', 'replaceText') | 20240209 | Equivalent to Javascript's replace function that given a string will search for a regular expression, with the optional flags, a replace with the provided text | replace('This is a test', ' a', 'i', ' not a') |
 | reverse(array) | base | Reverse the provided array | "reverse(@)" |
 | search_keys(arr, 'text') | all | Returns an array of entries where 'text' was found as part of an object property. | search_keys(files, 'filename') |
@@ -145,6 +148,7 @@ Using the same unix “pipe” mechanism it’s possible to apply different cate
 | to_number(any) | base | Transforms any input into a number | to_number(`123`) |
 | to_slon(obj) | 20240215 | Given an object will return the SLON representation of it. | to_slon(@) |
 | to_string(any) | base | Transforms any input into a string | to_string(`123`) |
+| to_toml(obj) | 20240502 | Given an object outputs a TOML format string if possible | to_toml(@) |
 | trim(str) | 20240209 | Given a string will return a trimmed version of it | trim(@) |
 | type(any) | base | Returns the type of any input | type(to_number(`123`)) |
 | unique(arr) | all | Given an array will return a new de-duplicated array. | unique([]) |
