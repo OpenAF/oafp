@@ -197,8 +197,40 @@ var _inputFns = new Map([
     ["mdtable", (_res, options) => {
         _showTmpMsg()
         ow.loadTemplate()
-        var _s = ow.template.md.fromTable(_res)
-        _$o(_s, options)
+
+        if (toBoolean(params.inmdtablejoin)) {
+            var _d = new Set(), _s = new Set()
+            // match all multiline markdown tables
+            var fnProc = () => {
+                if (_s.size > 0) {
+                    _d.add(ow.template.md.fromTable(Array.from(_s).join("\n")))
+                    _s.clear()
+                }
+            }
+            _res.split("\n").forEach(l => {
+                if (/^\|.+\|$/.test(l.trim())) {
+                    _s.add(l.trim())
+                } else {
+                    fnProc()
+                }
+            })
+            fnProc()
+            _$o(Array.from(_d), options)
+        } else {
+            var _s = ow.template.md.fromTable(_res)
+            _$o(_s, options)
+        }
+    }],
+    ["ask", (_res, options) => {
+        var _d = []
+        _res = af.fromJSSLON(_res)
+        if (isDef(askStruct) && isArray(_res)) {
+            __conConsole = true
+            __con.getTerminal().settings.set("-icanon min 1 -echo")
+            _d = askStruct(_res)
+            __con.getTerminal().settings.set("icanon echo")
+        }
+        _$o(_d, options)
     }],
     ["raw", (_res, options) => {
         _showTmpMsg()
