@@ -1,0 +1,294 @@
+[
+  [
+    {
+      "Helper": "$stringify",
+      "Description": "shows a JSON representation of the provided parameter"
+    },
+    {
+      "Helper": "$stringifyInLine",
+      "Description": "shows a JSON representation, without spaces, of the provided parameter"
+    },
+    {
+      "Helper": "$toYAML",
+      "Description": "shows the YAML version of the parameter"
+    },
+    {
+      "Helper": "$toJSON",
+      "Description": "shows the JSON version of the parameter"
+    },
+    {
+      "Helper": "$env",
+      "Description": "shows the current environment variable identified by the parameter"
+    },
+    {
+      "Helper": "$escape",
+      "Description": "shows an escaped version of the parameter"
+    },
+    {
+      "Helper": "$acolor",
+      "Description": "shows an ansi color (first argument) escape sequence of the string parameter (second argument)"
+    },
+    {
+      "Helper": "$f",
+      "Description": "uses the $f format function"
+    },
+    {
+      "Helper": "$ft",
+      "Description": "uses the $ft format function"
+    },
+    {
+      "Helper": "$path",
+      "Description": "uses the $path function to query objects"
+    },
+    {
+      "Helper": "$from",
+      "Description": "uses the $from & fromNLinq to query objects"
+    },
+    {
+      "Helper": "$oafp",
+      "Description": "uses the oafp function (inception) to parse the provided JSON/SLON string and return the results (tip: use with the #with helper)"
+    },
+    {
+      "Helper": "$toSLON",
+      "Description": "shows the ow.format.toSLON version of an object"
+    },
+    {
+      "Helper": "$get",
+      "Description": "shows the corresponding value for a key on $get"
+    },
+    {
+      "Helper": "$getObj",
+      "Description": "equivalent to $get with the extra parameter for $$.get path"
+    },
+    {
+      "Helper": "$dateDiff",
+      "Description": "shows a number of seconds for a provided date optionally (second argument) with minutes, hours, days, months, weeks or years and (third argument) a default value"
+    },
+    {
+      "Helper": "$switch",
+      "Description": "equivalent to a javascript switch"
+    },
+    {
+      "Helper": "$case",
+      "Description": "to be used with $switch for each case"
+    },
+    {
+      "Helper": "$default",
+      "Description": "to be used with $switch for each case"
+    },
+    {
+      "Helper": "$pbar",
+      "Description": "shows an ansi ascii progress bar with a value and a max value, a min value, a size, an indicator and space char"
+    },
+    {
+      "Helper": "$pbars",
+      "Description": "shows an ansi ascii tree of progress bars with a format string: \"unit path:color:legend... [-min:0] [-max:100] [-hsize:40]\""
+    },
+    {
+      "Helper": "$ptable",
+      "Description": "shows an ansi ascii printTable representation of an object"
+    },
+    {
+      "Helper": "$ptree",
+      "Description": "shows an ansi ascii printTree representation of an object"
+    },
+    {
+      "Helper": "$pchart",
+      "Description": "shows an ansi ascii line chart with an object and a format string: \"unit path:color:legend... [-min:0] [-max:100] [-hsize:40] [-vsize:10]\""
+    },
+    {
+      "Helper": "$output",
+      "Description": "shows an $output representation of an object (aObj as 1st arg and options in slon as 2nd arg)"
+    },
+    {
+      "Helper": "$cjson",
+      "Description": "shows an ansi ascii colority representation fo an object"
+    },
+    {
+      "Helper": "$cslon",
+      "Description": "shows an ansi ascii colored SLON representation of an object"
+    },
+    {
+      "Helper": "$pmap",
+      "Description": "shows an ansi ascii printMap representation of an object"
+    },
+    {
+      "Helper": "$jsmap",
+      "Description": "shows a HTML representation of an object"
+    },
+    {
+      "Helper": "$t",
+      "Description": "given a template and an object instance, as arguments, will process and return the template"
+    },
+    {
+      "Helper": "$date",
+      "Description": "converts the argument provided to date"
+    },
+    {
+      "Helper": "$isoDate",
+      "Description": "converts the argument provided to an ISO date string"
+    },
+    {
+      "Helper": "$number",
+      "Description": "casts the argument provided to number"
+    },
+    {
+      "Helper": "$boolean",
+      "Description": "casts the argument provided to boolean"
+    },
+    {
+      "Helper": "$string",
+      "Description": "casts the argument provided to string"
+    },
+    {
+      "Helper": "$keys",
+      "Description": "shows an array of keys of the provided map"
+    },
+    {
+      "Helper": "$values",
+      "Description": "shows an array of values of the provided map"
+    },
+    {
+      "Helper": "$alen",
+      "Description": "shows the ansi length of the argument provided"
+    },
+    {
+      "Helper": "$len",
+      "Description": "shows the string length of the argument provided"
+    },
+    {
+      "Helper": "$repeat",
+      "Description": "shortcut to the OpenAF's repeat function"
+    },
+    {
+      "Helper": "$range",
+      "Description": "shortcut to the OpenAF's range function"
+    },
+    {
+      "Helper": "$a2m",
+      "Description": "shortcut to the OpenAF's $a2m function"
+    },
+    {
+      "Helper": "$a4m",
+      "Description": "shortcut to the OpenAF's $a4m function"
+    },
+    {
+      "Helper": "$m2a",
+      "Description": "shortcut to the OpenAF's $m2a function"
+    },
+    {
+      "Helper": "$m4a",
+      "Description": "shortcut to the OpenAF's $m4a function"
+    },
+    {
+      "Helper": "$pass",
+      "Description": "shows an empty string"
+    },
+    {
+      "Helper": "$sline",
+      "Description": "shortcut to the OpenAF's format withSideLine"
+    },
+    {
+      "Helper": "$set",
+      "Description": "block set of a provided key"
+    },
+    {
+      "Helper": "$concat",
+      "Description": "concatenates all arguments as a single value"
+    }
+  ],
+  [
+    {
+      "Helper": "and",
+      "Description": "Enables building a block that runs if A 'and' B is true"
+    },
+    {
+      "Helper": "compare",
+      "Description": "Enables building a block evaluating 'A' 'operation' 'B'. Operation can be: ==, ===, !=, !==, <, >, <=, >= and typeof"
+    },
+    {
+      "Helper": "contains",
+      "Description": "Enables building a block that runs if string 'A' contains string 'B'"
+    },
+    {
+      "Helper": "gt",
+      "Description": "Enables building a block that runs if 'A' is greater than 'B'"
+    },
+    {
+      "Helper": "gte",
+      "Description": "Enables building a block that runs if 'A' is greater or equal than 'B'"
+    },
+    {
+      "Helper": "startsWith",
+      "Description": "Enables building a block that runs if string 'A' starts with 'B'"
+    },
+    {
+      "Helper": "endsWith",
+      "Description": "Enables building a block that runs if string 'A' ends with 'B'"
+    },
+    {
+      "Helper": "match",
+      "Description": "Enables building a block that runs if string 'A' matchs regular expression 'B'"
+    },
+    {
+      "Helper": "has",
+      "Description": "Enables building a block that runs if map or array 'A' has 'B' property or element."
+    },
+    {
+      "Helper": "eq",
+      "Description": "Enables building a block that runs if 'A' equals to 'B'"
+    },
+    {
+      "Helper": "ifEven",
+      "Description": "Enables building a block that runs if 'A' is even"
+    },
+    {
+      "Helper": "ifOdd",
+      "Description": "Enables building a block that runs if 'A' is odd"
+    },
+    {
+      "Helper": "is",
+      "Description": "Enables building a block that runs if 'A' is 'B'"
+    },
+    {
+      "Helper": "isnt",
+      "Description": "Enables building a block that runs if 'A' isn't 'B'"
+    },
+    {
+      "Helper": "lt",
+      "Description": "Enables building a block that runs if 'A' is lower than 'B'"
+    },
+    {
+      "Helper": "lte",
+      "Description": "Enables building a block that runs if 'A' is lower or equal than 'B'"
+    },
+    {
+      "Helper": "neither",
+      "Description": "Enables building a block that runs if 'A' and 'B' are not defined or false"
+    },
+    {
+      "Helper": "or",
+      "Description": "Enables building a block that runs if A 'or' B is true"
+    },
+    {
+      "Helper": "unlessEq",
+      "Description": "Enables building a block that runs unless 'A' equals to 'B'"
+    },
+    {
+      "Helper": "unlessGt",
+      "Description": "Enables building a block that runs unless 'A' greater than 'B'"
+    },
+    {
+      "Helper": "unlessLt",
+      "Description": "Enables building a block that runs unless 'A' lower than 'B'"
+    },
+    {
+      "Helper": "unlessGteq",
+      "Description": "Enables building a block that runs unless 'A' greater than or equals 'B'"
+    },
+    {
+      "Helper": "unlessLteq",
+      "Description": "Enables building a block that runs unless 'A' lower than or equals 'B'"
+    }
+  ]
+]

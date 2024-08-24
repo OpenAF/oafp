@@ -1,0 +1,1114 @@
+[
+  [
+    {
+      "Function": "a2m(arrFields, arrValues)",
+      "OpenAF": "20240209",
+      "Description": "Builds a map given an array of fields and values",
+      "Example": "a2m(k, v)"
+    },
+    {
+      "Function": "a4m(arr, 'key', dontRemove)",
+      "OpenAF": "20240209",
+      "Description": "Converts an array into a map",
+      "Example": "a4m([], 'name', \\`true`)"
+    },
+    {
+      "Function": "abs(number)",
+      "OpenAF": "base",
+      "Description": "The absolute value of a numeric field",
+      "Example": "[].{y:abs(y)}"
+    },
+    {
+      "Function": "add(number, number)",
+      "OpenAF": "20240217",
+      "Description": "Adds two numbers",
+      "Example": "add(1, 2)"
+    },
+    {
+      "Function": "amerge(x, y)",
+      "OpenAF": "20240215",
+      "Description": "OpenAF's merge with support for arrays",
+      "Example": "amerge([], from_slon('(stamp:123)'))"
+    },
+    {
+      "Function": "avg(arrayNumber)",
+      "OpenAF": "base",
+      "Description": "The average value of an array of numeric fields",
+      "Example": "avg([].y)"
+    },
+    {
+      "Function": "ceil(number)",
+      "OpenAF": "base",
+      "Description": "Returns the smallest integer that is equal or less than a specific numeric field value",
+      "Example": "[].ceil(y)"
+    },
+    {
+      "Function": "ch(name, op, arg1, args2)",
+      "OpenAF": "20240801",
+      "Description": "Wrapper for OpenAF's channel functions over a 'name' channel, an 'op' operation between get, set, unset, size, getAll, getKeys, unsetAll; depending on the 'op', 'arg1' and 'arg2' can be provided with values as objects or JSON/SLON",
+      "Example": "ch('a', 'set', 'a', 'abc').ch('a', 'get', 'a', __)"
+    },
+    {
+      "Function": "concat(x, y)",
+      "OpenAF": "20240209",
+      "Description": "Concats arrays or strings",
+      "Example": "concat('abc', '123')"
+    },
+    {
+      "Function": "contains(string/array, any)",
+      "OpenAF": "base",
+      "Description": "Returns true of false if a string field contains a specific value",
+      "Example": "files[?contains(filename, 'openaf.jar') == `true`"
+    },
+    {
+      "Function": "count_by(arr, 'field')",
+      "OpenAF": "all",
+      "Description": "Returns a count by array with the '_count' per value of the provided 'field'",
+      "Example": "count_by([], 'isFile')"
+    },
+    {
+      "Function": "date_diff(field, 'unit', nullval)",
+      "OpenAF": "20240228",
+      "Description": "Given a date field will return the numeric difference to now for the provided unit (e.g. seconds, minutes, hours, days, months, weeks, years). Optionally a nullval will be used if no difference can be calculated",
+      "Example": "date_diff(modifiedDate, 'days', '-1')"
+    },
+    {
+      "Function": "dec(name)",
+      "OpenAF": "20240428",
+      "Description": "Decrements the counter 'name' provided returning the counter value",
+      "Example": "dec('my_counter')"
+    },
+    {
+      "Function": "delete(map, 'field')",
+      "OpenAF": "all",
+      "Description": "Remove a field from the provided map",
+      "Example": "delete(data, 'timestamp')"
+    },
+    {
+      "Function": "div(a, b)",
+      "OpenAF": "20240217",
+      "Description": "Divides two numbers.",
+      "Example": "div(6, 2)"
+    },
+    {
+      "Function": "ends_with(string, array)",
+      "OpenAF": "base",
+      "Description": "Returns true if a field has the provided suffix",
+      "Example": "files[?ends_with(filename, '.jar')]"
+    },
+    {
+      "Function": "env(string)",
+      "OpenAF": "20240812",
+      "Description": "Retrieves a environment variable value",
+      "Example": "env('PATH')"
+    },
+    {
+      "Function": "envs(regex)",
+      "OpenAF": "20240812",
+      "Description": "Retrieves an array of name and values of environment variables",
+      "Example": "envs('^STR_.+$')"
+    },
+    {
+      "Function": "flat_map(x)",
+      "OpenAF": "all",
+      "Description": "Returns a flat, one level, version of the provided map.",
+      "Example": "flat_map(data)"
+    },
+    {
+      "Function": "floor(number)",
+      "OpenAF": "base",
+      "Description": "Returns the greatest integer that is equal or greater than a specific numeric field value",
+      "Example": "[].floor(y)"
+    },
+    {
+      "Function": "format(x, 'format')",
+      "OpenAF": "20240209",
+      "Description": "OpenAF's function $f (similar to printf) with type conversion",
+      "Example": "format(to_number(`123.12`), '%05.0f')"
+    },
+    {
+      "Function": "formatn(x, 'format')",
+      "OpenAF": "20240209",
+      "Description": "OpenAF's function $ft (similar to printf) without type conversion",
+      "Example": "format(string, '%10s')"
+    },
+    {
+      "Function": "from_bytesAbbr(x)",
+      "OpenAF": "20240209",
+      "Description": "Given a string with a byte abbreviation will convert to bytes",
+      "Example": "from_bytesAbbr('12GB')"
+    },
+    {
+      "Function": "from_csv(str, options)",
+      "OpenAF": "20240801",
+      "Description": "Given a string CSV representation tries to parse to an array",
+      "Example": "from_csv(@, '(withDelimiter:\\\""
+    },
+    {
+      "Function": "from_datef(date, 'format')",
+      "OpenAF": "20240228",
+      "Description": "Converts a date type into a string given a 'format' (equivalent to OpenAF's ow.format.fromDate)",
+      "Example": "from_datef(to_datef('20240202', 'yyyyMMdd'), 'yyyy')"
+    },
+    {
+      "Function": "from_json(str)",
+      "OpenAF": "20240215",
+      "Description": "Converts a json string representation into an object",
+      "Example": "from_json('{a:123}')\""
+    },
+    {
+      "Function": "from_ms(x, 'format')",
+      "OpenAF": "20240209",
+      "Description": "Shortcut for OpenAF's ow.format.elapsedTime4ms function. The format is represented as a SLON/JSON string",
+      "Example": "from_ms(`12000`,'(abrev:true)')"
+    },
+    {
+      "Function": "from_siAbbr(x)",
+      "OpenAF": "20240209",
+      "Description": "Given a string with SI numeric abbreviation will convert it to the absolute value",
+      "Example": "from_siAbbr('100m')"
+    },
+    {
+      "Function": "from_slon(obj)",
+      "OpenAF": "20240215",
+      "Description": "Converts a slon string representation into an object",
+      "Example": "from_slon('(abc: 123)')"
+    },
+    {
+      "Function": "from_timeAbbr(x)",
+      "OpenAF": "20240209",
+      "Description": "Converts a time abbreviation into ms",
+      "Example": "from_timeAbbr('12s')"
+    },
+    {
+      "Function": "from_toml(str)",
+      "OpenAF": "20240502",
+      "Description": "Given a TOML format string tries to convert it to an object",
+      "Example": "from_toml(@)"
+    },
+    {
+      "Function": "get(nameOrPath)",
+      "OpenAF": "20240305",
+      "Description": "Given a path to the original object or a name set by 'set' or 'setp' returns the corresponding value",
+      "Example": "packages[].{name: name, version: version, parentVersion: get('version') }"
+    },
+    {
+      "Function": "geta(nameOrPath, arrayIndex)",
+      "OpenAF": "20240415",
+      "Description": "Given a path to the original objet or name set by 'set' or 'setp' returns the arrayIndex element of the corresponding returning array",
+      "Example": "ranges(length(get('arr')),`0`,`1`).map(&{ elem: geta('arr',@).elem }, @)"
+    },
+    {
+      "Function": "getc(name)",
+      "OpenAF": "20240428",
+      "Description": "Returns the current value of a counter name user with inc/dec",
+      "Example": "[].{ idx: inc('my_counter'), code: concat('c', get('my_counter')), name: name}"
+    },
+    {
+      "Function": "group(arr, 'field')",
+      "OpenAF": "all",
+      "Description": "Given an array will return a new array grouping the entries for each value of the provided field",
+      "Example": "group(files, 'isDirectory')"
+    },
+    {
+      "Function": "group_by(arr, 'field1,field2')",
+      "OpenAF": "all",
+      "Description": "Given ar array will return a multi-level array grouping entries for each value of the provided fields (comma delimited)",
+      "Example": "group_by(files, 'isFile, permissions')"
+    },
+    {
+      "Function": "inc(name)",
+      "OpenAF": "20240428",
+      "Description": "Increments the counter 'name' provided returning the counter value",
+      "Example": "[].{ id: inc('my_counter'), title: title }"
+    },
+    {
+      "Function": "index_of(str, 'search')",
+      "OpenAF": "20240209",
+      "Description": "Given a string will return the first index where the word 'search' occurs",
+      "Example": "index_of('This is a test', 'test')"
+    },
+    {
+      "Function": "insert(obj, 'field', value)",
+      "OpenAF": "20240302",
+      "Description": "Adds a 'field' with the corresponding value to the object."
+    },
+    {
+      "Function": "join(string, arrayString)",
+      "OpenAF": "base",
+      "Description": "Returns a delimited list with the values of a specific array field",
+      "Example": "join(', ', files[].filename)"
+    },
+    {
+      "Function": "k2a(map, 'keyREmatch', 'outkey', removeEmpties)",
+      "OpenAF": "20240415",
+      "Description": "Given a map will only consider keys that match 'keyREmatch' and will output an array with the corresponding values. Optionally a 'outkey' can be added and removeEmpties boolean flag",
+      "Example": "k2a(@, 'strIngredient', 'ingredients', `true`)"
+    },
+    {
+      "Function": "keys(object)",
+      "OpenAF": "base",
+      "Description": "Returns a list of fields for a corresponding map",
+      "Example": "keys(files[0])"
+    },
+    {
+      "Function": "last_index_of(str, 'search')",
+      "OpenAF": "20240209",
+      "Description": "Given a string will return the last index where the word 'search' occurs",
+      "Example": "last_index_of('Test of a test', 'test')"
+    },
+    {
+      "Function": "length(string/array/object)",
+      "OpenAF": "base",
+      "Description": "Returns the size of any array or list",
+      "Example": "length(keys(files[0]))"
+    },
+    {
+      "Function": "lower_case(str)",
+      "OpenAF": "20240209",
+      "Description": "Given a string returns the lowercase converted version",
+      "Example": "lower_case('AbC')"
+    },
+    {
+      "Function": "m2a(arrFields, obj)",
+      "OpenAF": "20240209",
+      "Description": "Given an array of fields returns an array with the corresponding values of the provided object map.",
+      "Example": "m2a(from_slon('[name"
+    },
+    {
+      "Function": "m4a(obj, 'key')",
+      "OpenAF": "20240209",
+      "Description": "Given an object map where each entry corresponds to a map will return an array of maps with the extra field 'key' representing the corresponding map entry.",
+      "Example": "m4a(obj, 'key')"
+    },
+    {
+      "Function": "map(expression, array)",
+      "OpenAF": "base",
+      "Description": "Returns an array mapping",
+      "Example": "map(&filename == 'openaf.jar', files[])"
+    },
+    {
+      "Function": "match(str, 're', 'flags')",
+      "OpenAF": "20240209",
+      "Description": "Equivalent to javascript's match function return a boolean value if a regular expression is matched to a string with optional flags",
+      "Example": "match('abc 123', '\\\\d+', 'g')"
+    },
+    {
+      "Function": "max(number)",
+      "OpenAF": "base",
+      "Description": "Returns the maximum of a numeric field",
+      "Example": "max(files[].size)"
+    },
+    {
+      "Function": "max_by(array, expression)",
+      "OpenAF": "base",
+      "Description": "Returns the element for which the expression is the maximum",
+      "Example": "max_by(files[], &size)"
+    },
+    {
+      "Function": "merge(object, object)",
+      "OpenAF": "base",
+      "Description": "Returns the merge of two objects",
+      "Example": "merge([0],[1])"
+    },
+    {
+      "Function": "min(number)",
+      "OpenAF": "base",
+      "Description": "Returns the minimum of a numeric field",
+      "Example": "min(files[].size)"
+    },
+    {
+      "Function": "min_by(array, expression)",
+      "OpenAF": "base",
+      "Description": "Returns the element for which the expression is the minimum",
+      "Example": "min_by(files[], &size)"
+    },
+    {
+      "Function": "mod(a, b)",
+      "OpenAF": "20240217",
+      "Description": "Returns the modular of two numbers",
+      "Example": "mod(`5`, `2`)"
+    },
+    {
+      "Function": "mul(a, b)",
+      "OpenAF": "20240217",
+      "Description": "Multiplies two numbers",
+      "Example": "mul(`5`, `2`)"
+    },
+    {
+      "Function": "not_null(any)",
+      "OpenAF": "base",
+      "Description": "Returns the non-null value between the provided fields",
+      "Example": "[].not_null(a,b)"
+    },
+    {
+      "Function": "now(diff)",
+      "OpenAF": "20240302",
+      "Description": "Returns the current unix timestamp number with a negative diff (or positive for dates in the future)"
+    },
+    {
+      "Function": "nvl(field, value)",
+      "OpenAF": "20240216",
+      "Description": "Returns the provided value in case a field value is undefined or null",
+      "Example": "nvl(nullField, 'n/a')"
+    },
+    {
+      "Function": "oafp(str)",
+      "OpenAF": "20240812",
+      "Description": "Executes an oafp (inception) with the provided map in JSON or SLON string format",
+      "Example": "oafp('(file:data.json)')"
+    },
+    {
+      "Function": "opath(str)",
+      "OpenAF": "20240801",
+      "Description": "Inception function to ahver other path filters in 'str' applied over the original object before current transformations",
+      "Example": "files[].{ name: filename, path: opath('originalPath') }"
+    },
+    {
+      "Function": "path(obj, str)",
+      "OpenAF": "20240801",
+      "Description": "Inception function to have other path filters in 'str' applied over 'obj'",
+      "Example": "path(@, 'filename')"
+    },
+    {
+      "Function": "progress(value, max, min, size, indicator, space)",
+      "OpenAF": "20240712",
+      "Description": "Returns a progress string to represent a value, between a max and a min, using an indicator char and space chars within a size limit",
+      "Example": "{ val: v, p: progress(v, 100, 0, 10, __, __) }"
+    },
+    {
+      "Function": "range(size)",
+      "OpenAF": "20240502",
+      "Description": "Produces an array with exactly 'size' members from 1 to 'size'",
+      "Example": "range(`15`)"
+    },
+    {
+      "Function": "ranges(size, start, step)",
+      "OpenAF": "20240502",
+      "Description": "Produces an array with exactly 'size' members starting in 'start' and adding 'step' for the next member",
+      "Example": "ranges(`15`,`8`,`2`)"
+    },
+    {
+      "Function": "replace(str, 're', 'flags', 'replaceText')",
+      "OpenAF": "20240209",
+      "Description": "Equivalent to Javascript's replace function that given a string will search for a regular expression, with the optional flags, a replace with the provided text",
+      "Example": "replace('This is a test', ' a', 'i', ' not a')"
+    },
+    {
+      "Function": "reverse(array)",
+      "OpenAF": "base",
+      "Description": "Reverse the provided array",
+      "Example": "\"reverse(@)\""
+    },
+    {
+      "Function": "search_keys(arr, 'text')",
+      "OpenAF": "all",
+      "Description": "Returns an array of entries where 'text' was found as part of an object property.",
+      "Example": "search_keys(files, 'filename')"
+    },
+    {
+      "Function": "search_values(arr, 'text')",
+      "OpenAF": "all",
+      "Description": "Returns an array of entries where 'text' was found as part of an object property value.",
+      "Example": "search_values(files, '.git')"
+    },
+    {
+      "Function": "set(obj, path)",
+      "OpenAF": "20240305",
+      "Description": "Given an object will set the value to a name that it's equal to it's path",
+      "Example": "set(@, 'version').packages[].{ name: name, parentVersion: get('version') }"
+    },
+    {
+      "Function": "setp(obj, path, name)",
+      "OpenAF": "20240305",
+      "Description": "Given an object will set the value to a name given the provided path",
+      "Example": "set(@, 'version', 'ver').packages[].{ name: name, parentVersion: get('ver') }"
+    },
+    {
+      "Function": "sort(array)",
+      "OpenAF": "base",
+      "Description": "Sorts the provided array",
+      "Example": "\"sort(@)\""
+    },
+    {
+      "Function": "sort_by(array, expression)",
+      "OpenAF": "base",
+      "Description": "Sorts the provided array by the provided expression",
+      "Example": "sort_by(files[], &size)"
+    },
+    {
+      "Function": "split(str, 'sep')",
+      "OpenAF": "20240209",
+      "Description": "Equivalent to the split Javascript's function for a string given a separator",
+      "Example": "split(@, '\\n')"
+    },
+    {
+      "Function": "split_re(str, 're')",
+      "OpenAF": "20240228",
+      "Description": "Equivalent to the split Javascript's function for a string given a regular expression separator",
+      "Example": "split_re(@, '\\\\s+')"
+    },
+    {
+      "Function": "split_sep(str, sep, arrEnc)",
+      "OpenAF": "20240217",
+      "Description": "Given a string, a separator regexp and an array of pairs of enclosure chars",
+      "Example": "split_sep(@, '\\\\s+', from_slon('[['{'"
+    },
+    {
+      "Function": "starts_with(string, array)",
+      "OpenAF": "base",
+      "Description": "Returns true if a field has the provided prefix",
+      "Example": "files[?starts_with(filename, 'openaf.jar')]"
+    },
+    {
+      "Function": "sql_format(sql, format)",
+      "OpenAF": "20240528",
+      "Description": "Returns a beautified SQL with optional 'format' options map in json/slon. Options: indent (str); uppercase (bool); linesBetweenQueries (num); maxColumnLength (int); skipWhitespaceNearBlockParentheses (bool); language (str)",
+      "Example": "sql_format(sql, '(uppercase: true)')"
+    },
+    {
+      "Function": "sort_semver(arrayVersions)",
+      "OpenAF": "20240605",
+      "Description": "Sorts an array of strings with semantic versioning (e.g. 1.2.3)",
+      "Example": "sort_semver(@)"
+    },
+    {
+      "Function": "sort_by_semver(arrayMaps, stringExp)",
+      "OpenAF": "20240605",
+      "Description": "Sorts and array of maps where a string represents a semantic version (e.g. 1.2.3)",
+      "Example": "sort_by_semver([], 'version')"
+    },
+    {
+      "Function": "sub(a, b)",
+      "OpenAF": "20240217",
+      "Description": "Substracts two numbers",
+      "Example": "sub(`2`, `2`)"
+    },
+    {
+      "Function": "substring(str, ini, end)",
+      "OpenAF": "all",
+      "Description": "Given a string will return a sub-string starting on the initial index until the ending index",
+      "Example": "substring(@, index_of('test'), 5)"
+    },
+    {
+      "Function": "sum(array)",
+      "OpenAF": "base",
+      "Description": "Sums the numberic field of a provided array",
+      "Example": "sum(files[].size)"
+    },
+    {
+      "Function": "t(obj, 'template')",
+      "OpenAF": "20240228",
+      "Description": "Applies the Handlebars 'template' to the provided array or map",
+      "Example": "t(@, '{{filename}} ({{size}})')"
+    },
+    {
+      "Function": "tF(obj, 'template')",
+      "OpenAF": "20240228",
+      "Description": "Applies the Handlebars 'template', with all OpenAF helpers, to the provided array or map",
+      "Example": "tF(@, '{{\\$env 'TITLE'}}: {{filename}}')"
+    },
+    {
+      "Function": "template(a, 'template')",
+      "OpenAF": "20240209",
+      "Description": "Applies the Handlebars 'template' to the provided array or map",
+      "Example": "t(@, '{{filename}} ({{size}})')"
+    },
+    {
+      "Function": "templateF(x, 'template')",
+      "OpenAF": "20240209",
+      "Description": "Applies the Handlebars 'template', with all OpenAF helpers, to the provided array or map",
+      "Example": "tF(@, '{{\\$env 'TITLE'}}: {{filename}}')"
+    },
+    {
+      "Function": "timeago(num)",
+      "OpenAF": "20240209",
+      "Description": "Given a ms timestamp will return a human readable string of how log ago that timestamp occurred.",
+      "Example": "files[].{path:filepath,howLongAgo:timeago(lastModified)}"
+    },
+    {
+      "Function": "timeagoAbbr(num)",
+      "OpenAF": "20240810",
+      "Description": "Given a ms timestamp will return an abbreviated human readable string of how long ago that timestemp occurred.",
+      "Example": "files[].{path:filepath,howLongAgo:timeagoAbbr(lastModified)}"
+    },
+    {
+      "Function": "to_array(any)",
+      "OpenAF": "base",
+      "Description": "Transforms any input into an array",
+      "Example": "to_array(`true`)"
+    },
+    {
+      "Function": "to_bytesAbbr(x)",
+      "OpenAF": "20240209",
+      "Description": "Given an absolute number of bytes will return a string with unit abbreviation.",
+      "Example": "to_bytesAbbr(`12345678`)"
+    },
+    {
+      "Function": "to_csv(obj, options)",
+      "OpenAF": "20240801",
+      "Description": "Given an object will try to convert it to CSV with $csv options",
+      "Example": "to_csv(@, '(withDelimiter:\\\""
+    },
+    {
+      "Function": "to_date(x)",
+      "OpenAF": "20240209",
+      "Description": "Tries to convert a value to a date",
+      "Example": "to_date(createDate)"
+    },
+    {
+      "Function": "to_datef(str, 'pattern')",
+      "OpenAF": "20240228",
+      "Description": "Uses a Java date format to convert a string into a date",
+      "Example": "to_datef(createDate, 'yyyyMMdd')"
+    },
+    {
+      "Function": "to_isoDate(x)",
+      "OpenAF": "20240209",
+      "Description": "Tries to convert a string into an ISO date format string",
+      "Example": "to_isoDate( to_datef(createDate, 'yyyyMMdd') )"
+    },
+    {
+      "Function": "to_json(obj, 'space')",
+      "OpenAF": "20240215",
+      "Description": "Given an object will return the JSON string representation of it with the provided spacing",
+      "Example": "to_json(@, '')"
+    },
+    {
+      "Function": "to_map(arr, 'field')",
+      "OpenAF": "all",
+      "Description": "Given an array it will return a map where each entry is a property using the provided field with a map as value.",
+      "Example": "to_map(files, 'filename')"
+    },
+    {
+      "Function": "to_ms(date)",
+      "OpenAF": "20240810",
+      "Description": "Converts a date field into a number of ms",
+      "Example": "to_ms(createDate)"
+    },
+    {
+      "Function": "to_numAbbr(num)",
+      "OpenAF": "20240209",
+      "Description": "Given an absolute number will return a string with SI abbreviation",
+      "Example": "to_numAbbr(`12345678`)"
+    },
+    {
+      "Function": "to_number(any)",
+      "OpenAF": "base",
+      "Description": "Transforms any input into a number",
+      "Example": "to_number(`123`)"
+    },
+    {
+      "Function": "to_slon(obj)",
+      "OpenAF": "20240215",
+      "Description": "Given an object will return the SLON representation of it.",
+      "Example": "to_slon(@)"
+    },
+    {
+      "Function": "to_string(any)",
+      "OpenAF": "base",
+      "Description": "Transforms any input into a string",
+      "Example": "to_string(`123`)"
+    },
+    {
+      "Function": "to_toml(obj)",
+      "OpenAF": "20240502",
+      "Description": "Given an object outputs a TOML format string if possible",
+      "Example": "to_toml(@)"
+    },
+    {
+      "Function": "trim(str)",
+      "OpenAF": "20240209",
+      "Description": "Given a string will return a trimmed version of it",
+      "Example": "trim(@)"
+    },
+    {
+      "Function": "type(any)",
+      "OpenAF": "base",
+      "Description": "Returns the type of any input",
+      "Example": "type(to_number(`123`))"
+    },
+    {
+      "Function": "unique(arr)",
+      "OpenAF": "all",
+      "Description": "Given an array will return a new de-duplicated array.",
+      "Example": "unique([])"
+    },
+    {
+      "Function": "upper_case(str)",
+      "OpenAF": "20240209",
+      "Description": "Given a string returns the uppercase converted version",
+      "Example": "upper_case('AbC')"
+    },
+    {
+      "Function": "unset(name)",
+      "OpenAF": "20240428",
+      "Description": "Resets a counter name or a set/setp name",
+      "Example": "unset('my_counter')"
+    },
+    {
+      "Function": "values(a)",
+      "OpenAF": "base",
+      "Description": "Returns an array with all the values of a map",
+      "Example": "values(files[0])"
+    }
+  ],
+  [
+    {
+      "Function": "all"
+    },
+    {
+      "Function": "and"
+    },
+    {
+      "Function": "andBegin"
+    },
+    {
+      "Function": "andBetween"
+    },
+    {
+      "Function": "andBetweenEquals"
+    },
+    {
+      "Function": "andContains"
+    },
+    {
+      "Function": "andEmpty"
+    },
+    {
+      "Function": "andEnds"
+    },
+    {
+      "Function": "andEquals"
+    },
+    {
+      "Function": "andGreater"
+    },
+    {
+      "Function": "andGreaterEquals"
+    },
+    {
+      "Function": "andIs"
+    },
+    {
+      "Function": "andLess"
+    },
+    {
+      "Function": "andLessEquals"
+    },
+    {
+      "Function": "andMatch"
+    },
+    {
+      "Function": "andNot"
+    },
+    {
+      "Function": "andNotBetween"
+    },
+    {
+      "Function": "andNotBetweenEquals"
+    },
+    {
+      "Function": "andNotContains"
+    },
+    {
+      "Function": "andNotEmpty"
+    },
+    {
+      "Function": "andNotEnds"
+    },
+    {
+      "Function": "andNotEquals"
+    },
+    {
+      "Function": "andNotGreater"
+    },
+    {
+      "Function": "andNotGreaterEquals"
+    },
+    {
+      "Function": "andNotIs"
+    },
+    {
+      "Function": "andNotLess"
+    },
+    {
+      "Function": "andNotLessEquals"
+    },
+    {
+      "Function": "andNotMatch"
+    },
+    {
+      "Function": "andNotStarts"
+    },
+    {
+      "Function": "andNotType"
+    },
+    {
+      "Function": "andNotWhere"
+    },
+    {
+      "Function": "andStarts"
+    },
+    {
+      "Function": "andType"
+    },
+    {
+      "Function": "andWhere"
+    },
+    {
+      "Function": "any"
+    },
+    {
+      "Function": "apply"
+    },
+    {
+      "Function": "assign"
+    },
+    {
+      "Function": "at"
+    },
+    {
+      "Function": "attach"
+    },
+    {
+      "Function": "average"
+    },
+    {
+      "Function": "averageBy"
+    },
+    {
+      "Function": "begin"
+    },
+    {
+      "Function": "between"
+    },
+    {
+      "Function": "betweenEquals"
+    },
+    {
+      "Function": "cartesian"
+    },
+    {
+      "Function": "contains"
+    },
+    {
+      "Function": "count"
+    },
+    {
+      "Function": "countBy"
+    },
+    {
+      "Function": "define"
+    },
+    {
+      "Function": "detach"
+    },
+    {
+      "Function": "distinct"
+    },
+    {
+      "Function": "each"
+    },
+    {
+      "Function": "empty"
+    },
+    {
+      "Function": "end"
+    },
+    {
+      "Function": "ends"
+    },
+    {
+      "Function": "equals"
+    },
+    {
+      "Function": "except"
+    },
+    {
+      "Function": "filter"
+    },
+    {
+      "Function": "first"
+    },
+    {
+      "Function": "fnBy"
+    },
+    {
+      "Function": "greater"
+    },
+    {
+      "Function": "greaterEquals"
+    },
+    {
+      "Function": "group"
+    },
+    {
+      "Function": "groupBy"
+    },
+    {
+      "Function": "head"
+    },
+    {
+      "Function": "ignoreCase"
+    },
+    {
+      "Function": "intersect"
+    },
+    {
+      "Function": "is"
+    },
+    {
+      "Function": "join"
+    },
+    {
+      "Function": "last"
+    },
+    {
+      "Function": "less"
+    },
+    {
+      "Function": "lessEquals"
+    },
+    {
+      "Function": "limit"
+    },
+    {
+      "Function": "match"
+    },
+    {
+      "Function": "max"
+    },
+    {
+      "Function": "maxBy"
+    },
+    {
+      "Function": "min"
+    },
+    {
+      "Function": "minBy"
+    },
+    {
+      "Function": "mselect"
+    },
+    {
+      "Function": "none"
+    },
+    {
+      "Function": "not"
+    },
+    {
+      "Function": "notBetween"
+    },
+    {
+      "Function": "notBetweenEquals"
+    },
+    {
+      "Function": "notContains"
+    },
+    {
+      "Function": "notEmpty"
+    },
+    {
+      "Function": "notEnds"
+    },
+    {
+      "Function": "notEquals"
+    },
+    {
+      "Function": "notGreater"
+    },
+    {
+      "Function": "notGreaterEquals"
+    },
+    {
+      "Function": "notIs"
+    },
+    {
+      "Function": "notLess"
+    },
+    {
+      "Function": "notLessEquals"
+    },
+    {
+      "Function": "notMatch"
+    },
+    {
+      "Function": "notStarts"
+    },
+    {
+      "Function": "notType"
+    },
+    {
+      "Function": "notWhere"
+    },
+    {
+      "Function": "or"
+    },
+    {
+      "Function": "orBegin"
+    },
+    {
+      "Function": "orBetween"
+    },
+    {
+      "Function": "orBetweenEquals"
+    },
+    {
+      "Function": "orContains"
+    },
+    {
+      "Function": "orEmpty"
+    },
+    {
+      "Function": "orEnds"
+    },
+    {
+      "Function": "orEquals"
+    },
+    {
+      "Function": "orGreater"
+    },
+    {
+      "Function": "orGreaterEquals"
+    },
+    {
+      "Function": "orIs"
+    },
+    {
+      "Function": "orLess"
+    },
+    {
+      "Function": "orLessEquals"
+    },
+    {
+      "Function": "orMatch"
+    },
+    {
+      "Function": "orNot"
+    },
+    {
+      "Function": "orNotBetween"
+    },
+    {
+      "Function": "orNotBetweenEquals"
+    },
+    {
+      "Function": "orNotContains"
+    },
+    {
+      "Function": "orNotEmpty"
+    },
+    {
+      "Function": "orNotEnds"
+    },
+    {
+      "Function": "orNotEquals"
+    },
+    {
+      "Function": "orNotGreater"
+    },
+    {
+      "Function": "orNotGreaterEquals"
+    },
+    {
+      "Function": "orNotIs"
+    },
+    {
+      "Function": "orNotLess"
+    },
+    {
+      "Function": "orNotLessEquals"
+    },
+    {
+      "Function": "orNotMatch"
+    },
+    {
+      "Function": "orNotStarts"
+    },
+    {
+      "Function": "orNotType"
+    },
+    {
+      "Function": "orNotWhere"
+    },
+    {
+      "Function": "orStarts"
+    },
+    {
+      "Function": "orType"
+    },
+    {
+      "Function": "orWhere"
+    },
+    {
+      "Function": "pselect"
+    },
+    {
+      "Function": "query"
+    },
+    {
+      "Function": "removed"
+    },
+    {
+      "Function": "reverse"
+    },
+    {
+      "Function": "select"
+    },
+    {
+      "Function": "setWhere"
+    },
+    {
+      "Function": "skip"
+    },
+    {
+      "Function": "skipTake"
+    },
+    {
+      "Function": "skipWhile"
+    },
+    {
+      "Function": "sort"
+    },
+    {
+      "Function": "starts"
+    },
+    {
+      "Function": "stream"
+    },
+    {
+      "Function": "streamFn"
+    },
+    {
+      "Function": "sum"
+    },
+    {
+      "Function": "sumBy"
+    },
+    {
+      "Function": "tail"
+    },
+    {
+      "Function": "take"
+    },
+    {
+      "Function": "takeWhile"
+    },
+    {
+      "Function": "toDate"
+    },
+    {
+      "Function": "type"
+    },
+    {
+      "Function": "union"
+    },
+    {
+      "Function": "useCase"
+    },
+    {
+      "Function": "where"
+    }
+  ]
+]

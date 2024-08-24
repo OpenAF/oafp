@@ -1,0 +1,1151 @@
+[
+  [
+    {
+      "Option": "-h",
+      "Description": "Show this document"
+    },
+    {
+      "Option": "help",
+      "Description": "Alternative way to show this document or others (e.g. filters, template)"
+    },
+    {
+      "Option": "file",
+      "Description": "The file to parse (if not provide stdin is used)"
+    },
+    {
+      "Option": "cmd",
+      "Description": "Alternative to file and stdin to execute a command (e.g. kubectl, docker) to get the file contents"
+    },
+    {
+      "Option": "data",
+      "Description": "Alternative to file, stdin and cmd to provide data input"
+    },
+    {
+      "Option": "out",
+      "Description": "The output format (default: ctree)"
+    },
+    {
+      "Option": "in",
+      "Description": "The input type (if not provided it will try to be auto-detected)"
+    },
+    {
+      "Option": "from",
+      "Description": "An OpenAF nLinq path expression to filter output"
+    },
+    {
+      "Option": "sql",
+      "Description": "A SQL expression to filter output"
+    },
+    {
+      "Option": "sqlfilter",
+      "Description": "Enables the forcing of the sql filter parser (values: auto, simple, advanced)"
+    },
+    {
+      "Option": "sqlfiltertables",
+      "Description": "A JSON/SLON array composed of 'table' name and 'path' to each table's data to be used with the sqlfilter"
+    },
+    {
+      "Option": "path",
+      "Description": "A JMESPath expression to filter output"
+    },
+    {
+      "Option": "csv",
+      "Description": "If type=csv, the CSV options to use"
+    },
+    {
+      "Option": "outkey",
+      "Description": "If defined the map/list output will be prefix with the provided key"
+    },
+    {
+      "Option": "outfile",
+      "Description": "If defined all output will be written to the provided file"
+    },
+    {
+      "Option": "outfileappend",
+      "Description": "If 'true' and outfile=true the output will be appended on the provided file"
+    },
+    {
+      "Option": "pause",
+      "Description": "If 'true' will try to pause contents in alternative to _less -r_"
+    },
+    {
+      "Option": "color",
+      "Description": "If 'true' will force colored output if available"
+    },
+    {
+      "Option": "url",
+      "Description": "Retrieves data from the provided URL"
+    },
+    {
+      "Option": "urlmethod",
+      "Description": "If 'url' is provided defines the http method to use if different from GET"
+    },
+    {
+      "Option": "urlparams",
+      "Description": "If 'url' is provided extra parameters (equivalent to OpenAF's $rest) can be provided in JSON/SLON"
+    },
+    {
+      "Option": "urldata",
+      "Description": "If 'url' is provided a JSON/SLON/text data can be provided"
+    },
+    {
+      "Option": "chs",
+      "Description": "A JSON/SLON map or array composed of an OpenAF channel 'name', 'type' and optional 'options'"
+    },
+    {
+      "Option": "loop",
+      "Description": "If defined will loop the processing by the number of seconds provided"
+    },
+    {
+      "Option": "loopcls",
+      "Description": "If 'true' and loop is defined it will clear the screen (or file) on each loop cycle"
+    },
+    {
+      "Option": "libs",
+      "Description": "Comma delimited list of installed OpenAF's oPacks to consider to extend oafp's inputs, transformations and outputs"
+    },
+    {
+      "Option": "-examples",
+      "Description": "Will access an internet based list of oafp examples and list them"
+    },
+    {
+      "Option": "examples",
+      "Description": "Will search the provided keyword or 'category::subcategory' in the internet based list of oafp examples"
+    },
+    {
+      "Option": "version",
+      "Description": "Alternative way to change the input to a map with the tool's version"
+    },
+    {
+      "Option": "-v",
+      "Description": "Changes the input to a map with the tool's version info"
+    }
+  ],
+  [
+    {
+      "Input type": "ask",
+      "Description": "Interactively asks questions to an user (using JSON/SLON for OpenAF's askStruct)"
+    },
+    {
+      "Input type": "base64",
+      "Description": "A base64 text format"
+    },
+    {
+      "Input type": "ch",
+      "Description": "An OpenAF channel format"
+    },
+    {
+      "Input type": "csv",
+      "Description": "A CSV format (auto-detected)"
+    },
+    {
+      "Input type": "db",
+      "Description": "A JDBC query to a database"
+    },
+    {
+      "Input type": "gb64json",
+      "Description": "Equivalent to in=base64 and base64gzip=true"
+    },
+    {
+      "Input type": "hsperf",
+      "Description": "A Java hsperfdata* file (requires file=hsperfdata_user/123)"
+    },
+    {
+      "Input type": "ini",
+      "Description": "INI/Properties format"
+    },
+    {
+      "Input type": "json",
+      "Description": "A JSON format (auto-detected)"
+    },
+    {
+      "Input type": "jsonschema",
+      "Description": "Given a JSON schema format tries to generate sample data for it"
+    },
+    {
+      "Input type": "jwt",
+      "Description": "Decodes and/or verifies a JSON Web Token (JWT)"
+    },
+    {
+      "Input type": "lines",
+      "Description": "A given string/text to be processed line by line"
+    },
+    {
+      "Input type": "llm",
+      "Description": "A large language model input (uses 'llmenv' or 'llmoptions')"
+    },
+    {
+      "Input type": "llmmodels",
+      "Description": "Lists the large language models available (using 'llmenv' or 'llmoptions')"
+    },
+    {
+      "Input type": "ls",
+      "Description": "Returns a list of files and folders for a given directory path or zip or tar or tgz file"
+    },
+    {
+      "Input type": "md",
+      "Description": "A Markdown format"
+    },
+    {
+      "Input type": "mdtable",
+      "Description": "A Markdown table format"
+    },
+    {
+      "Input type": "ndjson",
+      "Description": "A NDJSON format"
+    },
+    {
+      "Input type": "oaf",
+      "Description": "Takes an OpenAF scripting code to execute and use the result as input"
+    },
+    {
+      "Input type": "oafp",
+      "Description": "Takes a JSON/SLON map input as parameters for calling a sub oafp process (arrays will call multiple oafp processes)"
+    },
+    {
+      "Input type": "openmetrics",
+      "Description": "An OpenMetrics/Prometheus compatible format"
+    },
+    {
+      "Input type": "raw",
+      "Description": "Passes the input directly to transforms and output"
+    },
+    {
+      "Input type": "rawhex",
+      "Description": "Tries to read the input char by char converting into lines with the hexadecimal representation"
+    },
+    {
+      "Input type": "sh",
+      "Description": "Executes a shell command returning stdout, stderr and exitcode as a map"
+    },
+    {
+      "Input type": "slon",
+      "Description": "A SLON format (auto-detected)"
+    },
+    {
+      "Input type": "sql",
+      "Description": "One or more SQLs statements to AST (Abstract Syntax Tree) or beautified SQL"
+    },
+    {
+      "Input type": "toml",
+      "Description": "TOML format"
+    },
+    {
+      "Input type": "xls",
+      "Description": "A XLSx compatible file (requires file=abc.xlsx)"
+    },
+    {
+      "Input type": "xml",
+      "Description": "An XML format (auto-detected)"
+    },
+    {
+      "Input type": "yaml",
+      "Description": "A YAML format (auto-detected)"
+    }
+  ],
+  [
+    {
+      "Option": "arraytomap",
+      "Type": "Boolean",
+      "Description": "If true will try to convert the input array to a map (see arraytomapkey, arraytomapkeepkey)"
+    },
+    {
+      "Option": "arraytomapkeepkey",
+      "Type": "Boolean",
+      "Description": "If true and arraytomap=true the defined arraytomapkey won't be removed from each map"
+    },
+    {
+      "Option": "arraytomapkey",
+      "Type": "String",
+      "Description": "For arraytomap=true defines the name of the map property that will be each element key (see arraytomapkeepkey)"
+    },
+    {
+      "Option": "cmlt",
+      "Type": "Boolean",
+      "Description": "If true will accumulate the input values into an output array (useful with loop)"
+    },
+    {
+      "Option": "correcttypes",
+      "Type": "Boolean",
+      "Description": "If true will try to convert alpha-numeric field values with just numbers to number fields, string date fields to dates and boolean fields"
+    },
+    {
+      "Option": "denormalize",
+      "Type": "String",
+      "Description": "Reverses 'normalize' given a JSON/SLON map with a normalize schema (see OpenAF's ow.ai.normalize.withSchema)"
+    },
+    {
+      "Option": "diff",
+      "Type": "String",
+      "Description": "A JSON/SLON map with a 'a' path and a 'b' path to compare and provide diff data"
+    },
+    {
+      "Option": "flatmap",
+      "Type": "Boolean",
+      "Description": "If true a map structure will be flat to just one level (optionally flatmapsep=[char] to use a different separator that '.')"
+    },
+    {
+      "Option": "getlist",
+      "Type": "Number",
+      "Description": "If true will try to find the first array on the input value (if number will stop only after the number of checks)"
+    },
+    {
+      "Option": "jsonschema",
+      "Type": "String",
+      "Description": "The JSON schema file to use for validation returning a map with a boolean valid and errors if exist"
+    },
+    {
+      "Option": "jsonschemacmd",
+      "Type": "String",
+      "Description": "Alternative option to 'jsonschema' to retrieve the JSON schema data to use for validation returning a map with a boolean valid and errors if exist"
+    },
+    {
+      "Option": "jsonschemagen",
+      "Type": "Boolean",
+      "Description": "If true will taken the provided input map as an example to generate an output json schema"
+    },
+    {
+      "Option": "kmeans",
+      "Type": "Number",
+      "Description": "Given an array of 'normalized' data will cluster data into the number of centroids provided"
+    },
+    {
+      "Option": "llmcontext",
+      "Type": "String",
+      "Description": "If 'llmprompt' is defined provides extra context to the model regarding the input data"
+    },
+    {
+      "Option": "llmprompt",
+      "Type": "String",
+      "Description": "A large language model prompt to transform the input data to json (uses the same input options 'llmenv' and 'llmoptions')"
+    },
+    {
+      "Option": "maptoarray",
+      "Type": "Boolean",
+      "Description": "If true will try to convert the input map to an array (see maptoarraykey)"
+    },
+    {
+      "Option": "maptoarraykey",
+      "Type": "String",
+      "Description": "If maptoarray=true defines the name of the map property that will hold the key for each map in the new array"
+    },
+    {
+      "Option": "merge",
+      "Type": "Boolean",
+      "Description": "If input is a list/array of maps will merge each element into one map"
+    },
+    {
+      "Option": "normalize",
+      "Type": "String",
+      "Description": "A JSON/SLON map with a normalize schema (see OpenAF's ow.ai.normalize.withSchema)"
+    },
+    {
+      "Option": "regression",
+      "Type": "String",
+      "Description": "Performs a regression (linear, log, exp, poly or power) over a provided list/array of numeric values"
+    },
+    {
+      "Option": "removedups",
+      "Type": "Boolean",
+      "Description": "If true will try to remove duplicates from an array"
+    },
+    {
+      "Option": "removenulls",
+      "Type": "Boolean",
+      "Description": "If true will try to remove nulls and undefined values from a map or array"
+    },
+    {
+      "Option": "searchkeys",
+      "Type": "String",
+      "Description": "Will return a map with only keys that match the provided string"
+    },
+    {
+      "Option": "searchvalues",
+      "Type": "String",
+      "Description": "Will return am map with only values that match the provided string"
+    },
+    {
+      "Option": "sortmapkeys",
+      "Type": "Boolean",
+      "Description": "If true the resulting map keys will be sorted"
+    },
+    {
+      "Option": "trim",
+      "Type": "Boolean",
+      "Description": "If true all the strings of the result map/list will be trimmed"
+    }
+  ],
+  [
+    {
+      "Output format": "base64",
+      "Description": "A base64 text format"
+    },
+    {
+      "Output format": "ch",
+      "Description": "An OpenAF channel format"
+    },
+    {
+      "Output format": "chart",
+      "Description": "A line-chart like chart (usefull together with 'loop')"
+    },
+    {
+      "Output format": "cjson",
+      "Description": "A JSON forcely colored format"
+    },
+    {
+      "Output format": "cmd",
+      "Description": "Executes a command for each input data entry"
+    },
+    {
+      "Output format": "cslon",
+      "Description": "A SLON format forcely colored"
+    },
+    {
+      "Output format": "csv",
+      "Description": "A CSV format (only for list outputs)"
+    },
+    {
+      "Output format": "ctable",
+      "Description": "A table-like forcely colored format (only for list outputs)"
+    },
+    {
+      "Output format": "ctree",
+      "Description": "A tree-like forcely colored format"
+    },
+    {
+      "Output format": "db",
+      "Description": "Output to a JDBC database"
+    },
+    {
+      "Output format": "envs",
+      "Description": "Tries to output the input data as OS environment variables setting commands"
+    },
+    {
+      "Output format": "gb64json",
+      "Description": "Equivalent to out=base64 and base64gzip=true"
+    },
+    {
+      "Output format": "grid",
+      "Description": "A multiple output ascii grid (usefull together with 'loop')"
+    },
+    {
+      "Output format": "html",
+      "Description": "An HTML format"
+    },
+    {
+      "Output format": "ini",
+      "Description": "A INI/Properties format (arrays are not supported)"
+    },
+    {
+      "Output format": "json",
+      "Description": "A JSON format without spacing"
+    },
+    {
+      "Output format": "jwt",
+      "Description": "Signs map data into a JSON Web Token (JWT)"
+    },
+    {
+      "Output format": "lines",
+      "Description": "Given an array of strings prints each line"
+    },
+    {
+      "Output format": "log",
+      "Description": "If input has Logstash compatible fields outputs a human-readable log"
+    },
+    {
+      "Output format": "map",
+      "Description": "A rectangle map format"
+    },
+    {
+      "Output format": "md",
+      "Description": "A Markdown format"
+    },
+    {
+      "Output format": "mdtable",
+      "Description": "A Markdown table format (only for list outputs)"
+    },
+    {
+      "Output format": "mdyaml",
+      "Description": "A multi document YAML format (only for list outputs)"
+    },
+    {
+      "Output format": "ndjson",
+      "Description": "A NDJSON format"
+    },
+    {
+      "Output format": "openmetrics",
+      "Description": "Converts a map or list to OpenMetrics/Prometheus compatible format"
+    },
+    {
+      "Output format": "pjson",
+      "Description": "A JSON format with spacing (equivalent to prettyjson)"
+    },
+    {
+      "Output format": "prettyjson",
+      "Description": "A JSON format with spacing"
+    },
+    {
+      "Output format": "pxml",
+      "Description": "Tries to output the input data into pretty xml"
+    },
+    {
+      "Output format": "raw",
+      "Description": "Tries to output the internal representation (string or json) of the input transformed data"
+    },
+    {
+      "Output format": "schart",
+      "Description": "A static line-chart like chart (for a fixed list/array of values)"
+    },
+    {
+      "Output format": "slon",
+      "Description": "A SLON format"
+    },
+    {
+      "Output format": "sql",
+      "Description": "Outputs a series of SQL statements for an input list/array data"
+    },
+    {
+      "Output format": "stable",
+      "Description": "A table-like format with separation (only for list outputs)"
+    },
+    {
+      "Output format": "table",
+      "Description": "A table-like format without size constraints (only for list outputs)"
+    },
+    {
+      "Output format": "template",
+      "Description": "A Handlebars template format"
+    },
+    {
+      "Output format": "toml",
+      "Description": "A TOML format (arrays will have outkey=list)"
+    },
+    {
+      "Output format": "tree",
+      "Description": "A tree-like format"
+    },
+    {
+      "Output format": "xls",
+      "Description": "A XLSx output format"
+    },
+    {
+      "Output format": "xml",
+      "Description": "An XML format"
+    },
+    {
+      "Output format": "yaml",
+      "Description": "A YAML format"
+    }
+  ],
+  [
+    {
+      "Option": "inch",
+      "Type": "String",
+      "Description": "A JSON/SLON configuration string with type and options/url"
+    },
+    {
+      "Option": "inchall",
+      "Type": "Boolean",
+      "Description": "A boolean flag to determine if the input map will be used for a getAll query"
+    }
+  ],
+  [
+    {
+      "Option": "indbjdbc",
+      "Type": "String",
+      "Description": "The JDBC URL to access the input database"
+    },
+    {
+      "Option": "indbuser",
+      "Type": "String",
+      "Description": "The JDBC access user"
+    },
+    {
+      "Option": "indbpass",
+      "Type": "String",
+      "Description": "The JDBC access password"
+    },
+    {
+      "Option": "indbtimeout",
+      "Type": "String",
+      "Description": "The JDBC access timeout"
+    },
+    {
+      "Option": "indblib",
+      "Type": "String",
+      "Description": "Use a JDBC driver oPack generated by ojob.io/db/getDriver"
+    },
+    {
+      "Option": "indbexec",
+      "Type": "Boolean",
+      "Description": "If true the input SQL is not a query but a DML statement"
+    }
+  ],
+  [
+    {
+      "Option": "jsondesc",
+      "Type": "Boolean",
+      "Description": "If true the output will be a list of JSON paths of the original json."
+    },
+    {
+      "Option": "jsonprefix",
+      "Type": "String",
+      "Description": "Given the 'jsondesc=true' output list you can use each to filter big json files by prefix."
+    }
+  ],
+  [
+    {
+      "Option": "injwtverify",
+      "Type": "Boolean",
+      "Description": "If true the boolean entry '__verified' will be added to the result."
+    },
+    {
+      "Option": "injwtsecret",
+      "Type": "String",
+      "Description": "A string secret for using HS256, HS384 or HS512 depending on secret size used to verify."
+    },
+    {
+      "Option": "injwtpubkey",
+      "Type": "String",
+      "Description": "A public key file used to verify (might require specifying the injwtalg)."
+    },
+    {
+      "Option": "injwtalg",
+      "Type": "String",
+      "Description": "Specifies the algorithm used to verify the JWT (HS* or RSA by default). Depends on available algorithms on the current JVM."
+    },
+    {
+      "Option": "injwtraw",
+      "Type": "Boolean",
+      "Description": "If true it won't try to convert Unix epoch timestamps to dates."
+    }
+  ],
+  [
+    {
+      "Option": "linesjoin",
+      "Type": "Boolean",
+      "Description": "If true it will return an array with each processed line"
+    },
+    {
+      "Option": "linesvisual",
+      "Type": "Boolean",
+      "Description": "If true it will try to determine header and column position from spaces and tabs"
+    },
+    {
+      "Option": "linesvisualsepre",
+      "Type": "String",
+      "Description": "Regular expression representing the separator between columns when linesvisual=true (defaults to ' \\\\s+')"
+    }
+  ],
+  [
+    {
+      "Option": "lsext",
+      "Type": "String",
+      "Description": "Forces the file format parsing of the provided path or file (between zip, tar, tgz)"
+    },
+    {
+      "Option": "lsrecursive",
+      "Type": "Boolean",
+      "Description": "Will list all files and folders recursively (for folders)"
+    },
+    {
+      "Option": "lsposix",
+      "Type": "Boolean",
+      "Description": "Tries to add extra posix data if available (for ZIP files)"
+    }
+  ],
+  [
+    {
+      "Option": "inmdtablejoin",
+      "Type": "Boolean",
+      "Description": "Scans an entire markdown input for tables and returns an array with the data of each markdown table"
+    }
+  ],
+  [
+    {
+      "Option": "ndjsonjoin",
+      "Type": "Boolean",
+      "Description": "If true will join the ndjson records to build an output array"
+    },
+    {
+      "Option": "ndjsonfilter",
+      "Type": "Boolean",
+      "Description": "If true each line is interpreted as an array before filters execute (this allows to filter json records on a ndjson)"
+    }
+  ],
+  [
+    {
+      "Option": "inrawhexline",
+      "Type": "Number",
+      "Description": "Number of hexadecimal characters per returned array line"
+    }
+  ],
+  [
+    {
+      "Option": "inshformat",
+      "Type": "String",
+      "Description": "The format to parse stdout and stderr between raw, yaml or json (default)"
+    }
+  ],
+  [
+    {
+      "Option": "sqlparse",
+      "Type": "Boolean",
+      "Description": "If true instead of returning a SQL AST representation it will beautify the SQL statement(s)"
+    },
+    {
+      "Option": "sqloptions",
+      "Type": "String",
+      "Description": "A JSON/SLON map with options for sqlparse=true"
+    }
+  ],
+  [
+    {
+      "Option": "xlssheet",
+      "Type": "String",
+      "Description": "The name of sheet to consider (default to the first sheet)"
+    },
+    {
+      "Option": "xlsevalformulas",
+      "Type": "Boolean",
+      "Description": "If false the existing formulas won't be evaluated (defaults to true)"
+    },
+    {
+      "Option": "xlscol",
+      "Type": "String",
+      "Description": "The column on the sheet where a table should be detected (e.g. \"A\")"
+    },
+    {
+      "Option": "xlsrow",
+      "Type": "Number",
+      "Description": "The row on the sheet where a table should be detected (e.g. 1)"
+    }
+  ],
+  [
+    {
+      "Option": "xmlignored",
+      "Type": "String",
+      "Description": "A comma-separated list of XML tags to ignore"
+    },
+    {
+      "Option": "xmlprefix",
+      "Type": "String",
+      "Description": "A prefix to add to all XML tags"
+    },
+    {
+      "Option": "xmlfiltertag",
+      "Type": "Boolean",
+      "Description": "If true will filter the XML tags"
+    }
+  ],
+  [
+    {
+      "Option": "base64gzip",
+      "Type": "Boolean",
+      "Description": "If true the contents will thet gzip/gunzip respectively to reduce the size of the base64 output"
+    }
+  ],
+  [
+    {
+      "Option": "format",
+      "Type": "String",
+      "Description": "You can choose between DEFAULT, EXCEL, INFORMIX_UNLOAD, INFORMIX_UNLOAD_CSV, MYSQL, RFC4180, ORACLE, POSTGRESQL_CSV, POSTGRESQL_TEXT and TDF"
+    },
+    {
+      "Option": "withHeader",
+      "Type": "Boolean",
+      "Description": "If true tries to automatically use the available header"
+    },
+    {
+      "Option": "withHeaders",
+      "Type": "Array",
+      "Description": "A list of headers to use with the corresponding order"
+    },
+    {
+      "Option": "quoteMode",
+      "Type": "String",
+      "Description": "You can choose between ALL, ALL_NON_NULL, MINIMAL, NON_NUMERIC and NONE."
+    },
+    {
+      "Option": "withDelimiter",
+      "Type": "String",
+      "Description": "A single character as a custom delimiter"
+    },
+    {
+      "Option": "withEscape",
+      "Type": "String",
+      "Description": "A single character as a custom escape"
+    },
+    {
+      "Option": "withNullString",
+      "Type": "String",
+      "Description": "String to use as representation of null values"
+    }
+  ],
+  [
+    {
+      "Option": "cmltch",
+      "Type": "String",
+      "Description": "A JSON/SLON OpenAF channel configuration string with type and options/url (defaults to simple)"
+    },
+    {
+      "Option": "cmltsize",
+      "Type": "Number",
+      "Description": "The number of input data values to keep (default 100). If -1 it will keep without a limit"
+    }
+  ],
+  [
+    {
+      "Option": "difftheme",
+      "Type": "String",
+      "Description": "A JSON/SLON map with the colors to use if color = true"
+    },
+    {
+      "Option": "diffnlines",
+      "Type": "Boolean",
+      "Description": "If true will append each line with a line number of the final result of the differences between 'a' and 'b' (just for rough reference)"
+    },
+    {
+      "Option": "diffwords",
+      "Type": "Boolean",
+      "Description": "If true and the input is text based will perform the diff at the word level"
+    },
+    {
+      "Option": "diffwordswithspace",
+      "Type": "Boolean",
+      "Description": "If true and the input is text based will perform the diff at the word + spaces level"
+    },
+    {
+      "Option": "difflines",
+      "Type": "Boolean",
+      "Description": "If true and the input is text based will perform the diff at the lines level"
+    },
+    {
+      "Option": "diffsentences",
+      "Type": "Boolean",
+      "Description": "If true and the input is text based will perfom the diff at the sentence level"
+    },
+    {
+      "Option": "diffchars",
+      "Type": "Boolean",
+      "Description": "If true and the input is text based will perform the diff at the char level"
+    }
+  ],
+  [
+    {
+      "Option": "llmenv",
+      "Type": "String",
+      "Description": "The environment variable containing the value of 'llmoptions' (defaults to OAFP_MODEL)"
+    },
+    {
+      "Option": "llmoptions",
+      "Type": "String",
+      "Description": "A JSON or SLON string with OpenAF's LLM 'type' (e.g. openai/ollama), 'model' name, 'timeout' in ms for answersm, 'url' for the ollama type or 'key' for openai type"
+    },
+    {
+      "Option": "llmconversation",
+      "Type": "String",
+      "Description": "File to keep the LLM conversation"
+    },
+    {
+      "Option": "llmimage",
+      "Type": "String",
+      "Description": "For visual models you can provide a base64 image or an image file path or an URL of an image"
+    }
+  ],
+  [
+    {
+      "Option": "regressionpath",
+      "Type": "String",
+      "Description": "The path to the array of y values for the regression formulas"
+    },
+    {
+      "Option": "regressionx",
+      "Type": "String",
+      "Description": "Optional path to the array of x values for the regression formulas (defaults to 1, 2, 3, ...)"
+    },
+    {
+      "Option": "regressionoptions",
+      "Type": "String",
+      "Description": "A JSON/SLON configuration with order (defaults to 2) and/or precision (defaults to 5)"
+    },
+    {
+      "Option": "regressionforecast",
+      "Type": "String",
+      "Description": "Optional path to an array of x values for which to forecast the corresponding y"
+    }
+  ],
+  [
+    {
+      "Option": "ch",
+      "Type": "String",
+      "Description": "A JSON/SLON configuration string with type and options/url"
+    },
+    {
+      "Option": "chkey",
+      "Type": "String",
+      "Description": "A comma delimited list of map keys to build a key from each array value"
+    },
+    {
+      "Option": "chunset",
+      "Type": "Boolean",
+      "Description": "If true the input data will be used to unset data on the output channel instead of set"
+    }
+  ],
+  [
+    {
+      "Option": "chart",
+      "Type": "String",
+      "Description": "Chart definition in the format \"<unit> <path:color:legend>... [-min:0] [-max:100]\". Unit is either 'int', 'dec1', 'dec2', 'dec3', 'dec', 'bytes' or 'si'. Path is equivalent to the 'path' filter (quotes should be used for non-basic 'path' expressions)."
+    },
+    {
+      "Option": "chartcls",
+      "Type": "Boolean",
+      "Description": "If true the screen will be cleared for each execution"
+    }
+  ],
+  [
+    {
+      "Option": "outcmd",
+      "Type": "String",
+      "Description": "The command to execute receiving, in pipeline, each input entry in json"
+    },
+    {
+      "Option": "outcmdjoin",
+      "Type": "Boolean",
+      "Description": "If true and if input is an array the entire array will be the input entry"
+    },
+    {
+      "Option": "outcmdseq",
+      "Type": "Boolean",
+      "Description": "If true and if input is an array the commands will be executed in sequence"
+    },
+    {
+      "Option": "outcmdnl",
+      "Type": "Boolean",
+      "Description": "If true each command execution output will be appended with a new-line"
+    },
+    {
+      "Option": "outcmdparam",
+      "Type": "Boolean",
+      "Description": "If true the input entry will be replaced on the 'outcmd' where '{}' is found"
+    }
+  ],
+  [
+    {
+      "Option": "dbjdbc",
+      "Type": "String",
+      "Description": "The JDBC URL to access the input database"
+    },
+    {
+      "Option": "dbuser",
+      "Type": "String",
+      "Description": "The JDBC access user"
+    },
+    {
+      "Option": "dbpass",
+      "Type": "String",
+      "Description": "The JDBC access password"
+    },
+    {
+      "Option": "dbtimeout",
+      "Type": "String",
+      "Description": "The JDBC access timeout"
+    },
+    {
+      "Option": "dblib",
+      "Type": "String",
+      "Description": "Use a JDBC driver oPack generated by ojob.io/db/getDriver"
+    },
+    {
+      "Option": "dbtable",
+      "Type": "String",
+      "Description": "The db table in which should be inserted ('data' by default)"
+    },
+    {
+      "Option": "dbnocreate",
+      "Type": "Boolean",
+      "Description": "If true no table creation command will be executed (if the table already exists set this to true)"
+    },
+    {
+      "Option": "dbicase",
+      "Type": "Boolean",
+      "Description": "If true table and field names will try to ignore case"
+    },
+    {
+      "Option": "dbbatchsize",
+      "Type": "Number",
+      "Description": "If defined it will changed the default batch data insert process"
+    }
+  ],
+  [
+    {
+      "Option": "envscmd",
+      "Type": "String",
+      "Description": "If defined will output the provided command to set each environment variable (defaults to 'export' or 'set' in Windows)"
+    },
+    {
+      "Option": "envsprefix",
+      "Type": "String",
+      "Description": "If defined uses the provided prefix for each environment variable key (defaults to '_OAFP_')"
+    }
+  ],
+  [
+    {
+      "Option": "jwtsecret",
+      "Type": "String",
+      "Description": "A string secret for using HS256, HS384 or HS512 depending on secret size used to sign the JWT."
+    },
+    {
+      "Option": "jwtprivkey",
+      "Type": "String",
+      "Description": "A private key file used to sign (might require specifying the jwtalg)."
+    },
+    {
+      "Option": "jwtalg",
+      "Type": "String",
+      "Description": "Specifies the algorithm used to sign the JWT (HS* or RSA by default). Depends on available algorithms on the current JVM."
+    }
+  ],
+  [
+    {
+      "Option": "grid",
+      "Type": "String",
+      "Description": "A JSON/SLON configuration composed of an array with another array per grid line. Each line array should have a map per column (see below for the map options)"
+    }
+  ],
+  [
+    {
+      "Option": "htmlcompact",
+      "Type": "Boolean",
+      "Description": "Boolean flag that if true and the input data is a string or markdown the generated html will have a visual compact width format"
+    },
+    {
+      "Option": "htmlpart",
+      "Type": "Boolean",
+      "Description": "Boolean flag that if true and the input data is a string or markdown the generated html will be partial and not the complete file"
+    },
+    {
+      "Option": "htmlopen",
+      "Type": "Boolean",
+      "Description": "Boolean that if false won't try to open the output contents in a browser (defaults to true)"
+    },
+    {
+      "Option": "htmlwait",
+      "Type": "Number",
+      "Description": "Amount of ms, when htmlopen=true, to wait for the system browser to open an render the html output"
+    }
+  ],
+  [
+    {
+      "Option": "logprintall",
+      "Type": "Boolean",
+      "Description": "If true all original non data (string) lines will be output"
+    }
+  ],
+  [
+    {
+      "Option": "mdtemplate",
+      "Type": "Boolean",
+      "Description": "If true will apply a template output without any input data"
+    }
+  ],
+  [
+    {
+      "Option": "metricsprefix",
+      "Type": "String",
+      "Description": "The prefix to use for each metric (defaults to 'metrics')"
+    },
+    {
+      "Option": "metricstimestamp",
+      "Type": "Number",
+      "Description": "Unix Epoch in seconds for each metric"
+    }
+  ],
+  [
+    {
+      "Option": "schart",
+      "Type": "String",
+      "Description": "Chart definition in the format \"<unit> <path:color:legend>... [-min:0] [-max:100]\". Unit is either 'int', 'dec1', 'dec2', 'dec3', 'dec', 'bytes' or 'si'. Path is equivalent to the 'path' filter (quotes should be used for non-basic 'path' expressions)."
+    }
+  ],
+  [
+    {
+      "Option": "sqltable",
+      "Type": "String",
+      "Description": "The table name to use for the SQL statements (defaults to 'data')"
+    },
+    {
+      "Option": "sqlicase",
+      "Type": "Boolean",
+      "Description": "If true the table and fields names won't be double-quoted"
+    },
+    {
+      "Option": "sqlnocreate",
+      "Type": "Boolean",
+      "Description": "If true the create table statement won't be generated"
+    }
+  ],
+  [
+    {
+      "Option": "template",
+      "Type": "String",
+      "Description": "A file path to a HandleBars' template"
+    },
+    {
+      "Option": "templatepath",
+      "Type": "String",
+      "Description": "If 'template' is not provided a path to the template definition (pre-transformation)"
+    },
+    {
+      "Option": "templatedata",
+      "Type": "String",
+      "Description": "If defined the template data will be retrieved from the provided path"
+    }
+  ],
+  [
+    {
+      "Option": "xlsfile",
+      "Type": "String",
+      "Description": "The output filename (if not defined a temporary file will be used to open with the OS's Excel-compatible application)"
+    },
+    {
+      "Option": "xlssheet",
+      "Type": "String",
+      "Description": "The name of sheet to use (default to 'data')"
+    },
+    {
+      "Option": "xlsformat",
+      "Type": "String",
+      "Description": "A SLON or JSON string with the formatting of the output file (e.g. (bold: true, borderBottom: \"medium\", borderBottomColor: \"red\"))"
+    },
+    {
+      "Option": "xlsopen",
+      "Type": "Boolean",
+      "Description": "If false it won't try to open the OS's Excel-compatible application (defaults to true)"
+    },
+    {
+      "Option": "xlsopenwait",
+      "Type": "Number",
+      "Description": "The amount of time, in ms, to keep the temporary file for the OS's Excel-compatible application to start and open the file"
+    }
+  ],
+  [
+    {
+      "Help": "help=filters",
+      "Description": "Provides more details regarding the use of \"path=\", \"from=\" and \"sql=\""
+    },
+    {
+      "Help": "help=template",
+      "Description": "Provides more details regarding the use of \"output=template\""
+    },
+    {
+      "Help": "help=examples",
+      "Description": "Provide several examples"
+    },
+    {
+      "Help": "help=readme",
+      "Description": "Returns this document"
+    }
+  ]
+]
