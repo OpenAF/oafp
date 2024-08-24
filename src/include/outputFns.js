@@ -84,6 +84,13 @@ var _outputFns = new Map([
         else
             _print(stringify(r))
     }],
+    ["lines", (r, options) => {
+        if (isArray(r)) {
+            r.forEach(_r => _print(_r))
+        } else {
+            _print(r)
+        }
+    }],
     ["ini", (r, options) => {
         if (!isString(r)) {
             ow.loadJava()
