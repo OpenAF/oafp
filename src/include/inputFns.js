@@ -229,6 +229,7 @@ var _inputFns = new Map([
             __con.getTerminal().settings.set("-icanon min 1 -echo")
             _d = askStruct(_res)
             __con.getTerminal().settings.set("icanon echo")
+            print("")
         }
         _$o(_d, options)
     }],
