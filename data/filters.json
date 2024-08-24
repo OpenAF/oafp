@@ -217,6 +217,12 @@
       "Example": "group_by(files, 'isFile, permissions')"
     },
     {
+      "Function": "if(cond, then, else)",
+      "OpenAF": "20240828",
+      "Description": "Returns 'then' or 'else' depending on the boolean result of 'cond'",
+      "Example": "if(answer=='n','Hupps...','GREAT!')"
+    },
+    {
       "Function": "inc(name)",
       "OpenAF": "20240428",
       "Description": "Increments the counter 'name' provided returning the counter value",

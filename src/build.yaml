@@ -38,7 +38,7 @@ init:
 
 ojob:
   opacks      :
-  - openaf: 20231222
+  - openaf: 20240824
   - GoogleCompiler
   catch       : printErrnl("[" + job.name + "] "); if (isDef(exception.javaException)) exception.javaException.printStackTrace(); else printErr(exception)
   logToConsole: true   # to change when finished
@@ -53,6 +53,7 @@ jobs:
   - Compile source
   - Remove shebang
   - Add header on compile
+  - Generate data
 
 # ==============
 - name : Op Pack
@@ -176,6 +177,19 @@ jobs:
     .prefix("compiler")
     .get()
 
+# --------------------
+- name : Generate data
+  lang : shell
+  exec : |
+    echo "Generating usage.json..."
+    oafp in=mdtable inmdtablejoin=true file={{path}}/docs/USAGE.md out=pjson > {{path}}/../data/usage.json
+
+    echo "Generating filters.json..."
+    oafp in=mdtable inmdtablejoin=true file={{path}}/docs/FILTERS.md out=pjson > {{path}}/../data/filters.json
+
+    echo "Generating templates.json..."
+    oafp in=mdtable inmdtablejoin=true file={{path}}/docs/TEMPLATE.md path="[-4]" out=pjson > {{path}}/../data/template.json
+      
 # -----------------------
 - name : Add default code
   exec : |
