@@ -413,6 +413,10 @@
       "Description": "A tree-like forcely colored format"
     },
     {
+      "Output format": "cyaml",
+      "Description": "An YAML colored format"
+    },
+    {
       "Output format": "db",
       "Description": "Output to a JDBC database"
     },
@@ -443,6 +447,10 @@
     {
       "Output format": "jwt",
       "Description": "Signs map data into a JSON Web Token (JWT)"
+    },
+    {
+      "Output format": "key",
+      "Description": "Stores data into an OpenAF global (used inside OpenAF)"
     },
     {
       "Output format": "lines",
@@ -493,6 +501,10 @@
       "Description": "Tries to output the internal representation (string or json) of the input transformed data"
     },
     {
+      "Output format": "res",
+      "Description": "Outputs data to an OpenAF global 'res' (used in oJobs)"
+    },
+    {
       "Output format": "schart",
       "Description": "A static line-chart like chart (for a fixed list/array of values)"
     },
@@ -515,6 +527,10 @@
     {
       "Output format": "template",
       "Description": "A Handlebars template format"
+    },
+    {
+      "Output format": "text",
+      "Description": "A string text format"
     },
     {
       "Output format": "toml",
