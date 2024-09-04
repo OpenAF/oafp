@@ -308,6 +308,7 @@ var _outputFns = new Map([
     }],
     ["cmd", (r, options) => {
         if (!isString(params.outcmd)) _exit(-1, "For out=cmd you need to provide a outcmd=\"...\"")
+        if (toBoolean(params.outcmdtmpl)) ow.loadTemplate()
 
         let _exe = data => {
             var _s, _d = isString(data) ? data : stringify(data, __, "")
@@ -315,6 +316,8 @@ var _outputFns = new Map([
                 try {
                 _s = $sh(params.outcmd.replace(/([^\\]?){}/g, "$1"+_d)).get(0)
                 } catch(e) {sprintErr(e)}
+            } else if (toBoolean(params.outcmdtmpl)) {
+                _s = $sh($t(params.outcmd, data)).get(0)
             } else {
                 _s = $sh(params.outcmd, _d).get(0)
             }
@@ -334,9 +337,15 @@ var _outputFns = new Map([
                 if (toBoolean(params.outcmdseq)) {
                     r.forEach(_exe)
                 } else {
-                    parallel4Array(r, _r => {
-                        _exe(_r)
-                    })
+                    if (isDef(pForEach)) {
+                        pForEach(r, _r => {
+                            _exe(_r)
+                        })
+                    } else {
+                        parallel4Array(r, _r => {
+                            _exe(_r)
+                        })
+                    }
                 }
             }
         } else {

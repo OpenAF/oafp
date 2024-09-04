@@ -189,6 +189,8 @@ complete:
       desc: If true each command execution output will be appended with a new-line
     - name: outcmdparam=
       desc: If true the input entry will be replaced on the 'outcmd' where '{}' is found
+    - name: outcmdtmpl=
+      desc: If true the input entry will be considered as an OpenAF template
   - name: out=cslon
     desc: A SLON format forcely colored
   - name: out=csv

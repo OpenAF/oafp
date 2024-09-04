@@ -509,6 +509,7 @@ List of options to use when _out=cmd_:
 | outcmdseq | Boolean | If true and if input is an array the commands will be executed in sequence |
 | outcmdnl | Boolean | If true each command execution output will be appended with a new-line |
 | outcmdparam | Boolean | If true the input entry will be replaced on the 'outcmd' where '{}' is found |
+| outcmdtmpl | Boolean | If true the input entry will be considered as an OpenAF template |
 
 > If input is an array, without outcmdjoin=true, each entry will result in a command execution in parallel
 
