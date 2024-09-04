@@ -171,7 +171,19 @@ var _outputFns = new Map([
             ow.template.addFormatHelpers()
             if (isUnDef(params.template) && isUnDef(params.templatepath)) _exit(-1, "For out=template you need to provide a template=someFile.hbs or templatepath=...")
             params.templatedata = _$(params.templatedata, "templatedata").isString().default("@")
-            _print($t( isUnDef(params.template) ? $path(params.__origr, params.templatepath) : io.readFileString(params.template), $path(r, params.templatedata) ) )
+            
+            var tmpl
+            if (isDef(params.template)) {
+                if (toBoolean(params.templatetmpl)) {
+                    tmpl = params.template
+                } else {
+                    tmpl = io.readFileString(params.template)
+                }
+            } else {
+                tmpl = $path(params.__origr, params.templatepath)
+            }
+            //_print($t( isUnDef(params.template) ? $path(params.__origr, params.templatepath) : ( isDef(params.templatetmpl) ? params.templatetmpl : io.readFileString(params.template) ), $path(r, params.templatedata) ) )
+            _print($t(tmpl, $path(r, params.templatedata)))
         }
     }],
     ["openmetrics", (r, options) => {

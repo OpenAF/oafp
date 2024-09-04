@@ -334,11 +334,13 @@ complete:
     desc: A Handlebars template format
     opts:
     - name: template=   
-      desc: A file path to a HandleBars' template
+      desc: A file path to a HandleBars' template or a string template definition if 'templatetmpl' is true
     - name: templatepath=
       desc: If 'template' is not provided a path to the template definition -pre-transformation-
     - name: templatedata=
       desc: If defined the template data will be retrieved from the provided path
+    - name: templatetmpl=
+      desc: If true the 'template' will be interpreted as the template defintion instead of a file path
   - name: out=text
     desc: A string text format
   - name: out=toml
