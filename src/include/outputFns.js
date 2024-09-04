@@ -308,7 +308,12 @@ var _outputFns = new Map([
     }],
     ["cmd", (r, options) => {
         if (!isString(params.outcmd)) _exit(-1, "For out=cmd you need to provide a outcmd=\"...\"")
-        if (toBoolean(params.outcmdtmpl)) ow.loadTemplate()
+        if (toBoolean(params.outcmdtmpl)) {
+            ow.loadTemplate()
+            ow.template.addConditionalHelpers()
+            ow.template.addOpenAFHelpers()
+            ow.template.addFormatHelpers()
+        }
 
         let _exe = data => {
             var _s, _d = isString(data) ? data : stringify(data, __, "")
