@@ -945,6 +945,11 @@
       "Option": "outcmdparam",
       "Type": "Boolean",
       "Description": "If true the input entry will be replaced on the 'outcmd' where '{}' is found"
+    },
+    {
+      "Option": "outcmdtmpl",
+      "Type": "Boolean",
+      "Description": "If true the input entry will be considered as an HandleBars' template"
     }
   ],
   [
@@ -1106,7 +1111,7 @@
     {
       "Option": "template",
       "Type": "String",
-      "Description": "A file path to a HandleBars' template"
+      "Description": "A file path to a HandleBars' template or a string template definition if 'templatetmpl' is true"
     },
     {
       "Option": "templatepath",
@@ -1117,6 +1122,11 @@
       "Option": "templatedata",
       "Type": "String",
       "Description": "If defined the template data will be retrieved from the provided path"
+    },
+    {
+      "Option": "templatetmpl",
+      "Type": "String",
+      "Description": "If true the 'template' will be interpreted as the template defintion instead of a file path"
     }
   ],
   [

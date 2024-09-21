@@ -17,8 +17,8 @@ complete:
   - name: in=csv
     desc: A CSV format -auto-detected-
     opts:
-    - name: csv=
-      desc: If type=csv, the CSV options to use
+    - name: incsv=
+      desc: If in=csv, the CSV options to use
   - name: in=db
     desc: A JDBC query to a database
     opts:
@@ -196,20 +196,8 @@ complete:
   - name: out=csv
     desc: A CSV format -only for list outputs-
     opts:
-    - name: format=
-      desc: You can choose between DEFAULT, EXCEL, INFORMIX_UNLOAD, INFORMIX_UNLOAD_CSV, MYSQL, RFC4180, ORACLE, POSTGRESQL_CSV, POSTGRESQL_TEXT and TDF
-    - name: withHeader=
-      desc: If true tries to automatically use the available header
-    - name: withHeaders=
-      desc: A list of headers to use with the corresponding order
-    - name: quoteMode=
-      desc: You can choose between ALL, ALL_NON_NULL, MINIMAL, NON_NUMERIC and NONE.
-    - name: withDelimiter=
-      desc: A single character as a custom delimiter
-    - name: withEscape=
-      desc: A single character as a custom escape
-    - name: withNullString=
-      desc: String to use as representation of null values
+    - name: csv=
+      desc: If out=csv, the CSV options to use
   - name: out=ctable
     desc: A table-like forcely colored format -only for list outputs-
   - name: out=ctree
