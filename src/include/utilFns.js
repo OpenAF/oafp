@@ -143,6 +143,7 @@ const _fromJSSLON = aString => {
 	if (!isString(aString) || aString == "" || isNull(aString)) return ""
 
 	aString = aString.trim()
+    if (isDef(af.fromJSSLON)) return af.fromJSSLON(aString)
 	if (aString.startsWith("{")) {
 		return jsonParse(aString, __, __, true)
 	} else {

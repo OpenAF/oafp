@@ -220,7 +220,7 @@
 
       io.writeFileString(_f, stringify(data1, __, ""))
       var _r = $sh([getOpenAFPath() + "/oaf", "-f", "../oafp.source.js", "-e", "in=json out=csv csv=\"(withDelimiter: '|')\" file=" + _f]).get(0)
-      ow.test.assert(_r.stdout.trim(), out1, "Problem with json to csv")
+      ow.test.assert(_r.stdout.trim(), out1.trim(), "Problem with json to csv")
 
       var _f2 = io.createTempFile("testCSV2", ".csv")
       io.writeFileString(_f2, _r.stdout)
