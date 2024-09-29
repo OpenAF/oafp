@@ -409,7 +409,7 @@ var _transformFns = {
         let toOrdStr  = r => stringify(sortMapKeys(r, true), __, "")
         let toOrdStrs = r => r.map(toOrdStr).reduce((pV, cV) => pV.concat(cV), [])
 
-        switch(params.settype) {
+        switch(params.setop) {
         case "union"    :
             let ca = new Set(toOrdStrs(_d1))
             return _d1.concat(_d2.filter(r => !ca.has(toOrdStr(r))))

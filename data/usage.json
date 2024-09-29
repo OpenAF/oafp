@@ -365,6 +365,11 @@
       "Description": "Will return am map with only values that match the provided string"
     },
     {
+      "Option": "set",
+      "Type": "String",
+      "Description": "Performs set operations (intersection by default) over an 'a' and 'b' path to an array defined in a JSON/SLON map"
+    },
+    {
       "Option": "sortmapkeys",
       "Type": "Boolean",
       "Description": "If true the resulting map keys will be sorted"
@@ -889,6 +894,13 @@
       "Option": "regressionforecast",
       "Type": "String",
       "Description": "Optional path to an array of x values for which to forecast the corresponding y"
+    }
+  ],
+  [
+    {
+      "Option": "setop",
+      "Type": "String",
+      "Description": "Allows to choose a different set operation between 'union', 'diffa', 'diffb', 'diffab' (symetric difference) and 'intersect' (default)"
     }
   ],
   [
