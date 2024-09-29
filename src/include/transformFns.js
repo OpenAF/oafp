@@ -33,7 +33,7 @@ var _transformFns = {
     "diff": _r => {
         var _d = _fromJSSLON(params.diff)
         if (isMap(_d)) {
-            if (!((isDef(_d.filea) && isDef(_d.fileb)) || (isDef(_d.a) && isDef(_d.b)))) _exit(-1, "diff.a path and diff.b path are required.")
+            if (!((isDef(_d.a) && isDef(_d.b)))) _exit(-1, "diff.a path and diff.b path are required.")
 
             loadDiff() 
             let _d1 = $path(_r, _d.a), _d2 = $path(_r, _d.b), _dt = __
@@ -392,6 +392,41 @@ var _transformFns = {
                 return _nr
             else
                 return _r
+        }
+    },
+    "set": _r => {
+        var _d = _fromJSSLON(params.set)
+
+        if (!isMap(_d) && isUnDef(_d.a) && isUnDef(_d.b)) _exit(-1, "set.a path and set.b path are required.")
+        if (isUnDef(pForEach)) _exit(-1, "This version of OpenAF does not support the set transform")
+        if (!isString(_d.a)) _exit(-1, "set.a path is not a string.")
+        if (!isString(_d.b)) _exit(-1, "set.b path is not a string.")
+
+        let _d1 = $path(_r, _d.a), _d2 = $path(_r, _d.b)
+        if (!isArray(_d1)) _exit(-1, "set.a path result is not an array.")
+        if (!isArray(_d2)) _exit(-1, "set.b path result is not an array.")
+
+        let toOrdStr  = r => stringify(sortMapKeys(r, true), __, "")
+        let toOrdStrs = r => r.map(toOrdStr).reduce((pV, cV) => pV.concat(cV), [])
+
+        switch(params.settype) {
+        case "union"    :
+            let ca = new Set(toOrdStrs(_d1))
+            return _d1.concat(_d2.filter(r => !ca.has(toOrdStr(r))))
+        case "diffa"    :
+            let cb2 = new Set(toOrdStrs(_d2))
+            return _d1.filter(r => !cb2.has(toOrdStr(r)))
+        case "diffb"    :
+            let cb3 = new Set(toOrdStrs(_d1))
+            return _d2.filter(r => !cb3.has(toOrdStr(r)))
+        case "diffab"  :
+            let cb4 = new Set(toOrdStr(_d1))
+            let cb5 = new Set(toOrdStr(_d2))
+            return _d1.filter(r => cb4.has(toOrdStr(r)) < 0).concat(_d2.filter(r => cb5.has(toOrdStr(r)) < 0))
+        case "intersect":
+        default         :
+            let cb1 = new Set(_d2.map(r => toOrdStr(r)))
+            return _d1.filter(r => cb1.has(toOrdStr(r)) >= 0)
         }
     }
 }
