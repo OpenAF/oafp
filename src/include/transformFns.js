@@ -406,8 +406,16 @@ var _transformFns = {
         if (!isArray(_d1)) _exit(-1, "set.a path result is not an array.")
         if (!isArray(_d2)) _exit(-1, "set.b path result is not an array.")
 
-        let toOrdStr  = r => stringify(sortMapKeys(r, true), __, "")
-        let toOrdStrs = r => r.map(toOrdStr).reduce((pV, cV) => pV.concat(cV), [])
+        let toOrdStr, toOrdStrs
+        if (isString(params.setkeys)) {
+            ow.loadObj()
+            var _ks = params.setkeys.split(",").map(r => r.trim())
+            toOrdStr  = r => stringify(isObject(r) ? sortMapKeys(ow.obj.filterKeys(_ks, r), true) : r, __, "")
+            toOrdStrs = r => pForEach(r, toOrdStr).reduce((pV, cV) => pV.concat(cV), [])
+        } else {
+            toOrdStr  = r => stringify(isObject(r) ? sortMapKeys(r, true) : r, __, "")
+            toOrdStrs = r => pForEach(r, toOrdStr).reduce((pV, cV) => pV.concat(cV), [])
+        }
 
         switch(params.setop) {
         case "union"    :
@@ -420,13 +428,13 @@ var _transformFns = {
             let cb3 = new Set(toOrdStrs(_d1))
             return _d2.filter(r => !cb3.has(toOrdStr(r)))
         case "diffab"  :
-            let cb4 = new Set(toOrdStr(_d1))
-            let cb5 = new Set(toOrdStr(_d2))
-            return _d1.filter(r => cb4.has(toOrdStr(r)) < 0).concat(_d2.filter(r => cb5.has(toOrdStr(r)) < 0))
+            let cb4 = new Set(toOrdStrs(_d1))
+            let cb5 = new Set(toOrdStrs(_d2))
+            return _d1.filter(r => !cb5.has(toOrdStr(r))).concat(_d2.filter(r => !cb4.has(toOrdStr(r))))
         case "intersect":
         default         :
-            let cb1 = new Set(_d2.map(r => toOrdStr(r)))
-            return _d1.filter(r => cb1.has(toOrdStr(r)) >= 0)
+            let cb1 = new Set(toOrdStrs(_d2))
+            return _d1.filter(r => cb1.has(toOrdStr(r)))
         }
     }
 }
