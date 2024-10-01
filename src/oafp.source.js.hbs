@@ -1,6 +1,6 @@
-var params = processExpr(" ")
+var _params = processExpr(" ")
 // Author : Nuno Aguiar
-const oafp = (params) => {
+const oafp = params => {
 if (isUnDef(params) || isDef(params.____ojob)) return 
 
 // Ensure params are interpreted as lower case
@@ -565,4 +565,4 @@ if (isNumber(params.loop)) {
 // Close streams
 if (isDef(global.__oafp_streams)) Object.keys(global.__oafp_streams).forEach(s => global.__oafp_streams[s].s.close())
 }
-oafp(params)
+oafp(_params)

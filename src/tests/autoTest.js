@@ -187,6 +187,37 @@
       ow.test.assert(_r.stdout, {"c.x":1,"c.y":1,"b.x":0,"b.y":0,"a.x":1,"a.y":-1}, "Problem with flatmap")
    }
 
+   // Set transform
+   exports.testSet = function() {
+      var _f = io.createTempFile("testFlatMap", ".json")
+      var data1 = {
+         old: [ { x: 1, y: 1 }, { x: 2, y: -2 }, { x: 0, y: 0 } ],
+         new: [ { x: 0, y: 0 }, { x: 1, y: 1  }, { x: 3, y: -3 } ]
+      }
+
+      io.writeFileString(_f, stringify(data1, __, ""))
+
+      // Intersect
+      var _r = $sh([getOpenAFPath() + "/oaf", "-f", "../oafp.source.js", "-e", "in=json out=json set=\"(a: 'old', b: 'new')\" setop=intersect file=" + _f]).getJson(0)
+      ow.test.assert(_r.stdout, [{"x":1,"y":1},{"x":0,"y":0}], "Problem with set intersect")
+
+      // Union
+      var _r = $sh([getOpenAFPath() + "/oaf", "-f", "../oafp.source.js", "-e", "in=json out=json set=\"(a: 'old', b: 'new')\" setop=union file=" + _f]).getJson(0)
+      ow.test.assert(_r.stdout, [{"x":1,"y":1},{"x":2,"y":-2},{"x":0,"y":0},{"x":3,"y":-3}], "Problem with set union")
+
+      // DiffA
+      var _r = $sh([getOpenAFPath() + "/oaf", "-f", "../oafp.source.js", "-e", "in=json out=json set=\"(a: 'old', b: 'new')\" setop=diffa file=" + _f]).getJson(0)
+      ow.test.assert(_r.stdout, [{"x":2,"y":-2}], "Problem with set diffa")
+
+      // DiffB
+      var _r = $sh([getOpenAFPath() + "/oaf", "-f", "../oafp.source.js", "-e", "in=json out=json set=\"(a: 'old', b: 'new')\" setop=diffb file=" + _f]).getJson(0)
+      ow.test.assert(_r.stdout, [{"x":3,"y":-3}], "Problem with set diffb")
+
+      // DiffAB
+      var _r = $sh([getOpenAFPath() + "/oaf", "-f", "../oafp.source.js", "-e", "in=json out=json set=\"(a: 'old', b: 'new')\" setop=diffab file=" + _f]).getJson(0)
+      ow.test.assert(_r.stdout, [{"x":2,"y":-2},{"x":3,"y":-3}], "Problem with set diffab")
+   }
+
    // JSON Schema
    exports.testJsonSchema = function() {
       var _f = io.createTempFile("testJsonSchema", ".json")

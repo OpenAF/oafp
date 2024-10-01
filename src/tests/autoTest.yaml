@@ -17,6 +17,7 @@ todo:
 - oafp::mapToArray
 - oafp::arrayToMap
 - oafp::flatMap
+- oafp::set
 
 - oafp::jsonSchema
 
@@ -170,6 +171,13 @@ jobs:
   deps: Load test
   args:
     func: "global.test.testFlatMap()"
+
+# ---------------
+- name: oafp::set
+  to  : oJob Test
+  deps: Load test
+  args:
+    func: "global.test.testSet()"
 
 # ----------------------
 - name: oafp::jsonSchema

@@ -481,7 +481,7 @@ var _inputFns = new Map([
         _$o(_r, options)
     }],
     ["oafp", (_res, options) => {
-        params.__inception = true
+        //params.__inception = true
         var _r = _fromJSSLON(_res)
         var id = "_oafp_key_" + genUUID()
         if (isMap(_r)) {
@@ -493,24 +493,26 @@ var _inputFns = new Map([
             $unset(id)
             _$o(_d, options)
         } else if (isArray(_r)) {
-            ow.loadObj()
             $set(id, true)
-            var _out = new ow.obj.syncArray()
-            var _p = _r.map((r, i) => {
+            var _out = pForEach(_r, (__r, i) => {
                 var sid = id + "_" + String(i)
-                r.out         = "key"
-                r.__key       = sid
-                r.__inception = true
-                return $do(() => {
-                    oafp(r)
-                    _out.add($get(sid))
+                __r.out         = "key"
+                __r.__key       = sid
+                __r.__inception = true
+                //return $do(() => {
+                var _rr
+                try {
+                    oafp(__r)
+                    _rr = $get(sid)
                     $unset(sid)
-                }).catch(e => {
+                } catch(e) {
                     sprintErr(e)
-                })
+                } finally {
+                    return _rr
+                }
             })
-            $doWait($doAll(_p))
-            _$o(_out.toArray(), options)
+            //$doWait($doAll(_p))
+            _$o(_out, options)
         } else {
             _exit(-1, "oafp input data needs to be a map or an array.")
         }
