@@ -31,6 +31,18 @@
       "Example": "amerge([], from_slon('(stamp:123)'))"
     },
     {
+      "Function": "assign(obj, objPath, value)",
+      "OpenAF": "20241010",
+      "Description": "Given an 'obj' will try to set the object path objPath to value",
+      "Example": "assign([?id='12']"
+    },
+    {
+      "Function": "assignp(path, objPath, value)",
+      "OpenAF": "20241010",
+      "Description": "Given a path will try to set the object path objPath to value",
+      "Example": "assignp('[?id='12']', 'status', 'valid')"
+    },
+    {
       "Function": "avg(arrayNumber)",
       "OpenAF": "base",
       "Description": "The average value of an array of numeric fields",
