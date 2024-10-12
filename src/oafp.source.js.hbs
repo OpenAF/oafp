@@ -480,13 +480,18 @@ var _run = () => {
                         if (params.input != "pm") {
                             _res = []
                             io.pipeLn(r => {
-                                if (isDef(_inputLineFns[params.type])) {
-                                    if (_inputLineFns[params.type](_transform(r), clone(options))) {
+                                try {
+                                    if (isDef(_inputLineFns[params.type])) {
+                                        if (_inputLineFns[params.type](_transform(r), clone(options))) {
+                                            _res.push(r)
+                                        }
+                                    } else { 
                                         _res.push(r)
                                     }
-                                } else { 
-                                    _res.push(r)
+                                } catch(ipl) {
+                                    printErr("ERROR: " + ipl)
                                 }
+
                                 return false
                             })
                             _res = _res.join('\n')

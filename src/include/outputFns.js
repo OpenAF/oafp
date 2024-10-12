@@ -102,7 +102,7 @@ var _outputFns = new Map([
                 }, _lt)
                 _arr.forEach(_r => {
                     if (isMap(_r)) {
-                        let d = (isDef(_r["@timestamp"]) ? _r["@timestamp"] : __)
+                        let d = (isDef(_r["@timestamp"]) && isString(_r["@timestamp"]) ? _r["@timestamp"] : __)
                         let l = (isDef(_r.level) ? _r.level : __)
                         let m = (isDef(_r.message) ? _r.message : __)
                         let lineC
