@@ -3,6 +3,9 @@ var _params = processExpr(" ")
 const oafp = params => {
 if (isUnDef(params) || isDef(params.____ojob)) return 
 
+// Process secBuckets
+if (isDef($sec().procMap)) params = $sec().procMap(params)
+
 // Ensure params are interpreted as lower case
 Object.keys(params).forEach(pk => {
     if (params[pk].length > 0) {
