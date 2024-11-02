@@ -761,3 +761,5 @@ oafp examples=kubernetes::
 | help=template | Provides more details regarding the use of "output=template" |
 | help=examples | Provide several examples |
 | help=readme | Returns this document |
+
+> You can use OpenAI's ChatGPT oAFp GPT https://chatgpt.com/g/g-uBUaPluLw-oafp to generate commands
