@@ -762,4 +762,4 @@ oafp examples=kubernetes::
 | help=examples | Provide several examples |
 | help=readme | Returns this document |
 
-> You can use OpenAI's ChatGPT oAFp GPT https://chatgpt.com/g/g-uBUaPluLw-oafp to generate commands
+> You can use [OpenAI's ChatGPT oAFp GPT](https://chatgpt.com/g/g-uBUaPluLw-oafp) to generate commands
