@@ -1021,6 +1021,11 @@
       "Option": "envsprefix",
       "Type": "String",
       "Description": "If defined uses the provided prefix for each environment variable key (defaults to '_OAFP_')"
+    },
+    {
+      "Option": "envsnoprefix",
+      "Type": "Boolean",
+      "Description": "Boolean flag to indicate that no envsprefix should be used (defaults to false)"
     }
   ],
   [

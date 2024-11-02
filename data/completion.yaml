@@ -232,6 +232,8 @@ complete:
       desc: If defined will output the provided command to set each environment variable -defaults to 'export' or 'set' in Windows-
     - name: envsprefix=
       desc: If defined uses the provided prefix for each environment variable key -defaults to 'OAFP'-
+    - name: envsnoprefix=
+      desc: Boolean flag to indicate that no envsprefix should be used -defaults to false-
   - name: out=gb64json
     desc: Equivalent to out=base64 and base64gzip=true
   - name: out=grid
