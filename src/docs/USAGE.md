@@ -625,7 +625,7 @@ List of options to use when _out=html_:
 |--------|------|-------------|
 | htmlcompact | Boolean | Boolean flag that if true and the input data is a string or markdown the generated html will have a visual compact width format |
 | htmlpart | Boolean | Boolean flag that if true and the input data is a string or markdown the generated html will be partial and not the complete file |
-| htmlopen | Boolean | Boolean that if false won't try to open the output contents in a browser (defaults to true) |
+| htmlopen | Boolean | Boolean that if false won't try to open the output contents in a browser (defaults to true). To use outfile= you need to set htmlopen=false. |
 | htmlwait | Number | Amount of ms, when htmlopen=true, to wait for the system browser to open an render the html output | 
 
 ---
