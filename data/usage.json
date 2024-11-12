@@ -722,22 +722,22 @@
   ],
   [
     {
-      "Option": "xlssheet",
+      "Option": "inxlssheet",
       "Type": "String",
       "Description": "The name of sheet to consider (default to the first sheet)"
     },
     {
-      "Option": "xlsevalformulas",
+      "Option": "inxlsevalformulas",
       "Type": "Boolean",
       "Description": "If false the existing formulas won't be evaluated (defaults to true)"
     },
     {
-      "Option": "xlscol",
+      "Option": "inxlscol",
       "Type": "String",
       "Description": "The column on the sheet where a table should be detected (e.g. \"A\")"
     },
     {
-      "Option": "xlsrow",
+      "Option": "inxlsrow",
       "Type": "Number",
       "Description": "The row on the sheet where a table should be detected (e.g. 1)"
     }
@@ -924,7 +924,7 @@
     {
       "Option": "chart",
       "Type": "String",
-      "Description": "Chart definition in the format \"<unit> <path:color:legend>... [-min:0] [-max:100]\". Unit is either 'int', 'dec1', 'dec2', 'dec3', 'dec', 'bytes' or 'si'. Path is equivalent to the 'path' filter (quotes should be used for non-basic 'path' expressions)."
+      "Description": "Chart definition in the format \"<unit> <path:color:legend>... [-min:0] [-max:100]\". The 'unit' used should be either 'int', 'dec1', 'dec2', 'dec3', 'dec', 'bytes' or 'si'. The 'path' is equivalent to the 'path=' jmespath filter (quotes should be used for non-basic 'path' expressions; and '@' should be used for the current value). The 'color' should be one of the basic color names. The 'legend' should be the label of the value (in quotes if includes spaces)"
     },
     {
       "Option": "chartcls",
@@ -1066,7 +1066,7 @@
     {
       "Option": "htmlopen",
       "Type": "Boolean",
-      "Description": "Boolean that if false won't try to open the output contents in a browser (defaults to true)"
+      "Description": "Boolean that if false won't try to open the output contents in a browser (defaults to true). To use outfile= you need to set htmlopen=false."
     },
     {
       "Option": "htmlwait",
