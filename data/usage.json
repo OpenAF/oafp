@@ -290,6 +290,11 @@
       "Description": "If true will try to find the first array on the input value (if number will stop only after the number of checks)"
     },
     {
+      "Option": "forcearray",
+      "Type": "Boolean",
+      "Description": "If true and if the input is map it will force it to be an array with that map as the only element"
+    },
+    {
       "Option": "jsonschema",
       "Type": "String",
       "Description": "The JSON schema file to use for validation returning a map with a boolean valid and errors if exist"
@@ -1171,6 +1176,43 @@
       "Option": "xlsopenwait",
       "Type": "Number",
       "Description": "The amount of time, in ms, to keep the temporary file for the OS's Excel-compatible application to start and open the file"
+    }
+  ],
+  [
+    {
+      "Parameter": "secRepo",
+      "Env variable": "OAFP_SECREPO",
+      "Description": "sBucket repository"
+    },
+    {
+      "Parameter": "secBucket",
+      "Env variable": "OAFP_SECBUCKET",
+      "Description": "sBucket bucket name"
+    },
+    {
+      "Parameter": "secPass",
+      "Env variable": "OAFP_SECPASS",
+      "Description": "sBucket bucket password"
+    },
+    {
+      "Parameter": "secMainPass",
+      "Env variable": "OAFP_SECMAINPASS",
+      "Description": "sBucket repository password"
+    },
+    {
+      "Parameter": "secFile",
+      "Env variable": "OAFP_SECFILE",
+      "Description": "Optional sBucket file source"
+    },
+    {
+      "Parameter": "secEnv",
+      "Env variable": "n/a",
+      "Description": "A boolean flag to use environment variables as sBuckets"
+    },
+    {
+      "Parameter": "secKey",
+      "Env variable": "n/a",
+      "Description": "The mandatory sBucket bucket key to use"
     }
   ],
   [
