@@ -377,9 +377,15 @@
       "Example": "oafp('(file:data.json)')"
     },
     {
+      "Function": "ojob(file, jsslon)",
+      "OpenAF": "20241116",
+      "Description": "Executes a 'file' oJob, with 'jsslon' as args, returning the output (if ow.ojob.output is used)",
+      "Example": "ojob('ojob.io/echo', obj)"
+    },
+    {
       "Function": "opath(str)",
       "OpenAF": "20240801",
-      "Description": "Inception function to ahver other path filters in 'str' applied over the original object before current transformations",
+      "Description": "Inception function to go over other path filters in 'str' applied over the original object before current transformations",
       "Example": "files[].{ name: filename, path: opath('originalPath') }"
     },
     {
@@ -441,6 +447,30 @@
       "OpenAF": "20240305",
       "Description": "Given an object will set the value to a name given the provided path",
       "Example": "set(@, 'version', 'ver').packages[].{ name: name, parentVersion: get('ver') }"
+    },
+    {
+      "Function": "sh(cmd, stdin)",
+      "OpenAF": "20241116",
+      "Description": "Executes a shell command with a stdin. Returns stdout, stderr, exitcode, cmd and in.",
+      "Example": "sh('cat', '123').stdout"
+    },
+    {
+      "Function": "sh_json(cmd, stdin)",
+      "OpenAF": "20241116",
+      "Description": "Executes a shell command with a stdin. Parses json returning stdout, stderr, exitcode, cmd and in.",
+      "Example": "sh('cmd', out).stdout"
+    },
+    {
+      "Function": "sh_jsslon(cmd, stdin)",
+      "OpenAF": "20241116",
+      "Description": "Executes a shell command with a stdin. Parses jsslon returning stdout, stderr, exitcode, cmd and in.",
+      "Example": "sh('cmd', out).stdout"
+    },
+    {
+      "Function": "sh_yaml(cmd, stdin)",
+      "OpenAF": "20241116",
+      "Description": "Executes a shell command with a stdin. Parses yaml output returning stdout, stderr, exitcode, cmd and in.",
+      "Example": "sh('cmd', out).stdout"
     },
     {
       "Function": "sort(array)",
