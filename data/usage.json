@@ -1095,6 +1095,13 @@
   ],
   [
     {
+      "Option": "pxmlprefix",
+      "Type": "String",
+      "Description": "A prefix added to all XML tags"
+    }
+  ],
+  [
+    {
       "Option": "metricsprefix",
       "Type": "String",
       "Description": "The prefix to use for each metric (defaults to 'metrics')"
@@ -1176,6 +1183,13 @@
       "Option": "xlsopenwait",
       "Type": "Number",
       "Description": "The amount of time, in ms, to keep the temporary file for the OS's Excel-compatible application to start and open the file"
+    }
+  ],
+  [
+    {
+      "Option": "outxmlprefix",
+      "Type": "String",
+      "Description": "A prefix added to all XML tags"
     }
   ],
   [
