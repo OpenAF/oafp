@@ -380,6 +380,11 @@
       "Description": "If true the resulting map keys will be sorted"
     },
     {
+      "Option": "spacekeys",
+      "Type": "String",
+      "Description": "Replaces spaces in keys with the provided string (for example, helpful to xml output)"
+    },
+    {
       "Option": "trim",
       "Type": "Boolean",
       "Description": "If true all the strings of the result map/list will be trimmed"
