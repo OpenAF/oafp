@@ -666,6 +666,11 @@
       "Option": "linesvisualsepre",
       "Type": "String",
       "Description": "Regular expression representing the separator between columns when linesvisual=true (defaults to ' \\\\s+')"
+    },
+    {
+      "Option": "linesvisualheadsep",
+      "Type": "Boolean",
+      "Description": "If true will try to process the second line as header separator aiding on column position determination (if linesvisualsepre is not defined it will default to '\\\\s+')"
     }
   ],
   [
