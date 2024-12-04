@@ -124,6 +124,7 @@ These options will change the parsed input data included any filters provided.
 | normalize | String | A JSON/SLON map with a normalize schema (see OpenAF's ow.ai.normalize.withSchema) |
 | regression | String | Performs a regression (linear, log, exp, poly or power) over a provided list/array of numeric values |
 | removedups | Boolean | If true will try to remove duplicates from an array |
+| removeempty | Boolean | If true will remove array/list entries that are either null or undefined |
 | removenulls | Boolean | If true will try to remove nulls and undefined values from a map or array |
 | searchkeys | String | Will return a map with only keys that match the provided string |
 | searchvalues | String | Will return am map with only values that match the provided string |

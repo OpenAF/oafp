@@ -224,6 +224,14 @@ var _transformFns = {
         }
         return _r
     },
+    "removeempty": _r => {
+        if (toBoolean(params.removeempty)) {
+            if (isArray(_r)) {
+                return _r.filter(r => isDef(r) && !isNull(r))
+            }
+        }
+        return _r
+    },
     "trim": _r => {
         if (toBoolean(params.trim)) {
             traverse(_r, (aK, aV, aP, aO) => {
