@@ -155,6 +155,10 @@
       "Description": "INI/Properties format"
     },
     {
+      "Input type": "javagc",
+      "Description": "The Java GC log lines text format"
+    },
+    {
       "Input type": "json",
       "Description": "A JSON format (auto-detected)"
     },
@@ -610,6 +614,13 @@
       "Option": "indbexec",
       "Type": "Boolean",
       "Description": "If true the input SQL is not a query but a DML statement"
+    }
+  ],
+  [
+    {
+      "Option": "javagcjoin",
+      "Type": "Boolean",
+      "Description": "If true it will return an array with each processed line."
     }
   ],
   [

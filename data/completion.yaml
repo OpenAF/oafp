@@ -40,6 +40,11 @@ complete:
     desc: A Java hsperfdata* file -requires file=hsperfdata_user/123-
   - name: in=ini
     desc: INI/Properties format
+  - name: in=javagc
+    desc: A Java GC log text file format
+    opts:
+    - name: javagcjoin=
+      desc: If true it will return an array with each processed line.
   - name: in=json
     desc: A JSON format -auto-detected-
     opts:
