@@ -349,6 +349,11 @@
       "Description": "A JSON/SLON map with a normalize schema (see OpenAF's ow.ai.normalize.withSchema)"
     },
     {
+      "Option": "numformat",
+      "Type": "String",
+      "Description": "For all number values applies a java.util.Formatter format (e.g. %,d)"
+    },
+    {
       "Option": "regression",
       "Type": "String",
       "Description": "Performs a regression (linear, log, exp, poly or power) over a provided list/array of numeric values"

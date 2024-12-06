@@ -49,6 +49,12 @@
       "Example": "avg([].y)"
     },
     {
+      "Function": "at(idx)",
+      "OpenAF": "20241205",
+      "Description": "Returns the array index entry",
+      "Example": "[].at(5)"
+    },
+    {
       "Function": "ceil(number)",
       "OpenAF": "base",
       "Description": "Returns the smallest integer that is equal or less than a specific numeric field value",
@@ -173,6 +179,12 @@
       "OpenAF": "20240209",
       "Description": "Shortcut for OpenAF's ow.format.elapsedTime4ms function. The format is represented as a SLON/JSON string",
       "Example": "from_ms(`12000`,'(abrev:true)')"
+    },
+    {
+      "Function": "from_numSpace(str, sep)",
+      "OpenAF": "20241207",
+      "Description": "Tries to convert a string number with thousands separators back to a number",
+      "Example": "from_numSpace('123 456', ' ')"
     },
     {
       "Function": "from_siAbbr(x)",
@@ -401,6 +413,12 @@
       "Example": "{ val: v, p: progress(v, 100, 0, 10, __, __) }"
     },
     {
+      "Function": "random(min, max)",
+      "OpenAF": "20241205",
+      "Description": "Returns a random number between a minimum and maximum limit",
+      "Example": "random(0, 100)"
+    },
+    {
       "Function": "range(size)",
       "OpenAF": "20240502",
       "Description": "Produces an array with exactly 'size' members from 1 to 'size'",
@@ -527,6 +545,12 @@
       "Example": "sort_by_semver([], 'version')"
     },
     {
+      "Function": "srandom(min, max)",
+      "OpenAF": "20241205",
+      "Description": "Returns a secure random number between a minimum and maximum limit",
+      "Example": "srandom(0, 100)"
+    },
+    {
       "Function": "sub(a, b)",
       "OpenAF": "20240217",
       "Description": "Substracts two numbers",
@@ -645,6 +669,12 @@
       "OpenAF": "base",
       "Description": "Transforms any input into a number",
       "Example": "to_number(`123`)"
+    },
+    {
+      "Function": "to_numSpace(num, space)",
+      "OpenAF": "20241207",
+      "Description": "Transforms a number input to a string with thousands separator 'space'",
+      "Example": "to_numSpace(123456, ',')"
     },
     {
       "Function": "to_slon(obj)",

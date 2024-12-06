@@ -461,5 +461,13 @@ var _transformFns = {
             })
         }
         return _r
+    },
+    "numformat": _r => {
+        traverse(_r, (aK, aV, aP, aO) => {
+            if (isTNumber(aV) && isString(params.numformat)) {
+                aO[aK] = $ft(params.numformat, aV)
+            }
+        })
+        return _r
     }
 }
