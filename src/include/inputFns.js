@@ -413,10 +413,12 @@ var _inputFns = new Map([
     }],
     ["javagc", (_res, options) => {
         if (!isBoolean(params.javagcjoin)) params.javagcjoin = toBoolean(_$(params.javagcjoin, "javagcjoin").isString().default(__))
-        
-            let _procLine = _line => {
+
+            let _procLine = _event => {
                 try {
                     let regexes = [
+                        // JDK 8 Allocation Failure (adjusted to handle multiline events)
+                        /([^ ]+) (\d+\.\d+): \[GC \((.*?)\)(.+?)\[PSYoungGen: (\d+K)->(\d+K)\(.*?\)\] (\d+K)->(\d+K)\(.*?\), (\d+\.\d+) secs\] \[Times: user=(\d+\.\d+) sys=(\d+\.\d+), real=(\d+\.\d+) secs\]/s,
                         // JDK 8 style regexes
                         /([^ ]+) (\d+\.\d+): \[GC \((.*?)\) \[PSYoungGen: (\d+K)->(\d+K)\(.*?\)\] (\d+K)->(\d+K)\(.*?\), (\d+\.\d+) secs\]/,
                         /([^ ]+) (\d+\.\d+): \[Full GC \((.*?)\) \[PSYoungGen: (\d+K)->(\d+K)\(.*?\)\] \[ParOldGen: (\d+K)->(\d+K)\(.*?\)\] (\d+K)->(\d+K)\(.*?\), \[Metaspace: (\d+K)->(\d+K)\(.*?\)\], (\d+\.\d+) secs\]/,
@@ -424,82 +426,131 @@ var _inputFns = new Map([
                         /([^ ]+) (\d+\.\d+): \[GC \((.*?)\) \[PSYoungGen: (\d+K)->(\d+K)\(.*?\)\] (\d+K)->(\d+K)\(.*?\), (\d+\.\d+) secs\] \[Times: user=(\d+\.\d+) sys=(\d+\.\d+), real=(\d+\.\d+) secs\]/,
                         // JDK 8 with +PrintHeapAtGC
                         /([^ ]+) (\d+\.\d+): \[Full GC \((.*?)\) \[PSYoungGen: (\d+K)->(\d+K)\(.*?\)\] \[ParOldGen: (\d+K)->(\d+K)\(.*?\)\] (\d+K)->(\d+K)\(.*?\), \[Metaspace: (\d+K)->(\d+K)\(.*?\)\], (\d+\.\d+) secs\] \[Times: user=(\d+\.\d+) sys=(\d+\.\d+), real=(\d+\.\d+) secs\]/,
-                        // Updated JDK 9+ style regexes
+                        // JDK 9+ style regexes
                         /\[(\d+\.\d+)s\]\[\w+\]\[gc\s*\]\s*GC\((\d+)\)\s*(.*?)\s*(\d+[GMK])->(\d+[GMK])\((\d+[GMK])\)\s*(\d+\.\d+)ms/,
-                        /\[(\d+\.\d+)s\]\[\w+\]\[gc,\w+\]\s*GC\((\d+)\)\s*(.*?)\s*Heap:\s*(\d+[GMK])->(\d+[GMK])\((\d+[GMK])\)\s*Metaspace:\s*(\d+[GMK])->(\d+[GMK])\((\d+[GMK])\)\s*(\d+\.\d+)ms/
-                    ]
-                    
-                    for (let regex of regexes) {
-                        let match = _line.match(regex)
-                        if (match) {
-                            let result = {}
-                            
-                            if (_line.startsWith('[')) {
-                                // JDK 9+ style parsing
-                                result.sinceStart = parseFloat(match[1])
-                                result.gcId = parseInt(match[2])
-                                result.gcType = match[3].trim()
-                                result.durationSecs = parseFloat(match[match.length - 1]) / 1000 // convert ms to secs
+                        /\[(\d+\.\d+)s\]\[\w+\]\[gc,\w+\]\s*GC\((\d+)\)\s*(.*?)\s*Heap:\s*(\d+[GMK])->(\d+[GMK])\((\d+[GMK])\)\s*Metaspace:\s*(\d+[GMK])->(\d+[GMK])\((\d+[GMK])\)\s*(\d+\.\d+)ms/,
+                        // JDK 9+ Allocation Failure
+                        /\[(\d+\.\d+)s\]\[\w+\]\[gc\s*\]\s*GC\((\d+)\)\s*Allocation Failure\s*(.*?)\s*(\d+[GMK])->(\d+[GMK])\((\d+[GMK])\)\s*(\d+\.\d+)ms/,
+                    ];
             
-                                if (regex === regexes[4]) {
+                    for (let index = 0; index < regexes.length; index++) {
+                        let regex = regexes[index];
+                        let match = _event.match(regex);
+                        if (match) {
+                            let result = {};
+            
+                            if (_event.startsWith('[')) {
+                                // JDK 9+ style parsing
+                                result.sinceStart = parseFloat(match[1]);
+                                result.gcId = parseInt(match[2]);
+                                result.gcType = match[3].trim();
+                                result.durationSecs = parseFloat(match[match.length - 1]) / 1000; // convert ms to secs
+            
+                                if (index === 4) {
                                     // Match for GC pause with heap info
-                                    result.beforeGC = ow.format.fromBytesAbbreviation(match[4] + "B")
-                                    result.afterGC = ow.format.fromBytesAbbreviation(match[5] + "B")
-                                } else if (regex === regexes[5]) {
+                                    result.beforeGC = ow.format.fromBytesAbbreviation(match[4] + "B");
+                                    result.afterGC = ow.format.fromBytesAbbreviation(match[5] + "B");
+                                } else if (index === 5 || index === 7) {
                                     // Match for GC pause with heap and metaspace info
-                                    result.heapBeforeGC = ow.format.fromBytesAbbreviation(match[4] + "B")
-                                    result.heapAfterGC = ow.format.fromBytesAbbreviation(match[5] + "B")
-                                    result.metaspaceBeforeGC = ow.format.fromBytesAbbreviation(match[7] + "B")
-                                    result.metaspaceAfterGC = ow.format.fromBytesAbbreviation(match[8] + "B")
+                                    result.heapBeforeGC = ow.format.fromBytesAbbreviation(match[4] + "B");
+                                    result.heapAfterGC = ow.format.fromBytesAbbreviation(match[5] + "B");
+                                    result.metaspaceBeforeGC = ow.format.fromBytesAbbreviation(match[7] + "B");
+                                    result.metaspaceAfterGC = ow.format.fromBytesAbbreviation(match[8] + "B");
+                                }
+            
+                                // Determine if Allocation Failure
+                                if (_event.includes("Allocation Failure")) {
+                                    result.gcCause = "Allocation Failure";
                                 }
                             } else {
                                 // JDK 8 style parsing
-                                result.timestamp = ow.format.toDate(match[1], "yyyy-MMdd'T'HH:mm:ss.SSSZ")
-                                result.sinceStart = parseFloat(match[2])
-                                result.gcType = match[3]
-                                result.durationSecs = parseFloat(match[match.length - 1])
-                                
-                                if (match.length === 9) {
-                                    result.PSYoungGenBeforeGC = ow.format.fromBytesAbbreviation(match[4] + "B")
-                                    result.PSYoungGenAfterGC = ow.format.fromBytesAbbreviation(match[5] + "B")
-                                    result.beforeGC = ow.format.fromBytesAbbreviation(match[6] + "B")
-                                    result.afterGC = ow.format.fromBytesAbbreviation(match[7] + "B")
-                                } else if (match.length === 13) {
-                                    result.PSYoungGenBeforeGC = ow.format.fromBytesAbbreviation(match[4] + "B")
-                                    result.PSYoungGenAfterGC = ow.format.fromBytesAbbreviation(match[5] + "B")
-                                    result.ParOldGenBeforeGC = ow.format.fromBytesAbbreviation(match[6] + "B")
-                                    result.ParOldGenAfterGC = ow.format.fromBytesAbbreviation(match[7] + "B")
-                                    result.beforeGC = ow.format.fromBytesAbbreviation(match[8] + "B")
-                                    result.afterGC = ow.format.fromBytesAbbreviation(match[9] + "B")
-                                    result.metaspaceBeforeGC = ow.format.fromBytesAbbreviation(match[10] + "B")
-                                    result.metaspaceAfterGC = ow.format.fromBytesAbbreviation(match[11] + "B")
-                                } else if (match.length === 12) {
-                                    // Match for GC with +PrintTenuringDistribution or +PrintHeapAtGC
-                                    result.PSYoungGenBeforeGC = ow.format.fromBytesAbbreviation(match[4] + "B")
-                                    result.PSYoungGenAfterGC = ow.format.fromBytesAbbreviation(match[5] + "B")
-                                    result.beforeGC = ow.format.fromBytesAbbreviation(match[6] + "B")
-                                    result.afterGC = ow.format.fromBytesAbbreviation(match[7] + "B")
-                                    result.userTime = parseFloat(match[8])
-                                    result.sysTime = parseFloat(match[9])
-                                    result.realTime = parseFloat(match[10])
+                                result.timestamp = ow.format.toDate(match[1], "yyyy-MMdd'T'HH:mm:ss.SSSZ");
+                                result.sinceStart = parseFloat(match[2]);
+                                result.gcType = match[3];
+                                result.durationSecs = parseFloat(match[match.length - 1]);
+            
+                                if (index === 0 || index === 6) {
+                                    result.PSYoungGenBeforeGC = ow.format.fromBytesAbbreviation(match[4] + "B");
+                                    result.PSYoungGenAfterGC = ow.format.fromBytesAbbreviation(match[5] + "B");
+                                    result.beforeGC = ow.format.fromBytesAbbreviation(match[6] + "B");
+                                    result.afterGC = ow.format.fromBytesAbbreviation(match[7] + "B");
+                                    if (index === 6 && _event.includes("Allocation Failure")) {
+                                        result.gcCause = "Allocation Failure";
+                                    }
+                                } else if (index === 1 || index === 3) {
+                                    result.PSYoungGenBeforeGC = ow.format.fromBytesAbbreviation(match[4] + "B");
+                                    result.PSYoungGenAfterGC = ow.format.fromBytesAbbreviation(match[5] + "B");
+                                    result.ParOldGenBeforeGC = ow.format.fromBytesAbbreviation(match[6] + "B");
+                                    result.ParOldGenAfterGC = ow.format.fromBytesAbbreviation(match[7] + "B");
+                                    result.beforeGC = ow.format.fromBytesAbbreviation(match[8] + "B");
+                                    result.afterGC = ow.format.fromBytesAbbreviation(match[9] + "B");
+                                    result.metaspaceBeforeGC = ow.format.fromBytesAbbreviation(match[10] + "B");
+                                    result.metaspaceAfterGC = ow.format.fromBytesAbbreviation(match[11] + "B");
+                                } else if (index === 2) {
+                                    // Match for GC with +PrintTenuringDistribution
+                                    result.PSYoungGenBeforeGC = ow.format.fromBytesAbbreviation(match[4] + "B");
+                                    result.PSYoungGenAfterGC = ow.format.fromBytesAbbreviation(match[5] + "B");
+                                    result.beforeGC = ow.format.fromBytesAbbreviation(match[6] + "B");
+                                    result.afterGC = ow.format.fromBytesAbbreviation(match[7] + "B");
+                                    result.userTime = parseFloat(match[8]);
+                                    result.sysTime = parseFloat(match[9]);
+                                    result.realTime = parseFloat(match[10]);
+                                } else if (index === 6) {
+                                    // Adjusted Allocation Failure parsing
+                                    result.PSYoungGenBeforeGC = ow.format.fromBytesAbbreviation(match[5] + "B");
+                                    result.PSYoungGenAfterGC = ow.format.fromBytesAbbreviation(match[6] + "B");
+                                    result.beforeGC = ow.format.fromBytesAbbreviation(match[7] + "B");
+                                    result.afterGC = ow.format.fromBytesAbbreviation(match[8] + "B");
+                                    result.durationSecs = parseFloat(match[9]);
+                                    if (match[10]) {
+                                        result.userTime = parseFloat(match[10]);
+                                        result.sysTime = parseFloat(match[11]);
+                                        result.realTime = parseFloat(match[12]);
+                                    }
+                                    result.gcCause = "Allocation Failure";
                                 }
                             }
-                            return result
+                            return result;
                         }
                     }
-                } catch(e) {
-                    printErr(e)
-                    _exit(-2, "Error parsing Java GC log: " + e)
+                } catch (e) {
+                    printErr(e);
+                    _exit(-2, "Error parsing Java GC log: " + e);
                 }
-            }
+            };
         ow.loadFormat()
 
         _showTmpMsg()
         if (isString(_res)) {
+            let lines = _res.split("\n")
+            let gcStartPattern = /^(\[\d+|\d{4}-\d{2}-\d{2}T)/ // Matches lines starting with '[\d+' or a timestamp
+
+            let gcEvents = []
+            let currentEvent = []
+
+            for (let line of lines) {
+                if (gcStartPattern.test(line)) {
+                    // New GC event detected
+                    if (currentEvent.length > 0) {
+                        gcEvents.push(currentEvent.join("\n"))
+                    }
+                    currentEvent = [line]
+                } else {
+                    // Continuation of the current GC event
+                    currentEvent.push(line)
+                }
+            }
+            // Add the last GC event
+            if (currentEvent.length > 0) {
+                gcEvents.push(currentEvent.join("\n"))
+            }
+
+            let results = gcEvents.map(_procLine).filter(r => isMap(r))
+
             if (params.javagcjoin) {
-                _$o(_res.split("\n").map(_procLine).filter(r => isMap(r)), options, true)
-            } else {
-                _res.split("\n").forEach(r => _$o(_procLine(r), options, true))
+                _$o(results, options, true)
+            } else {
+                results.forEach(result => _$o(result, options, true))
             }
         } else {
             _exit(-1, "javagc is only supported with a string input.")
