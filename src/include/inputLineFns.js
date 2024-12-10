@@ -21,7 +21,7 @@ var _inputLineFns = {
 
         if (params.javagcjoin) return true
 
-        if (isUnDef(global.__javagc_buffer)) global.__javagc_buffer = ""
+        if (isUnDef(global.__javagc_buffer) || global.__javagc_buffer.length > 1048576) global.__javagc_buffer = ""
         
         let _procLine = _event => {
             try {
