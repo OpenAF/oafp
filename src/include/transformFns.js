@@ -266,7 +266,7 @@ var _transformFns = {
             params.llmenv     = _$(params.llmenv, "llmenv").isString().default("OAFP_MODEL")
             params.llmoptions = _$(params.llmoptions, "llmoptions").isString().default(__)
 
-            var res = $llm(isDef(params.llmoptions) ? params.llmoptions : $sec("system", "envs").get(params.llmenv) )
+            var res = $llm( _getSec(isDef(params.llmoptions) ? params.llmoptions : $sec("system", "envs").get(params.llmenv)) )
             if (isDef(params.llmconversation) && io.fileExists(params.llmconversation)) 
                 res.getGPT().setConversation(io.readFileJSON(params.llmconversation))
             var type = "json", shouldStr = true

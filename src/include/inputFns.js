@@ -718,7 +718,7 @@ var _inputFns = new Map([
             _exit(-1, "llmoptions not defined and " + params.llmenv + " not found.")
 
         _showTmpMsg()
-        var res = $llm(isDef(params.llmoptions) ? _fromJSSLON(params.llmoptions) : $sec("system", "envs").get(params.llmenv))
+        var res = $llm( _getSec(isDef(params.llmoptions) ? _fromJSSLON(params.llmoptions) : $sec("system", "envs").get(params.llmenv)) )
         if (isDef(params.llmconversation) && io.fileExists(params.llmconversation)) 
             res.getGPT().setConversation( io.readFileJSON(params.llmconversation) )
         let __res
@@ -754,7 +754,7 @@ var _inputFns = new Map([
 
         _showTmpMsg()
 
-        var res = $llm(isDef(params.llmoptions) ? _fromJSSLON(params.llmoptions) : $sec("system", "envs").get(params.llmenv))
+        var res = $llm( _getSec(isDef(params.llmoptions) ? _fromJSSLON(params.llmoptions) : $sec("system", "envs").get(params.llmenv)) )
         if (isUnDef(res.getModels)) _exit(-1, "OpenAF support for llm model listing API not found.")
         _$o(res.getModels(), options)
     }],

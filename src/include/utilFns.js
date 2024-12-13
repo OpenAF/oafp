@@ -218,6 +218,35 @@ const _o$o = (a, b, c) => {
         if (isDef(_s)) _print(_s)
     }
 }
+const _getSec = (aM, aPath) => {
+	aM = _$(aM).isMap().default({})
+	if (isDef(aM.secKey)) {
+		aMap = clone(aM)
+		
+		aMap.secRepo     = _$(aMap.secRepo).default(getEnv("OAFP_SECREPO"))
+		aMap.secBucket   = _$(aMap.secBucket).default(getEnv("OAFP_SECBUCKET"))
+		aMap.secPass     = _$(aMap.secPass).default(getEnv("OAFP_SECPASS"))
+		aMap.secMainPass = _$(aMap.secMainPass).default(getEnv("OAFP_SECMAINPASS"))
+		aMap.secFile     = _$(aMap.secFile).default(getEnv("OAFP_SECFILE"))
+		
+		var s = $sec(aMap.secRepo, aMap.secBucket, aMap.secPass, aMap.secMainPass, aMap.secFile).get(aMap.secKey)
+
+		delete aMap.secRepo
+		delete aMap.secBucket
+		delete aMap.secPass
+		delete aMap.secMainPass
+		delete aMap.secFile
+		delete aMap.secKey
+
+		if (isDef(aPath)) {
+			return $$(aMap).set(aPath, merge($$(aMap).get(aPath), s))
+		} else {
+			return merge(aMap, s)
+		}
+	} else {
+		return aM
+	}
+}
 const _msg = "(processing data...)"
 const _showTmpMsg  = msg => { if (params.out != 'grid' && !params.__inception && !toBoolean(params.loopcls) && !toBoolean(params.chartcls)) printErrnl(_$(msg).default(_msg)) } 
 const _clearTmpMsg = msg => { if (params.out != 'grid' && !params.__inception && !toBoolean(params.loopcls) && !toBoolean(params.chartcls)) printErrnl("\r" + " ".repeat(_$(msg).default(_msg).length) + "\r") }
