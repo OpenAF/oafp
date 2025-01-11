@@ -106,7 +106,7 @@ Using the same unix “pipe” mechanism it’s possible to apply different cate
 | last_index_of(str, 'search') | 20240209 | Given a string will return the last index where the word 'search' occurs | last_index_of('Test of a test', 'test') |
 | length(string/array/object) | base | Returns the size of any array or list | length(keys(files[0])) |
 | lower_case(str) | 20240209 | Given a string returns the lowercase converted version | lower_case('AbC') |
-| m2a(arrFields, obj) | 20240209 | Given an array of fields returns an array with the corresponding values of the provided object map. | m2a(from_slon('[name | size]'), @) |
+| m2a(arrFields, obj) | 20240209 | Given an array of fields returns an array with the corresponding values of the provided object map. | m2a(from_slon('[name \| size]'), @) |
 | m4a(obj, 'key') | 20240209 | Given an object map where each entry corresponds to a map will return an array of maps with the extra field 'key' representing the corresponding map entry. | m4a(obj, 'key') |
 | map(expression, array) | base | Returns an array mapping | map(&filename == 'openaf.jar', files[]) |
 | match(str, 're', 'flags') | 20240209 | Equivalent to javascript's match function return a boolean value if a regular expression is matched to a string with optional flags | match('abc 123', '\\d+', 'g') |
