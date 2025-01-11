@@ -92,7 +92,7 @@ Using the same unix “pipe” mechanism it’s possible to apply different cate
 | from_timeAbbr(x) | 20240209 | Converts a time abbreviation into ms | from_timeAbbr('12s') |
 | from_toml(str) | 20240502 | Given a TOML format string tries to convert it to an object | from_toml(@) |
 | get(nameOrPath) | 20240305 | Given a path to the original object or a name set by 'set' or 'setp' returns the corresponding value | packages[].{name: name, version: version, parentVersion: get('version') } |
-| geta(nameOrPath, arrayIndex) | 20240415 | Given a path to the original objet or name set by 'set' or 'setp' returns the arrayIndex element of the corresponding returning array | ranges(length(get('arr')),`0`,`1`).map(&{ elem: geta('arr',@).elem }, @) |
+| geta(nameOrPath, arrayIndex) | 20240415 | Given a path to the original object or name set by 'set' or 'setp' returns the arrayIndex element of the corresponding returning array | ranges(length(get('arr')),`0`,`1`).map(&{ elem: geta('arr',@).elem }, @) |
 | getc(name) | 20240428 | Returns the current value of a counter name user with inc/dec | [].{ idx: inc('my_counter'), code: concat('c', get('my_counter')), name: name} |
 | group(arr, 'field') | all | Given an array will return a new array grouping the entries for each value of the provided field | group(files, 'isDirectory') |
 | group_by(arr, 'field1,field2') | all | Given ar array will return a multi-level array grouping entries for each value of the provided fields (comma delimited) | group_by(files, 'isFile, permissions') |
