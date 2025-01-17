@@ -219,7 +219,7 @@
     {
       "Function": "geta(nameOrPath, arrayIndex)",
       "OpenAF": "20240415",
-      "Description": "Given a path to the original objet or name set by 'set' or 'setp' returns the arrayIndex element of the corresponding returning array",
+      "Description": "Given a path to the original object or name set by 'set' or 'setp' returns the arrayIndex element of the corresponding returning array",
       "Example": "ranges(length(get('arr')),`0`,`1`).map(&{ elem: geta('arr',@).elem }, @)"
     },
     {
@@ -303,7 +303,7 @@
       "Function": "m2a(arrFields, obj)",
       "OpenAF": "20240209",
       "Description": "Given an array of fields returns an array with the corresponding values of the provided object map.",
-      "Example": "m2a(from_slon('[name"
+      "Example": "m2a(from_slon('[name \\"
     },
     {
       "Function": "m4a(obj, 'key')",
