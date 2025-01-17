@@ -491,6 +491,9 @@ var _run = () => {
                         case "delete":
                             _res = $rest(_hp).delete(params.url, _hd)
                             break
+                        case "head":
+                            _res = $rest(_hp).head(params.url, _hd)
+                            break
                         default:
                             _res = $rest(_hp).get(params.url)
                         }
