@@ -716,7 +716,7 @@ var _inputFns = new Map([
                 } finally {
                     return _rr
                 }
-            })
+            }, __, isDef(params.inoafpseq) ? toBoolean(params.inoafpseq) : __)
             //$doWait($doAll(_p))
             _$o(_out, options)
         } else {
