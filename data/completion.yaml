@@ -40,6 +40,11 @@ complete:
     desc: A Java hsperfdata* file -requires file=hsperfdata_user/123-
   - name: in=ini
     desc: INI/Properties format
+  - name: in=javas
+    desc: Tries to list java processes running locally
+    opts:
+    - name: javasinception=
+      desc: If true will include also oafp itself
   - name: in=javagc
     desc: A Java GC log text file format
     opts:

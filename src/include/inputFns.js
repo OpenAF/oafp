@@ -794,6 +794,17 @@ var _inputFns = new Map([
         if (isUnDef(res.getModels)) _exit(-1, "OpenAF support for llm model listing API not found.")
         _$o(res.getModels(), options)
     }],
+    ["javas", (_res, options) => {
+        params.javasinception = toBoolean(params.javasinception)
+        _showTmpMsg()
+        plugin("JMX")
+        var jmx = new JMX()
+        var _r = jmx.getLocals().Locals
+        if (!params.javasinception) {
+            _r = _r.filter(r => r.id != getPid())
+        }
+        _$o(_r, options)
+    }],
     ["ls", (_res, options) => {
         _showTmpMsg()
         if (isString(_res)) {

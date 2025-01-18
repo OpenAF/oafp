@@ -70,6 +70,7 @@ List of data input types that can be auto-detected (through the file extension o
 | gb64json | Equivalent to in=base64 and base64gzip=true |
 | hsperf | A Java hsperfdata* file (requires file=hsperfdata_user/123) |
 | ini | INI/Properties format |
+| javas | Tries to list java processes running locally (javainception=true to include itself) |
 | javagc | The Java GC log lines text format |
 | json | A JSON format (auto-detected) |
 | jsonschema | Given a JSON schema format tries to generate sample data for it |
