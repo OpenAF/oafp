@@ -155,8 +155,16 @@
       "Description": "INI/Properties format"
     },
     {
+      "Input type": "javas",
+      "Description": "Tries to list java processes running locally (javainception=true to include itself)"
+    },
+    {
       "Input type": "javagc",
       "Description": "The Java GC log lines text format"
+    },
+    {
+      "Input type": "jmx",
+      "Description": "Uses Java JMX to retrieve data from another Java process"
     },
     {
       "Input type": "json",
@@ -225,6 +233,10 @@
     {
       "Input type": "slon",
       "Description": "A SLON format (auto-detected)"
+    },
+    {
+      "Input type": "snmp",
+      "Description": "A SNMP device source"
     },
     {
       "Input type": "sql",
@@ -635,6 +647,56 @@
   ],
   [
     {
+      "Option": "jmxpid",
+      "Type": "Number",
+      "Description": "The local java process pid to connect to if 'jmxurl' is not provided."
+    },
+    {
+      "Option": "jmxurl",
+      "Type": "String",
+      "Description": "The JMX URL to connect to if 'jmxpid' is not provided."
+    },
+    {
+      "Option": "jmxuser",
+      "Type": "String",
+      "Description": "The JMX user to use if JMX URL was provided."
+    },
+    {
+      "Option": "jmxpass",
+      "Type": "String",
+      "Description": "The JMX password to use if JMX URL was provided."
+    },
+    {
+      "Option": "jmxprovider",
+      "Type": "String",
+      "Description": "The JMX provider Java class if JMX URL was provided."
+    },
+    {
+      "Option": "jmxop",
+      "Type": "String",
+      "Description": "The operation to perform (see below for options)"
+    }
+  ],
+  [
+    {
+      "Op": "all",
+      "Description": "Tries to retrieve all JMX data available."
+    },
+    {
+      "Op": "domains",
+      "Description": "Retrieves just a list of JMX domains available."
+    },
+    {
+      "Op": "query",
+      "Description": "Performs a JMX query from the input data provided (e.g. java.lang:*)"
+    },
+    {
+      "Op": "get",
+      "Description": "Retrieves a specific JMX object (e.g. java.lang:type=Memory)"
+    }
+  ],
+  [
+    {
       "Option": "jsondesc",
       "Type": "Boolean",
       "Description": "If true the output will be a list of JSON paths of the original json."
@@ -742,6 +804,64 @@
       "Option": "inshformat",
       "Type": "String",
       "Description": "The format to parse stdout and stderr between raw, yaml or json (default)"
+    }
+  ],
+  [
+    {
+      "Option": "insnmp",
+      "Type": "String",
+      "Description": "A SNMP address in the form 'udp://1.2.3.4/161'"
+    },
+    {
+      "Option": "insnmpcommunity",
+      "Type": "String",
+      "Description": "The SNMP community to use (default 'public')"
+    },
+    {
+      "Option": "insnmptimeout",
+      "Type": "Number",
+      "Description": "The timeout to wait for a reply"
+    },
+    {
+      "Option": "insnmpretries",
+      "Type": "Number",
+      "Description": "Number of retries in case of failure"
+    },
+    {
+      "Option": "insnmpversion",
+      "Type": "Number",
+      "Description": "Version of the SNMP server (e.g. 2, 3)"
+    },
+    {
+      "Option": "insnmpsec",
+      "Type": "String",
+      "Description": "A JSON/SLON representation of security attributes (see below)"
+    }
+  ],
+  [
+    {
+      "Entry": "securityName",
+      "Description": "The security name to use"
+    },
+    {
+      "Entry": "authProtocol",
+      "Description": "One of: HMAC128SHA224, HMAC192SHA256, HMAC256SHA384, HMAC384SHA512, MD5, SHA"
+    },
+    {
+      "Entry": "privProtocol",
+      "Description": "One of: 3DES, AES128, AES192, AES256, DES"
+    },
+    {
+      "Entry": "authPassphrase",
+      "Description": "The authorization passphrase to use"
+    },
+    {
+      "Entry": "privPassphrase",
+      "Description": "The private passphrase to use"
+    },
+    {
+      "Entry": "engineId",
+      "Description": "The engine id in hexadecimal format"
     }
   ],
   [
