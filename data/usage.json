@@ -414,6 +414,36 @@
       "Option": "trim",
       "Type": "Boolean",
       "Description": "If true all the strings of the result map/list will be trimmed"
+    },
+    {
+      "Option": "xjs",
+      "Type": "String",
+      "Description": "A .js file with function code manipulating an input 'args'. Returns the transformed 'args' variable."
+    },
+    {
+      "Option": "xpy",
+      "Type": "String",
+      "Description": "A .py file with Python function code manipulating an input 'args'. Returns the transformed 'args' variable."
+    },
+    {
+      "Option": "xfn",
+      "Type": "String",
+      "Description": "A javascript code, receiving input as 'args' and return it's code evaluation."
+    },
+    {
+      "Option": "xrjs",
+      "Type": "String",
+      "Description": "A .js file with function code to manipulate each input array record as 'args'. Returns the transformed 'args' record."
+    },
+    {
+      "Option": "xrpy",
+      "Type": "String",
+      "Description": "A .py file with function code to manipulate each input array record as 'args'. Returns the transformed 'args' record."
+    },
+    {
+      "Option": "xrfn",
+      "Type": "String",
+      "Description": "A javascript code, receiving each input array record as 'args' and return it's code evaluation."
     }
   ],
   [
