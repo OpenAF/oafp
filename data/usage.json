@@ -296,6 +296,21 @@
       "Description": "A JSON/SLON map with a 'a' path and a 'b' path to compare and provide diff data"
     },
     {
+      "Option": "field2byte",
+      "Type": "String",
+      "Description": "A comma delimited list of fields whose value should be converted to a byte abbreviation"
+    },
+    {
+      "Option": "field2date",
+      "Type": "String",
+      "Description": "A comma delimited list of fields whose value should be converted to date values"
+    },
+    {
+      "Option": "field2si",
+      "Type": "String",
+      "Description": "A comma delimited list of fields whose value should be converted to a SI abbreviation"
+    },
+    {
       "Option": "flatmap",
       "Type": "Boolean",
       "Description": "If true a map structure will be flat to just one level (optionally flatmapsep=[char] to use a different separator that '.')"
@@ -414,6 +429,11 @@
       "Option": "trim",
       "Type": "Boolean",
       "Description": "If true all the strings of the result map/list will be trimmed"
+    },
+    {
+      "Option": "val2icon",
+      "Type": "Boolean",
+      "Description": "If true will transform undefined, null and boolean values to emoticons"
     },
     {
       "Option": "xjs",
