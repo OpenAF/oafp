@@ -432,8 +432,8 @@
     },
     {
       "Option": "val2icon",
-      "Type": "Boolean",
-      "Description": "If true will transform undefined, null and boolean values to emoticons"
+      "Type": "String",
+      "Description": "If defined will transform undefined, null and boolean values to emoticons (values can be 'default' or 'simple')"
     },
     {
       "Option": "xjs",
