@@ -338,10 +338,6 @@ var options = {
     __pause: params.pause, 
     __key: params.__key 
 }
-// ndjson options
-/*if (params.type == "ndjson") {
-    params.ndjsonjoin = toBoolean(_$(params.ndjsonjoin, "ndjsonjoin").isString().default(__))
-}*/
 // csv options
 if (isDef(params.inputcsv)) {
     params.inputcsv = _fromJSSLON(params.inputcsv)

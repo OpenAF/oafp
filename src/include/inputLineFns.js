@@ -179,5 +179,26 @@ var _inputLineFns = {
         } else {
             return true
         }
+    },
+    "ndslon": (r, options) => {
+        if (!isBoolean(params.ndslonjoin)) params.ndslonjoin = toBoolean(_$(params.ndslonjoin, "ndslonjoin").isString().default(__))
+        
+        if (!params.ndslonjoin) {
+            if (isUnDef(global.__ndslonbuf) && r.length != 0 && r.trim().startsWith("(")) global.__ndslonbuf = ""
+            if (isDef(global.__ndslonbuf)) {
+                if (r.length != 0 && !r.trim().endsWith(")")) { global.__ndslonbuf += r.trim(); return }
+                if (global.__ndslonbuf.length > 0) { r = global.__ndslonbuf + r; global.__ndslonbuf = __ }
+            }
+            if (r.length == 0 || r.length > 0 && r.trim().substring(0, 1) != "(") { 
+                _$o(af.fromSLON(global.__ndslonbuf), options, true)
+                noFurtherOutput = true
+                global.__ndslonbuf = __
+                return 
+            }
+            _$o(af.fromSLON(String(r)), options, true)
+            noFurtherOutput = true
+        } else {
+            return true
+        }
     }
 }

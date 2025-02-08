@@ -1,6 +1,7 @@
 [
     [".json", "json"],
     [".ndjson", "ndjson"],
+    [".ndslon", "ndslon"],
     [".slon", "slon"],
     [".yaml", "yaml"],
     [".xml", "xml"],

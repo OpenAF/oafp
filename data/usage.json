@@ -204,7 +204,11 @@
     },
     {
       "Input type": "ndjson",
-      "Description": "A NDJSON format"
+      "Description": "A NDJSON (new-line delimited JSON) format"
+    },
+    {
+      "Input type": "ndslon",
+      "Description": "A NDSLON (new-line delimited SLON) format"
     },
     {
       "Input type": "oaf",
@@ -569,7 +573,11 @@
     },
     {
       "Output format": "ndjson",
-      "Description": "A NDJSON format"
+      "Description": "A NDJSON (new-line delimited JSON) format"
+    },
+    {
+      "Output format": "ndslon",
+      "Description": "A NDSLON (new-line delimited SLON) format"
     },
     {
       "Output format": "openmetrics",
@@ -840,6 +848,18 @@
       "Option": "ndjsonfilter",
       "Type": "Boolean",
       "Description": "If true each line is interpreted as an array before filters execute (this allows to filter json records on a ndjson)"
+    }
+  ],
+  [
+    {
+      "Option": "ndslonjoin",
+      "Type": "Boolean",
+      "Description": "If true will join the ndslon records to build an output array"
+    },
+    {
+      "Option": "ndslonfilter",
+      "Type": "Boolean",
+      "Description": "If true each line is interpreted as an array before filters execute (this allows to filter slon records on a ndslon)"
     }
   ],
   [

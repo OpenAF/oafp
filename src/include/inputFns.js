@@ -150,7 +150,7 @@ var _inputFns = new Map([
         if (!isBoolean(params.ndjsonjoin)) params.ndjsonjoin = toBoolean(_$(params.ndjsonjoin, "ndjsonjoin").isString().default(__))
 
         _showTmpMsg()
-        global.__ndjsonbuf = __
+        global.__ndjsonbuf = __, noOut = true
         var _ndjline = (r, fn) => {
             if (isUnDef(global.__ndjsonbuf) && r.length != 0 && r.trim().startsWith("{")) global.__ndjsonbuf = ""
             if (isDef(global.__ndjsonbuf)) {
@@ -158,11 +158,15 @@ var _inputFns = new Map([
                 if (global.__ndjsonbuf.length > 0) { r = global.__ndjsonbuf + r; global.__ndjsonbuf = __ }
             }
             if (r.length == 0 || r.length > 0 && r.trim().substring(0, 1) != "{") { 
+                noOut = false
                 fn(r)
                 global.__ndjsonbuf = __
                 return 
             }
-            fn(r)
+            if (r.trim().length > 0) {
+                noOut = false
+                fn(r)
+            }
         }
         var _ndjproc = res => {
             var _j = []
@@ -196,6 +200,63 @@ var _inputFns = new Map([
             })
             _stream.close()
         }
+        if (noOut) _clearTmpMsg()
+    }],
+    ["ndslon", (_res, options) => {
+        if (!isBoolean(params.ndslonjoin)) params.ndslonjoin = toBoolean(_$(params.ndslonjoin, "ndslonjoin").isString().default(__))
+
+        _showTmpMsg()
+        global.__ndslonbuf = __, noOut = true
+        var _ndslonline = (r, fn) => {
+            if (isUnDef(global.__ndslonbuf) && r.length != 0 && r.trim().startsWith("(")) global.__ndslonbuf = ""
+            if (isDef(global.__ndslonbuf)) {
+                if (r.length != 0 && !r.trim().endsWith(")")) { global.__ndslonbuf += r.trim(); return }
+                if (global.__ndslonbuf.length > 0) { r = global.__ndslonbuf + r; global.__ndslonbuf = __ }
+            }
+            if (r.length == 0 || r.length > 0 && r.trim().substring(0, 1) != "{") { 
+                noOut = false
+                fn(r)
+                global.__ndslonbuf = __
+                return 
+            }
+            if (r.trim().length > 0) {
+                noOut = false
+                fn(r)
+            }
+        }
+        var _ndslonproc = res => {
+            var _j = []
+            res.split("\n").filter(l => l.length > 0).forEach(r => _ndslonline(r, r => _j.push(af.fromSLON(r))))
+            return _j
+        }
+
+        if (params.ndslonjoin) {
+            if (isDef(params.file) && isUnDef(params.cmd)) {
+                _res = io.readFileString(params.file)
+            }
+            if (isDef(params.cmd)) {
+                _res = _runCmd2Bytes(params.cmd, true)
+            }
+
+            _$o(_ndslonproc(_res), options)
+        } else {
+            var _stream
+            if (isDef(params.file) && isUnDef(params.cmd)) {
+                _stream = io.readFileStream(params.file)
+            } else {
+                if (isDef(params.cmd)) {
+                    _stream = af.fromBytes2InputStream(_runCmd2Bytes(params.cmd))
+                } else {
+                    _stream = af.fromString2InputStream(_res)
+                }
+            }
+
+            ioStreamReadLines(_stream, r => {
+                _ndslonline(r, line => _$o(af.fromSLON(line), clone(options), true) )
+            })
+            _stream.close()
+        }
+        if (noOut) _clearTmpMsg()
     }],
     ["md", (_res, options) => {
         _showTmpMsg()
