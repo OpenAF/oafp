@@ -163,6 +163,10 @@
       "Description": "The Java GC log lines text format"
     },
     {
+      "Input type": "javathread",
+      "Description": "The Java Thread stack dump lines text format"
+    },
+    {
       "Input type": "jmx",
       "Description": "Uses Java JMX to retrieve data from another Java process"
     },
@@ -701,6 +705,13 @@
       "Option": "javagcjoin",
       "Type": "Boolean",
       "Description": "If true it will return an array with each processed line."
+    }
+  ],
+  [
+    {
+      "Option": "javathreadpid",
+      "Type": "Number",
+      "Description": "Optional you can provider the local java process pid to try to get the thread stack trace (*)"
     }
   ],
   [
