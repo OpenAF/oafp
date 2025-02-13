@@ -196,6 +196,7 @@ var _transformFns = {
     },
     "correcttypes"  : _r => {
         if (toBoolean(params.correcttypes) && isObject(_r)) {
+            ow.loadFormat()
             traverse(_r, (aK, aV, aP, aO) => {
                 switch(descType(aV)) {
                 case "number": if (isString(aV)) aO[aK] = Number(aV); break
@@ -203,7 +204,11 @@ var _transformFns = {
                     // String boolean
                     if (aV.trim().toLowerCase() == "true" || aV.trim().toLowerCase() == "false") { aO[aK] = toBoolean(aV); break }
                     // String ISO date
-                    if (aV.trim().match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/)) { aO[aK] = new Date(aV); break }
+                    if (isDef(ow.format.fromISODate)) {
+                        if (aV.trim().match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\d+Z$/)) { aO[aK] = ow.format.fromISODate(aV); break }
+                    } else {
+                        if (aV.trim().match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/)) { aO[aK] = new Date(aV); break }
+                    }
                     // String date
                     if (aV.trim().match(/^\d{4}-\d{2}-\d{2}$/)) { aO[aK] = new Date(aV); break }
                     // String time with seconds
@@ -557,7 +562,7 @@ var _transformFns = {
         let _lst = params.field2date.split(",").map(r => r.trim())
         traverse(_r, (aK, aV, aP, aO) => {
             if (_lst.indexOf(aP.length > 0 && !aP.startsWith("[") ? aP.substring(1) + "." + aK : aK) >= 0 && isNumber(aV) && aV > 0) {
-                try { aO[aK] = new Date(aV) } catch(e) {}
+                try { aO[aK] = ow.format.fromISODate(aV) } catch(e) {}
             }
         })
         return _r
