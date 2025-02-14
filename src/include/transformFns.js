@@ -562,7 +562,7 @@ var _transformFns = {
         let _lst = params.field2date.split(",").map(r => r.trim())
         traverse(_r, (aK, aV, aP, aO) => {
             if (_lst.indexOf(aP.length > 0 && !aP.startsWith("[") ? aP.substring(1) + "." + aK : aK) >= 0 && isNumber(aV) && aV > 0) {
-                try { aO[aK] = ow.format.fromISODate(aV) } catch(e) {}
+                try { aO[aK] = isString(aV) ? ow.format.fromISODate(aV) : new Date(aV) } catch(e) { printErr(e) }
             }
         })
         return _r
