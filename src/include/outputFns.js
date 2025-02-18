@@ -72,6 +72,10 @@ var _outputFns = new Map([
         if (typeof __flags.TREE.mono == "undefined") options.__format = "ctree"
         _o$o(r, options)
     }],
+    ["btree", (r, options) => {
+        if (typeof __flags.TREE.mono == "undefined") options.__format = "btree"
+        _o$o(r, options)
+    }],
     ["res", (r, options) => {
         _o$o(r, options)
     }],
