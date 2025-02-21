@@ -386,7 +386,7 @@ var _inputFns = new Map([
                 $ch("oafp::indata").create(params.inch.type, isDef($sec().procMap) ? $sec().procMap(params.inch.options) : params.inch.options) 
             }
 
-            var _r = _fromJSSLON(r)
+            var _r = _fromJSSLON(r, true)
             if (toBoolean(params.inchall) || r.trim().length == 0) {
                 _$o($ch("oafp::indata").getAll(isMap(_r) ? _r : __), options)
             } else {
@@ -899,8 +899,8 @@ var _inputFns = new Map([
         _$o(_r, options)
     }],
     ["oafp", (_res, options) => {
-        //params.__inception = true
-        var _r = _fromJSSLON(_res)
+        // Detects if input is YAML of JSON/SLON
+        var _r = _fromJSSLON(_res, true)
         var id = "_oafp_key_" + genUUID()
         if (isMap(_r)) {
             _r.out         = "key"
@@ -938,7 +938,7 @@ var _inputFns = new Map([
     ["sh", (_res, options) => {
         _showTmpMsg()
         var _r
-        _res = _fromJSSLON(_res)
+        _res = _fromJSSLON(_res, true)
         if (isString(_res)) {
             _r = $sh(_res).get(0)
         } else {
@@ -1051,7 +1051,7 @@ var _inputFns = new Map([
         _showTmpMsg()
         plugin("SNMP")
         var snmp = new SNMP(params.insnmp, params.insnmpcommunity, params.insnmptimeout, params.insnmpversion, params.insnmpsec)
-        let _r = {}, _i = _fromJSSLON(_res)
+        let _r = {}, _i = _fromJSSLON(_res, true)
         if (isString(_i)) {
             var _p = _i.split("\n").map(p => p.trim()).filter(p => p.length > 0)
             if (_p.length == 1) {

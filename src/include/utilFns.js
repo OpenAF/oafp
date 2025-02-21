@@ -139,16 +139,22 @@ const _runCmd2Bytes = (cmd, toStr) => {
     .get()
     return toStr ? af.fromBytes2String(data) : data
 }
-const _fromJSSLON = aString => {
+const _fromJSSLON = (aString, checkYAML) => {
 	if (!isString(aString) || aString == "" || isNull(aString)) return ""
 
 	aString = aString.trim()
-    if (isDef(af.fromJSSLON)) return af.fromJSSLON(aString)
-	if (aString.startsWith("{")) {
-		return jsonParse(aString, __, __, true)
-	} else {
-		return af.fromSLON(aString)
-	}
+    var _r
+    if (isDef(af.fromJSSLON)) _r = af.fromJSSLON(aString)
+    if (isUnDef(_r)) {
+        if (aString.startsWith("{")) {
+            _r = jsonParse(aString, __, __, true)
+        } else {
+            _r = af.fromSLON(aString)
+        }
+    } else {
+        if (isString(_r) && checkYAML) _r = af.fromYAML(_r)
+    }
+    return _r
 }
 const _chartPathParse = (r, frmt, prefix, isStatic) => {
     prefix = _$(prefix).isString().default("_oafp_fn_")

@@ -220,7 +220,7 @@
     },
     {
       "Input type": "oafp",
-      "Description": "Takes a JSON/SLON map input as parameters for calling a sub oafp process (arrays will call multiple oafp processes; inoafpseq=true will process sequentially)"
+      "Description": "Takes a JSON/SLON/YAML map input as parameters for calling a sub oafp process (arrays will call multiple oafp processes; inoafpseq=true will process sequentially)"
     },
     {
       "Input type": "openmetrics",
