@@ -207,7 +207,12 @@ const _print = (m) => {
         } else {
             if ("undefined" === typeof global.__oafp_streams) global.__oafp_streams = {}
             if ("undefined" !== typeof global.__oafp_streams[params.outfile]) {
-                ioStreamWrite(global.__oafp_streams[params.outfile].s, m + (toBoolean(params.outfileappend) ? "\n" : ""))
+                var _ofa = toBoolean(params.outfileappend)
+                if (_ofa) {
+                    ioStreamWrite(global.__oafp_streams[params.outfile].s, m + (_ofa ? "\n" : ""))
+                } else {
+                    io.writeFileBytes(params.outfile, isString(m) ? af.fromString2Bytes(m) : m)
+                }
             }
         }
     }

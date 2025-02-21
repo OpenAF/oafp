@@ -395,7 +395,7 @@ var _res = "", noFurtherOutput = false
 // Check for output streams
 if (isDef(params.outfile)) {
     if ("undefined" === typeof global.__oafp_streams) global.__oafp_streams = {}
-    if ("undefined" === typeof global.__oafp_streams[params.outfile])
+    if ("undefined" === typeof global.__oafp_streams[params.outfile] && toBoolean(params.outfileappend))
         global.__oafp_streams[params.outfile] = { s: io.writeFileStream(params.outfile, toBoolean(params.outfileappend)) }
 }
 
