@@ -105,6 +105,14 @@
       "Description": "Comma delimited list of installed OpenAF's oPacks to consider to extend oafp's inputs, transformations and outputs"
     },
     {
+      "Option": "pipe",
+      "Description": "A JSON/SLON/YAML map for recursive call of oafp similar to using unix pipes (useful with -f)"
+    },
+    {
+      "Option": "-f",
+      "Description": "Enables to provide a JSON/SLON/YAML file with all the oafp parameters as a map"
+    },
+    {
       "Option": "-examples",
       "Description": "Will access an internet based list of oafp examples and list them"
     },

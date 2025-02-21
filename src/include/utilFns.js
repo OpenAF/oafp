@@ -209,7 +209,15 @@ const _print = (m) => {
     if ("undefined" !== typeof m) {
         if ("undefined" === typeof params.outfile) {
             if (toBoolean(params.loopcls)) cls()
-            print(m)
+            if (isDef(params.pipe)) {
+                var _m = isMap(params.pipe) ? params.pipe : _fromJSSLON(params.pipe, true)
+                if (isMap(_m)) {
+                    _m.data = m
+                    oafp(_m)
+                }
+            } else {
+                print(m)
+            }
         } else {
             if ("undefined" === typeof global.__oafp_streams) global.__oafp_streams = {}
             if ("undefined" !== typeof global.__oafp_streams[params.outfile]) {

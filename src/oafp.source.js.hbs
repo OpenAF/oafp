@@ -6,6 +6,39 @@ if (isUnDef(params) || isDef(params.____ojob)) return
 // Process secBuckets
 if (isDef($sec().procMap)) params = $sec().procMap(params)
 
+// --- Util functions
+{{{srcUtilFns}}}
+// ---
+
+// Process params
+// Check if file is provided
+if (Object.keys(params).indexOf("-f") >= 0) {
+    let _l = Object.keys(params).length
+    var _i = Object.keys(params).indexOf("-f")
+    if (_l > _i + 1) {
+        if (Object.keys(params)[_i + 1].length > 0) {
+            params.paramsfile = Object.keys(params)[_i + 1]
+            delete params[params.paramsfile]
+        }
+    }
+    delete params["-f"]
+}
+if (isDef(params.paramsfile)) {
+    if (io.fileExists(params.paramsfile)) {
+        var _args = io.readFileString(params.paramsfile)
+        if (isString(_args)) {
+            // Check if it is a JSON/SLON/YAML
+            _margs = _fromJSSLON(_args, true)
+            if (isMap(_margs)) {
+                // Set the params if not already set
+                Object.keys(_margs).forEach(k => {
+                    if (isUnDef(params[k])) params[k] = _margs[k]
+                })
+            }
+        }
+    }
+}
+
 // Ensure params are interpreted as lower case
 Object.keys(params).forEach(pk => {
     if (params[pk].length > 0) {
@@ -16,10 +49,6 @@ Object.keys(params).forEach(pk => {
         }
     }
 })
-
-// --- Util functions
-{{{srcUtilFns}}}
-// ---
 
 // Exit function
 const _exit = (code, msg) => {
