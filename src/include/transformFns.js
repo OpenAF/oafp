@@ -440,10 +440,16 @@ var _transformFns = {
         case "diffb"    :
             let cb3 = new Set(toOrdStrs(_d1))
             return _d2.filter(r => !cb3.has(toOrdStr(r)))
-        case "diffab"  :
+        case "diffab"   :
             let cb4 = new Set(toOrdStrs(_d1))
             let cb5 = new Set(toOrdStrs(_d2))
             return _d1.filter(r => !cb5.has(toOrdStr(r))).concat(_d2.filter(r => !cb4.has(toOrdStr(r))))
+        case "diff"     :
+            let cb6 = new Set(toOrdStrs(_d1))
+            let cb7 = new Set(toOrdStrs(_d2))
+            return            _d1.map(r => Object.assign({ '*': cb7.has(toOrdStr(r)) ? __ : "a" }, r))
+                      .concat(_d2.map(r => Object.assign({ '*': cb6.has(toOrdStr(r)) ? __ : "b" }, r)))
+                      .filter(r => isDef(r['*']))
         case "intersect":
         default         :
             let cb1 = new Set(toOrdStrs(_d2))
