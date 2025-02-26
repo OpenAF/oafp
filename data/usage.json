@@ -1155,7 +1155,7 @@
     {
       "Option": "setop",
       "Type": "String",
-      "Description": "Allows to choose a different set operation between 'union', 'diffa', 'diffb', 'diffab' (symetric difference) and 'intersect' (default)"
+      "Description": "Allows to choose a different set operation between 'union', 'diffa', 'diffb', 'diffab' (symetric difference), 'diff' and 'intersect' (default)"
     }
   ],
   [
