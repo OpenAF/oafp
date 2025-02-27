@@ -194,7 +194,7 @@ params.debug = toBoolean(params.debug)
 if (isDef(params["-debug"])) params.debug = true
 
 // Verify the data param
-if ("[object Object]" == Object.prototype.toString.call(params.data)) {
+if ("[object Object]" == Object.prototype.toString.call(params.data) || Array.isArray(params.data)) {
     params.data = stringify(params.data, __, "")
 }
 
