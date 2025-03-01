@@ -228,6 +228,8 @@ const _print = (m) => {
                 } else {
                     io.writeFileBytes(params.outfile, isString(m) ? af.fromString2Bytes(m) : m)
                 }
+            } else {
+                io.writeFileBytes(params.outfile, isString(m) ? af.fromString2Bytes(m) : m)
             }
         }
     }
