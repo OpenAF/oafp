@@ -6,6 +6,12 @@ help:
     desc     : Option to perform (e.g. dev; clean; pack; build; test)
     example  : "build"
     mandatory: false
+    options  :
+    - dev
+    - clean
+    - pack
+    - build
+    - test
 
 todo:
 - (ask        ):
