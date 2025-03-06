@@ -133,7 +133,7 @@ var _outputFns = new Map([
         if (isString(r))
             _print(r)
         else
-            _print(stringify(r))
+            _print(stringify(r,__,""))
     }],
     ["lines", (r, options) => {
         if (isArray(r)) {
