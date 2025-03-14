@@ -231,6 +231,10 @@
       "Description": "Takes a JSON/SLON/YAML map input as parameters for calling a sub oafp process (arrays will call multiple oafp processes; inoafpseq=true will process sequentially)"
     },
     {
+      "Input type": "ojob",
+      "Description": "Takes a JSON/SLON/YAML map input with a 'ojob' string and a 'args' map parameter"
+    },
+    {
       "Input type": "openmetrics",
       "Description": "An OpenMetrics/Prometheus compatible format"
     },
