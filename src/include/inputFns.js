@@ -861,6 +861,30 @@ var _inputFns = new Map([
             _exit(-1, "hsperf is only supported with either 'file' or 'cmd' defined.")
         }
     }],
+    ["jfr", (_res, options) => {
+        ow.loadJava()
+        if (isUnDef(ow.java.parseJFR)) _exit(-1, "jfr not available.")
+
+        if (!isBoolean(params.jfrjoin)) params.jfrjoin = toBoolean(_$(params.jfrjoin, "jfrjoin").isString().default(__))
+        
+        _showTmpMsg()
+        var _r
+        if (isDef(params.file) && isUnDef(params.cmd)) {
+            _res = params.file
+        }
+        if (isDef(params.cmd)) {
+            _res = _runCmd2Bytes(params.cmd, true)
+            var _ft = io.createTempFile("jfr", ".jfr")
+            io.writeFileBytes(_ft, _res)
+            _res = _ft
+        }
+
+        if (params.jfrjoin) {
+            _$o(ow.java.parseJFR(_res), options)
+        } else {
+            ow.java.parseJFR(_res, event => _$o(event, options))
+        }
+    }],
     ["rawhex", (_res, options) => {
         var _r
         params.inrawhexline = _$(params.inrawhexline, "inrawhexline").isNumber().default(__)

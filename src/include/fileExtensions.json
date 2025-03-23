@@ -12,5 +12,6 @@
     [".xlsx", "xls"],
     [".sql", "sql"],
     [".toml", "toml"],
-    [".jwt", "jwt"]
+    [".jwt", "jwt"],
+    [".jfr", "jfr"]
 ]
