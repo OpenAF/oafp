@@ -66,7 +66,7 @@ jobs:
 
     # --------------------
     - name: Build and pack
-      uses: openaf/ojob-action@v4
+      uses: openaf/ojob-action@v7
       env :
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
