@@ -740,6 +740,11 @@
       "Option": "jfrjoin",
       "Type": "Boolean",
       "Description": "If true will join the JFR records to build an output array"
+    },
+    {
+      "Option": "jfrdesc",
+      "Type": "Boolean",
+      "Description": "If true it will include a __desc_ entry with the JFR event description"
     }
   ],
   [
