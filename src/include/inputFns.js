@@ -298,7 +298,7 @@ var _inputFns = new Map([
     }],
     ["ask", (_res, options) => {
         var _d = []
-        _res = af.fromJSSLON(_res)
+        _res = _fromJSSLON(_res)
         if (isDef(askStruct) && isArray(_res)) {
             __conConsole = true
             __con.getTerminal().settings.set("-icanon min 1 -echo")
@@ -1005,7 +1005,7 @@ var _inputFns = new Map([
     }],
     ["llm", (_res, options) => {
         params.llmenv     = _$(params.llmenv, "llmenv").isString().default("OAFP_MODEL")
-        params.llmoptions = _$(params.llmoptions, "llmoptions").isString().default(__)
+        params.llmoptions = _$(params.llmoptions, "llmoptions").or().isString().isMap().default(__)
         if (isUnDef(params.llmoptions) && !isString(getEnv(params.llmenv))) 
             _exit(-1, "llmoptions not defined and " + params.llmenv + " not found.")
 
@@ -1040,7 +1040,7 @@ var _inputFns = new Map([
     }],
     ["llmmodels", (_res, options) => {
         params.llmenv     = _$(params.llmenv, "llmenv").isString().default("OAFP_MODEL")
-        params.llmoptions = _$(params.llmoptions, "llmoptions").isString().default(__)
+        params.llmoptions = _$(params.llmoptions, "llmoptions").or().isString().isMap().default(__)
         if (isUnDef(params.llmoptions) && !isString(getEnv(params.llmenv))) 
             _exit(-1, "llmoptions not defined and " + params.llmenv + " not found.")
 
@@ -1091,7 +1091,7 @@ var _inputFns = new Map([
         params.insnmptimeout = _$(params.insnmptimeout, "insnmptimeout").isNumber().default(__)
         params.insnmpretries = _$(params.insnmpretries, "insnmpretries").isNumber().default(__)
         params.insnmpversion = _$(params.insnmpversion, "insnmpversion").isString().default(__)
-        params.insnmpsec = _fromJSSLON(_$(params.insnmpsec, "insnmpsec").isString().default(__))
+        params.insnmpsec = _fromJSSLON(_$(params.insnmpsec, "insnmpsec").or().isString().isMap().default(__))
         _showTmpMsg()
         plugin("SNMP")
         var snmp = new SNMP(params.insnmp, params.insnmpcommunity, params.insnmptimeout, params.insnmpversion, params.insnmpsec)

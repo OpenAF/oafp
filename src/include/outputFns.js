@@ -276,7 +276,7 @@ var _outputFns = new Map([
     }],   
     ["grid" , (r, options) => {
         if (isUnDef(params.grid)) _exit(-1, "For out=grid you need to provide a grid=...")
-        let _f = _fromJSSLON(_$(params.grid, "grid").isString().$_())
+        let _f = _fromJSSLON(_$(params.grid, "grid").or().isString().isMap().$_())
 
         if (isArray(_f) && _f.length > 0 && isArray(_f[0])) {
             _f.forEach((y, yi) => {
@@ -576,7 +576,7 @@ var _outputFns = new Map([
   
             var xls = new XLS(isDef(origFile) && io.fileExists(origFile) ? origFile : __)
             var sheet = xls.getSheet(_$(params.xlssheet, "xlssheet").isString().default("data"))
-            params.xlsformat = _$(params.xlsformat, "xlsformat").isString().default("(bold: true, borderBottom: \"medium\", borderBottomColor: \"red\")")
+            params.xlsformat = _$(params.xlsformat, "xlsformat").or().isString().isMap().default("(bold: true, borderBottom: \"medium\", borderBottomColor: \"red\")")
             params.xlsformat = _fromJSSLON(params.xlsformat)
             ow.format.xls.setTable(xls, sheet, "A", 1, ar, __, params.xlsformat)
             xls.writeFile(params.xlsfile)

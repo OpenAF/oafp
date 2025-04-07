@@ -434,7 +434,7 @@ if (isDef(params.outfile)) {
 }
 
 // Check chs
-if (isString(params.chs)) {
+if (isString(params.chs) || isMap(params.chs)) {
     var _chs = af.fromJSSLON(params.chs)
     if (!isArray(_chs)) _chs = [_chs]
     _chs.forEach(ch => {
@@ -509,7 +509,7 @@ var _run = () => {
                 } else {
                     if (isDef(params.url)) {
                         params.urlmethod = _$(params.urlmethod, "urlmethod").isString().default("GET")
-                        let _hp = _fromJSSLON(_$(params.urlparams).isString().default("{}"))
+                        let _hp = _fromJSSLON(_$(params.urlparams).or().isString().isMap().default("{}"))
 
                         let _hd
                         if (isDef(params.urldata)) _hd = _fromJSSLON(params.urldata)

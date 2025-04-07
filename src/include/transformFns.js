@@ -8,7 +8,7 @@ var _transformFns = {
     "cmlt"    : r => {
         if (toBoolean(params.cmlt)) {
             var _r = (isArray(r) ? r : [ r ])
-            params.cmltch = _$(params.cmltch, "cmltch").default("(type: simple)")
+            params.cmltch = _$(params.cmltch, "cmltch").or().isString().isMap().default("(type: simple)")
             let cmltch = _fromJSSLON(params.cmltch)
             if (isMap(cmltch)) {
                 if (isUnDef(cmltch.type)) _exit(-1, "cmltch.type is not defined.")
@@ -39,7 +39,7 @@ var _transformFns = {
             let _d1 = $path(_r, _d.a), _d2 = $path(_r, _d.b), _dt = __
             if (toBoolean(params.color)) {
                 if (isUnDef(params.difftheme) && isDef(getEnv("OAFP_DIFFTHEME"))) params.difftheme = getEnv("OAFP_DIFFTHEME")
-                _dt = _fromJSSLON(_$(params.difftheme, "difftheme").isString().default(""))
+                _dt = _fromJSSLON(_$(params.difftheme, "difftheme").or().isString().isMap().default(""))
                 _dt = merge({
                     added  : "GREEN",
                     removed: "RED",
@@ -314,7 +314,7 @@ var _transformFns = {
             ow.loadAI()
             var rg = ow.ai.regression()
             let regressionpath    = _$(params.regressionpath, "regressionpath").isString().default("@")
-            let regressionoptions = _fromJSSLON(_$(params.regressionoptions, "regressionoptions").isString().default("{order:2,precision:5}"))
+            let regressionoptions = _fromJSSLON(_$(params.regressionoptions, "regressionoptions").or().isString().isMap().default("{order:2,precision:5}"))
             let _data = $path(_r, regressionpath)
             if (isArray(_data)) {
                 if (isString(params.regressionx)) {
@@ -355,7 +355,7 @@ var _transformFns = {
         return _r
     },
     "normalize": _r => {
-        if (isString(params.normalize)) {
+        if (isString(params.normalize) || isMap(params.normalize)) {
             var _s = _fromJSSLON(params.normalize)
             if (isMap(_s)) {
                 ow.loadAI()
@@ -369,7 +369,7 @@ var _transformFns = {
         }
     },
     "denormalize": _r => {
-        if (isString(params.denormalize)) {
+        if (isString(params.denormalize) || isMap(params.denormalize)) {
             var _s = _fromJSSLON(params.denormalize)
             if (isMap(_s)) {
                 ow.loadAI()
