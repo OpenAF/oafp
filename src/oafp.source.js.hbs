@@ -621,6 +621,8 @@ if (isNumber(params.loop)) {
         }
         _run()
         sleep(params.loop * 1000, true)
+        // Ensure params have a fresh copy
+        if (isDef(bkprms)) params = clone(bkprms)
     }
 } else {
     _run()
