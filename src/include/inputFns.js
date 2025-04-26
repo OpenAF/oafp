@@ -920,7 +920,19 @@ var _inputFns = new Map([
     ["oaf", (_res, options) => {
         if (!isString(_res)) _exit(-1, "oaf is only supported with a string.")
         _showTmpMsg()
-        var _r = af.eval(_res)
+        var _r
+        if (isString(_res)) {
+            let _t
+            if (io.fileExists(_res)) {
+                _t = io.readFileString(_res)
+            } else {
+                _t = _res
+            }
+            if (isString(_t)) {
+                let _f = new Function("var data;" + _t + ";return data")
+                _r = _f()
+            }
+        }
         _$o(_r, options)
     }],
     ["oafp", (_res, options) => {
@@ -939,15 +951,21 @@ var _inputFns = new Map([
             $set(id, true)
             var _out = pForEach(_r, (__r, i) => {
                 var sid = id + "_" + String(i)
-                __r.out         = "key"
-                __r.__key       = sid
-                __r.__inception = true
+                var _ok = false
+                if (isUnDef(__r.out)) {
+                    __r.out         = "key"
+                    __r.__key       = sid
+                    __r.__inception = true
+                    _ok = true
+                }
                 //return $do(() => {
                 var _rr
                 try {
                     oafp(__r)
-                    _rr = $get(sid)
-                    $unset(sid)
+                    if (_ok) {
+                        _rr = $get(sid)
+                        $unset(sid)
+                    }
                 } catch(e) {
                     sprintErr(e)
                 } finally {

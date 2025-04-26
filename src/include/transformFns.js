@@ -599,6 +599,20 @@ var _transformFns = {
             }
         })
         return _r
+    },
+    "oaf": _r => {
+        if (isString(params.oaf)) {
+            let _t
+            if (io.fileExists(params.oaf)) {
+                _t = io.readFileString(params.oaf)
+            } else {
+                _t = params.oaf
+            }
+            if (isString(_t)) {
+                let _f = new Function("data", _t + ";return data")
+                return _f(_r)
+            }
+        }
+        return _r
     }
-
 }

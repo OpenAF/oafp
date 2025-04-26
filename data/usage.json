@@ -228,7 +228,7 @@
     },
     {
       "Input type": "oaf",
-      "Description": "Takes an OpenAF scripting code to execute and use the result as input"
+      "Description": "Takes an OpenAF scripting code or OpenAF scripting file to execute and use the result as input"
     },
     {
       "Input type": "oafp",
@@ -408,6 +408,11 @@
       "Option": "numformat",
       "Type": "String",
       "Description": "For all number values applies a java.util.Formatter format (e.g. %,d)"
+    },
+    {
+      "Option": "oaf",
+      "Type": "String",
+      "Description": "An OpenAF scripting code or OpenAF scripting file to execute taking input as 'data' and returning the transformed data"
     },
     {
       "Option": "regression",
@@ -607,6 +612,10 @@
     {
       "Output format": "openmetrics",
       "Description": "Converts a map or list to OpenMetrics/Prometheus compatible format"
+    },
+    {
+      "Output format": "oaf",
+      "Description": "An OpenAF scripting code or OpenAF scripting file (together with 'outoaf') to execute taking input transformed as 'data'"
     },
     {
       "Output format": "pjson",

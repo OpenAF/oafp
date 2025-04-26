@@ -594,5 +594,20 @@ var _outputFns = new Map([
                 } 
             }
         }
+    }],
+    ["oaf", (r, options) => {
+        if (isUnDef(params.outoaf)) _exit(-1, "For out=oaf you need to provide a outoaf=...")
+        if (isString(params.outoaf)) {
+            let _t
+            if (io.fileExists(params.outoaf)) {
+                _t = io.readFileString(params.outoaf)
+            } else {
+                _t = params.outoaf
+            }
+            if (isString(_t)) {
+                let _f = new Function("data", _t)
+                _f(r)
+            }
+        }
     }]
 ])
