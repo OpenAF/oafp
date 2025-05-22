@@ -733,6 +733,11 @@
       "Option": "indbexec",
       "Type": "Boolean",
       "Description": "If true the input SQL is not a query but a DML statement"
+    },
+    {
+      "Option": "indbdesc",
+      "Type": "Boolean",
+      "Description": "If true the output will be a list of column names and types (use 'LIMIT 1' for faster results)"
     }
   ],
   [
