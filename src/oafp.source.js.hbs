@@ -19,6 +19,9 @@ var procParams = () => {
     params.output = params.format
     params.in = params.type
     params.input = params.type
+    if (isUnDef(params._id)) {
+        params._id = genUUID()
+    }
 }
 procParams()
 
@@ -546,19 +549,17 @@ var _run = () => {
                             _res = []
                             //var _resC = $atomic(), _par = false, _opar = isDef(params.parallel) && toBoolean(params.parallel), _sres, _nc = getNumberOfCores(), times = $atomic(), execs = $atomic()
                             var _p = _parInit()
-                            if (_p._par) {
-                                ow.loadObj()
-                                _sres = new ow.obj.syncArray()
-                            }
+                            ow.loadObj()
+                            _p._sres = new ow.obj.syncArray()
                             io.pipeLn(r => {
                                 try {
                                     _parExec(_p, () => {
                                         if (isDef(_inputLineFns[params.type])) {
                                             if (_inputLineFns[params.type](_transform(r), clone(options))) {
-                                                _sres.add(r)
+                                                _p._sres.add(r)
                                             }
                                         } else { 
-                                            _sres.add(r)
+                                            _p._sres.add(r)
                                         }
                                     })
                                 } catch(ipl) {
@@ -570,7 +571,7 @@ var _run = () => {
                             })
                             if (_p._par) {
                                 _parDone(_p)
-                                _res = _res.concat(_sres.toArray())
+                                _res = _res.concat(_p._sres.toArray())
                             }
                             _res = _res.join('\n')
                         }

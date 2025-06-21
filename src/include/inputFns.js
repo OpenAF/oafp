@@ -132,17 +132,22 @@ var _inputFns = new Map([
                 }
             }
 
+            var _p = _parInit()
             ioStreamReadLines(_stream, r => {
-                // If linesvisual=true then the first line is the header and the space position of
-                // each header title determines the column position for the remaining lines
+                _parExec(_p, () => {
+                    // If linesvisual=true then the first line is the header and the space position of
+                    // each header title determines the column position for the remaining lines
 
-                if (toBoolean(params.linesvisual)) {
-                    var _r = _visualProc(r)
-                    if (isDef(_r)) _$o(_r, clone(options), true)
-                } else {
-                    _$o(r, clone(options), true)
-                }
+                    if (toBoolean(params.linesvisual)) {
+                        var _r = _visualProc(r)
+                        if (isDef(_r)) _$o(_r, clone(options), true)
+                    } else {
+                        _$o(r, clone(options), true)
+                    }
+                })
+                _p = _parCheck(_p)
             })
+            _parDone(_p)
             _stream.close()
         }
     }],
