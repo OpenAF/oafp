@@ -544,21 +544,34 @@ var _run = () => {
                     } else {
                         if (params.input != "pm") {
                             _res = []
+                            //var _resC = $atomic(), _par = false, _opar = isDef(params.parallel) && toBoolean(params.parallel), _sres, _nc = getNumberOfCores(), times = $atomic(), execs = $atomic()
+                            var _p = _parInit()
+                            if (_p._par) {
+                                ow.loadObj()
+                                _sres = new ow.obj.syncArray()
+                            }
                             io.pipeLn(r => {
                                 try {
-                                    if (isDef(_inputLineFns[params.type])) {
-                                        if (_inputLineFns[params.type](_transform(r), clone(options))) {
-                                            _res.push(r)
+                                    _parExec(_p, () => {
+                                        if (isDef(_inputLineFns[params.type])) {
+                                            if (_inputLineFns[params.type](_transform(r), clone(options))) {
+                                                _sres.add(r)
+                                            }
+                                        } else { 
+                                            _sres.add(r)
                                         }
-                                    } else { 
-                                        _res.push(r)
-                                    }
+                                    })
                                 } catch(ipl) {
                                     printErr("ERROR: " + ipl)
                                 }
+                                _p = _parCheck(_p)
 
                                 return false
                             })
+                            if (_p._par) {
+                                _parDone(_p)
+                                _res = _res.concat(_sres.toArray())
+                            }
                             _res = _res.join('\n')
                         }
                     }

@@ -195,9 +195,12 @@ var _inputFns = new Map([
                 }
             }
 
+            var _p = _parInit()
             ioStreamReadLines(_stream, r => {
-                _ndjline(r, line => _$o(jsonParse(line, __, __, true), clone(options), true) )
+                _parExec(_p, () => _ndjline(r, line => _$o(jsonParse(line, __, __, true), clone(options), true) ) )
+                _p = _parCheck(_p)
             })
+            _parDone(_p)
             _stream.close()
         }
         if (noOut) _clearTmpMsg()
@@ -213,7 +216,7 @@ var _inputFns = new Map([
                 if (r.length != 0 && !r.trim().endsWith(")")) { global.__ndslonbuf += r.trim(); return }
                 if (global.__ndslonbuf.length > 0) { r = global.__ndslonbuf + r; global.__ndslonbuf = __ }
             }
-            if (r.length == 0 || r.length > 0 && r.trim().substring(0, 1) != "{") { 
+            if (r.length == 0 || r.length > 0 && r.trim().substring(0, 1) != "(") { 
                 noOut = false
                 fn(r)
                 global.__ndslonbuf = __
@@ -251,9 +254,12 @@ var _inputFns = new Map([
                 }
             }
 
+            var _p = _parInit()
             ioStreamReadLines(_stream, r => {
-                _ndslonline(r, line => _$o(af.fromSLON(line), clone(options), true) )
+                _parExec(_p, () => _ndslonline(r, line => _$o(af.fromSLON(line), clone(options), true) ) )
+                _p = _parCheck(_p)
             })
+            _parDone(_p)
             _stream.close()
         }
         if (noOut) _clearTmpMsg()
