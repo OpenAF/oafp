@@ -65,6 +65,10 @@
       "Description": "If 'true' and outfile=true the output will be appended on the provided file"
     },
     {
+      "Option": "parallel",
+      "Description": "If 'true' and input supports parallel processing it will try to process the input in parallel disregarding input order"
+    },
+    {
       "Option": "pause",
       "Description": "If 'true' will try to pause contents in alternative to _less -r_"
     },
@@ -742,6 +746,53 @@
   ],
   [
     {
+      "Option": "indsvsep",
+      "Type": "String",
+      "Description": "The separator to use (default is ',')"
+    },
+    {
+      "Option": "indsvsepre",
+      "Type": "String",
+      "Description": "The regular expression to use as separator"
+    },
+    {
+      "Option": "indsvquote",
+      "Type": "String",
+      "Description": "The quote character to use (default is '\"')"
+    },
+    {
+      "Option": "indsvescape",
+      "Type": "String",
+      "Description": "The escape character to use for double-quotes"
+    },
+    {
+      "Option": "indsvcomment",
+      "Type": "String",
+      "Description": "The comment character to use (default is '#')"
+    },
+    {
+      "Option": "indsvheader",
+      "Type": "Boolean",
+      "Description": "If true will try to use the first line as header (default is true)"
+    },
+    {
+      "Option": "indsvtrim",
+      "Type": "Boolean",
+      "Description": "If true will trim all values (default is true)"
+    },
+    {
+      "Option": "indsvjoin",
+      "Type": "Boolean",
+      "Description": "If true it will return an array with each processed line"
+    },
+    {
+      "Option": "indsvfields",
+      "Type": "String",
+      "Description": "Comma separated list of fields to use as header (overrides indsvheader)"
+    }
+  ],
+  [
+    {
       "Option": "javagcjoin",
       "Type": "Boolean",
       "Description": "If true it will return an array with each processed line."
@@ -1303,6 +1354,38 @@
       "Option": "dbbatchsize",
       "Type": "Number",
       "Description": "If defined it will changed the default batch data insert process"
+    }
+  ],
+  [
+    {
+      "Option": "dsvsep",
+      "Type": "String",
+      "Description": "The separator to use (default is ',')"
+    },
+    {
+      "Option": "dsvquote",
+      "Type": "String",
+      "Description": "The quote character to use (default is '\"')"
+    },
+    {
+      "Option": "dsvfields",
+      "Type": "String",
+      "Description": "Comma separated list of fields to use as header (overrides dsvheader)"
+    },
+    {
+      "Option": "dsvuseslon",
+      "Type": "Boolean",
+      "Description": "If true the output of value objects will be in SLON format (default is false)"
+    },
+    {
+      "Option": "dsvheader",
+      "Type": "Boolean",
+      "Description": "If true will try to output the first line as header (default is true)"
+    },
+    {
+      "Option": "dsvnl",
+      "Type": "String",
+      "Description": "Newline sequence to use (default is '\\n')"
     }
   ],
   [
