@@ -624,10 +624,10 @@ var _outputFns = new Map([
             r = [ r ]
         }
         if (isArray(r)) {
-            var _out = ""
+            var _out = []
             if (toBoolean(params.dsvheader) && isArray(r) && r.length > 0) {
                 if (isDef(params.dsvfields) && isArray(params.dsvfields)) {
-                    _out += params.dsvfields.map(f => {
+                    _out.push(params.dsvfields.map(f => {
                         if (isString(f)) {
                             f = f.replace(/"/g, '""')
                             f = `"${f}"`
@@ -635,9 +635,9 @@ var _outputFns = new Map([
                             f = ""
                         }
                         return f
-                    }).join(params.dsvsep)
+                    }))
                 } else {
-                    _out += Object.keys(r[0]).map(f => {
+                    _out.push(Object.keys(r[0]).map(f => {
                         if (isString(f)) {
                             f = f.replace(/"/g, '""')
                             f = `"${f}"`
@@ -645,14 +645,14 @@ var _outputFns = new Map([
                             f = ""
                         }
                         return f
-                    }).join(params.dsvsep)
+                    }))
                 }
-                if (params.dsvnl.length > 0) _out += params.dsvnl
+                if (params.dsvnl.length > 0) _out.push(params.dsvnl)
             }
             if (!isArray(params.dsvfields)) params.dsvfields = __
 
             r.forEach((row, i) => {
-                if (i > 0) _out += params.dsvnl
+                if (i > 0) _out.push(params.dsvnl)
                 var _row = pForEach(isDef(params.dsvfields) ? params.dsvfields : Object.keys(row), k => {
                     var v = row[k]
                     if (isString(v)) {
@@ -667,14 +667,14 @@ var _outputFns = new Map([
                     }
                     return v
                 })
-                _out += _row.join(params.dsvsep)
+                _out.push(_row.join(params.dsvsep))
             })
             if (params.dsvnl.length > 0 && _out.length > 0 && _out[_out.length - 1] != params.dsvnl && r.length > 1) {
-                _out += params.dsvnl
+                _out.push(params.dsvnl)
             }
         } else {
             _exit(-1, "For out=dsv input needs to be an array or map.")
         }
-        _print(_out)
+        _print(_out.join(""))
     }]
 ])

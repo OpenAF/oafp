@@ -229,11 +229,20 @@ var _inputLineFns = {
             if (toBoolean(params.indsvheader)) {
                 if (isUnDef(params.indsvfields)) {
                     if (isUnDef(params.indsvsepre)) {
-                        params.indsvfields = rs.trim().split(params.indsvsep)
+                        params.indsvfields = r.trim().split(params.indsvsep)
                     } else {
-                        params.indsvfields = rs.trim().split(new RegExp(params.indsvsepre))
+                        params.indsvfields = r.trim().split(new RegExp(params.indsvsepre))
                     }
-
+                    params.indsvfields = params.indsvfields.map(f => {
+                        if (params.indsvtrim) f = f.trim()
+                        if (params.indsvquote && f.startsWith(params.indsvquote) && f.endsWith(params.indsvquote)) {
+                            f = f.substring(1, f.length - 1)
+                        }
+                        if (params.indsvescape) {
+                            f = f.replace(new RegExp(params.indsvescape + params.indsvquote, "g"), params.indsvquote)
+                        }
+                        return f
+                    })
                     return __
                 }
             }
