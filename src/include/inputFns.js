@@ -307,7 +307,7 @@ var _inputFns = new Map([
 
             var _r = {}
             if (isString(r)) {
-                if (isUnDef(params.indescsepre)) {
+                if (isUnDef(params.indsvsepre)) {
                     _r = pForEach(r.split(params.indsvsep), s => {
                         if (params.indsvtrim) s = s.trim()
                         if (params.indsvquote && s.startsWith(params.indsvquote) && s.endsWith(params.indsvquote)) {
