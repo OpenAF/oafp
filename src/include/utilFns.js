@@ -263,7 +263,7 @@ const _parInit = () => {
         _resC: $atomic(),
         _nc  : getNumberOfCores(),
         times: $atomic(),
-        execs: $atomic(),
+        execs: $atomic(0, "long"),
         _opar: (isDef(params.parallel) && toBoolean(params.parallel)) || String(getEnv("OAFP_PARALLEL")).toLowerCase() == "true",
         _par : false
     }
@@ -296,7 +296,7 @@ const _parExec = (_par, fn) => {
     if (_par._par) {
         $do(() => {
             _par._resC.inc()
-            return fn()
+            return fn(_par.execs.inc())
         }).then(() => {
             return _par._resC.dec()
         }).catch(e => {
@@ -304,10 +304,9 @@ const _parExec = (_par, fn) => {
         })
         if (isDef(_e)) throw _e
     } else {
-        fn()
+        fn(_par.execs.inc())
     }
     _par.times.getAdd(nowNano() - init)
-    _par.execs.inc()
 }
 
 const _getSec = (aM, aPath) => {

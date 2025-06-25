@@ -553,14 +553,15 @@ var _run = () => {
                             _p._sres = new ow.obj.syncArray()
                             io.pipeLn(r => {
                                 try {
-                                    _parExec(_p, () => {
+                                    _parExec(_p, part => {
                                         if (isDef(_inputLineFns[params.type])) {
-                                            if (_inputLineFns[params.type](_transform(r), clone(options))) {
+                                            if (_inputLineFns[params.type](_transform(r), merge(clone(options), { part: part }))) {
                                                 _p._sres.add(r)
                                             }
                                         } else { 
                                             _p._sres.add(r)
                                         }
+                                        return false
                                     })
                                 } catch(ipl) {
                                     printErr("ERROR: " + ipl)
@@ -569,10 +570,8 @@ var _run = () => {
 
                                 return false
                             })
-                            if (_p._par) {
-                                _parDone(_p)
-                                _res = _res.concat(_p._sres.toArray())
-                            }
+                            _parDone(_p)
+                            _res = _res.concat(_p._sres.toArray())
                             _res = _res.join('\n')
                         }
                     }

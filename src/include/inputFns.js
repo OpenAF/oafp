@@ -269,6 +269,116 @@ var _inputFns = new Map([
         }
         if (noOut) _clearTmpMsg()
     }],
+    ["dsv", (_res, options) => {
+        _showTmpMsg()
+        if (isUnDef(params.indsvsep)) params.indsvsep = ","
+        if (isUnDef(params.indsvsepre)) params.indsvsepre = __
+        if (isUnDef(params.indsvquote)) params.indsvquote = "\""
+        if (isUnDef(params.indsvescape)) params.indsvescape = "\\"
+        if (isUnDef(params.indsvcomment)) params.indsvcomment = "#"
+        if (isUnDef(params.indsvheader)) params.indsvheader = true
+        if (isUnDef(params.indsvtrim)) params.indsvtrim = true
+        if (isUnDef(params.indsvjoin)) params.indsvjoin = false
+        if (isUnDef(params.indsvfields)) params.indsvfields = __
+
+        if (isString(params.indsvfields)) params.indsvfields = params.indsvfields.trim().split(",").map(f => f.trim())
+        if (isDef(params.indsvfields) && !isArray(params.indsvfields)) params.indsvfields = __
+        var _dsvmap = r => {
+            var _r = {}
+            params.indsvfields.forEach((f, i) => {
+                _r[f] = r[i]
+            })
+            return _r
+        }
+
+        var _dsvproc = r => {
+            if (isUnDef(r) || r.length == 0) return {}
+
+            if (toBoolean(params.indsvheader)) {
+                if (isUnDef(params.indsvfields)) {
+                    if (isUnDef(params.indsvsepre)) {
+                        params.indsvfields = r.trim().split(params.indsvsep)
+                    } else {
+                        params.indsvfields = r.trim().split(new RegExp(params.indsvsepre))
+                    }
+                    return __
+                }
+            }
+
+            var _r = {}
+            if (isString(r)) {
+                if (isUnDef(params.indescsepre)) {
+                    _r = pForEach(r.split(params.indsvsep), s => {
+                        if (params.indsvtrim) s = s.trim()
+                        if (params.indsvquote && s.startsWith(params.indsvquote) && s.endsWith(params.indsvquote)) {
+                            s = s.substring(1, s.length - 1)
+                        }
+                        if (params.indsvescape) {
+                            s = s.replace(new RegExp(params.indsvescape + params.indsvquote, "g"), params.indsvquote)
+                        }
+                        return s
+                    })
+                } else {
+                    _r = pForEach(r.split(new RegExp(params.indsvsepre)), s => {
+                        if (params.indsvtrim) s = s.trim()
+                        if (params.indsvquote && s.startsWith(params.indsvquote) && s.endsWith(params.indsvquote)) {
+                            s = s.substring(1, s.length - 1)
+                        }
+                        if (params.indsvescape) {
+                            s = s.replace(new RegExp(params.indsvescape + params.indsvquote, "g"), params.indsvquote)
+                        }
+                        return s
+                    })
+                }
+                return _dsvmap(_r)
+            }
+        }
+                
+        var noOut = true
+        if (params.indsvjoin) {
+            if (isDef(params.file) && isUnDef(params.cmd)) {
+                _res = io.readFileString(params.file)
+            }
+            if (isDef(params.cmd)) {
+                _res = _runCmd2Bytes(params.cmd, true)
+            }
+
+            _$o( _res.split(/\r?\n/).map(r => {
+                if (isUnDef(r) || r.length == 0) return __
+                if (r.trim().startsWith(params.indsvcomment)) return __
+                return _dsvproc(r)
+            }).filter(r => isDef(r)), options)
+        } else {
+            var _stream
+            if (isDef(params.file) && isUnDef(params.cmd)) {
+                _stream = io.readFileStream(params.file)
+            } else {
+                if (isDef(params.cmd)) {
+                    _stream = af.fromBytes2InputStream(_runCmd2Bytes(params.cmd))
+                } else {
+                    _stream = af.fromString2InputStream(_res)
+                }
+            }
+
+            var _p = _parInit()
+            ioStreamReadLines(_stream, r => {
+                if (isUnDef(r) || r.length == 0) return
+                if (r.trim().startsWith(params.indsvcomment)) return
+                _parExec(_p, () => {
+                    if (isString(r)) {
+                        var _dsv = _dsvproc(r)
+                        if (isDef(_dsv)) _$o(_dsv, clone(options), true)
+                    }
+                    return true
+                })
+                _p = _parCheck(_p)
+                return false
+            })
+            _parDone(_p)
+            _stream.close()
+        }
+        if (noOut) _clearTmpMsg()
+    }],
     ["md", (_res, options) => {
         _showTmpMsg()
         __ansiColorFlag = true

@@ -200,5 +200,82 @@ var _inputLineFns = {
         } else {
             return true
         }
+    },
+    "dsv": (r, options) => {
+        if (isUnDef(params.indsvsep)) params.indsvsep = ","
+        if (isUnDef(params.indsvsepre)) params.indsvsepre = __
+        if (isUnDef(params.indsvquote)) params.indsvquote = "\""
+        if (isUnDef(params.indsvescape)) params.indsvescape = "\\"
+        if (isUnDef(params.indsvcomment)) params.indsvcomment = "#"
+        if (isUnDef(params.indsvheader)) params.indsvheader = true
+        if (isUnDef(params.indsvtrim)) params.indsvtrim = true
+        if (isUnDef(params.indsvjoin)) params.indsvjoin = false
+        if (isUnDef(params.indsvfields)) params.indsvfields = __
+
+        if (isString(params.indsvfields)) params.indsvfields = params.indsvfields.trim().split(",").map(f => f.trim())
+        if (isDef(params.indsvfields) && !isArray(params.indsvfields)) params.indsvfields = __
+
+        var _dsvmap = rs => {
+            var _r = {}
+            params.indsvfields.forEach((f, i) => {
+                _r[f] = rs[i]
+            })
+            return _r
+        }
+
+        var _dsvproc = rs => {
+            if (isUnDef(rs) || rs.length == 0) return __
+
+            if (toBoolean(params.indsvheader)) {
+                if (isUnDef(params.indsvfields)) {
+                    if (isUnDef(params.indsvsepre)) {
+                        params.indsvfields = rs.trim().split(params.indsvsep)
+                    } else {
+                        params.indsvfields = rs.trim().split(new RegExp(params.indsvsepre))
+                    }
+
+                    return __
+                }
+            }
+
+            var _r = {}
+            if (isString(rs)) {
+                if (isUnDef(params.indsvsepre)) {
+                    _r = pForEach(rs.split(params.indsvsep), s => {
+                        if (params.indsvtrim) s = s.trim()
+                        if (params.indsvquote && s.startsWith(params.indsvquote) && s.endsWith(params.indsvquote)) {
+                            s = s.substring(1, s.length - 1)
+                        }
+                        if (params.indsvescape) {
+                            s = s.replace(new RegExp(params.indsvescape + params.indsvquote, "g"), params.indsvquote)
+                        }
+                        return s
+                    })
+                } else {
+                    _r = pForEach(rs.split(new RegExp(params.indsvsepre)), s => {
+                        if (params.indsvtrim) s = s.trim()
+                        if (params.indsvquote && s.startsWith(params.indsvquote) && s.endsWith(params.indsvquote)) {
+                            s = s.substring(1, s.length - 1)
+                        }
+                        if (params.indsvescape) {
+                            s = s.replace(new RegExp(params.indsvescape + params.indsvquote, "g"), params.indsvquote)
+                        }
+                        return s
+                    })
+                }
+                return _dsvmap(_r)
+            }
+        }
+
+        if (!params.indsvjoin) {
+            r = String(r)
+            if (r.length > 0 && r.trim().substring(0, 1) != params.indsvcomment) {
+                var _rs = _dsvproc(r)
+                if (isDef(_rs)) _$o(_rs, options, true)
+                return true
+            }
+        } else {
+            return true
+        }
     }
 }
