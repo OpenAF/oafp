@@ -265,7 +265,8 @@ const _parInit = () => {
         times: $atomic(),
         execs: $atomic(0, "long"),
         _opar: (isDef(params.parallel) && toBoolean(params.parallel)) || String(getEnv("OAFP_PARALLEL")).toLowerCase() == "true",
-        _par : false
+        _par : false,
+        _ts  : []
     }
 }
 
@@ -285,28 +286,37 @@ const _parCheck = _par => {
 
 // Parallel execution done
 const _parDone = _par => {
-    while(_par._resC.get() > 0) {
-        sleep(100, true)
-    }
+	var tries = 0
+	do {
+		$doWait($doAll(_par._ts))
+		if (_par._resC.get() > 0) sleep(__getThreadPools().queued * __flags.PFOREACH.waitms, true)
+		tries++
+	} while(_par._resC.get() > 0 && tries < 100)
 }
 
 // Parallel execution
 const _parExec = (_par, fn) => {
     var init = nowNano(), _e
     if (_par._par) {
-        $do(() => {
+        _par._ts.push($do(() => {
             _par._resC.inc()
             return fn(_par.execs.inc())
         }).then(() => {
             return _par._resC.dec()
         }).catch(e => {
             _e = e
-        })
+        }))
         if (isDef(_e)) throw _e
     } else {
         fn(_par.execs.inc())
     }
     _par.times.getAdd(nowNano() - init)
+
+	// Cool down and go sequential if too many threads
+    var _tpstats = __getThreadPools()
+    if (_tpstats.queued > _tpstats.poolSize / __flags.PFOREACH.threads_thrs) {
+        $doWait(_par._ts.pop())
+    }
 }
 
 const _getSec = (aM, aPath) => {
