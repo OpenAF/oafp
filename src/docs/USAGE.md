@@ -738,6 +738,7 @@ List of options to use when _out=dsv_:
 | dsvfields | String | Comma separated list of fields to use as header (overrides dsvheader) |
 | dsvuseslon | Boolean | If true the output of value objects will be in SLON format (default is false) |
 | dsvheader | Boolean | If true will try to output the first line as header (default is true) |
+| dsvnl | String | Newline sequence to use (default is '\n') |
 
 ---
 

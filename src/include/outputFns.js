@@ -673,7 +673,7 @@ var _outputFns = new Map([
                 _out.push(params.dsvnl)
             }
         } else {
-            _exit(-1, "For out=dsv input needs to be an array or map.")
+            _exit(-1, "For out=dsv, input needs to be an array or map.")
         }
         _print(_out.join(""))
     }]
