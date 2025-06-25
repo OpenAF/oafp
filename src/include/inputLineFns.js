@@ -229,9 +229,9 @@ var _inputLineFns = {
             if (toBoolean(params.indsvheader)) {
                 if (isUnDef(params.indsvfields)) {
                     if (isUnDef(params.indsvsepre)) {
-                        params.indsvfields = r.trim().split(params.indsvsep)
+                        params.indsvfields = rs.trim().split(params.indsvsep)
                     } else {
-                        params.indsvfields = r.trim().split(new RegExp(params.indsvsepre))
+                        params.indsvfields = rs.trim().split(new RegExp(params.indsvsepre))
                     }
                     params.indsvfields = params.indsvfields.map(f => {
                         if (params.indsvtrim) f = f.trim()
