@@ -547,7 +547,6 @@ var _run = () => {
                     } else {
                         if (params.input != "pm") {
                             _res = []
-                            //var _resC = $atomic(), _par = false, _opar = isDef(params.parallel) && toBoolean(params.parallel), _sres, _nc = getNumberOfCores(), times = $atomic(), execs = $atomic()
                             var _p = _parInit()
                             ow.loadObj()
                             _p._sres = new ow.obj.syncArray()
