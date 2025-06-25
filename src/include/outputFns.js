@@ -609,5 +609,72 @@ var _outputFns = new Map([
                 _f(r)
             }
         }
+    }],
+    ["dsv", (r, options) => {
+        if (isUnDef(params.dsvsep))     params.dsvsep = ","
+        if (isUnDef(params.dsvquote))   params.dsvquote = '\\"'
+        if (isUnDef(params.dsvfields))  params.dsvfields = __
+        if (isUnDef(params.dsvuseslon)) params.dsvuseslon = false
+        if (isUnDef(params.dsvnl))      params.dsvnl = "\n"
+        if (isUnDef(params.dsvheader))  params.dsvheader = true
+
+        if (isDef(params.dsvfields)) params.dsvfields = String(params.dsvfields).split(",")
+
+        if (isMap(r)) {
+            r = [ r ]
+        }
+        if (isArray(r)) {
+            var _out = []
+            if (toBoolean(params.dsvheader) && isArray(r) && r.length > 0) {
+                if (isDef(params.dsvfields) && isArray(params.dsvfields)) {
+                    _out.push(params.dsvfields.map(f => {
+                        if (isString(f)) {
+                            f = f.replace(/"/g, '""')
+                            f = `"${f}"`
+                        } else if (isNull(f)) {
+                            f = ""
+                        }
+                        return f
+                    }))
+                } else {
+                    _out.push(Object.keys(r[0]).map(f => {
+                        if (isString(f)) {
+                            f = f.replace(/"/g, '""')
+                            f = `"${f}"`
+                        } else if (isNull(f)) {
+                            f = ""
+                        }
+                        return f
+                    }))
+                }
+                if (params.dsvnl.length > 0) _out.push(params.dsvnl)
+            }
+            if (!isArray(params.dsvfields)) params.dsvfields = __
+
+            r.forEach((row, i) => {
+                if (i > 0) _out.push(params.dsvnl)
+                var _row = pForEach(isDef(params.dsvfields) ? params.dsvfields : Object.keys(row), k => {
+                    var v = row[k]
+                    if (isString(v)) {
+                        v = v.replace(/"/g, '""')
+                        v = `"${v}"`
+                    } else if (isNull(v)) {
+                        v = ""
+                    } else if (isArray(v) || isMap(v)) {
+                        v = params.dsvuseslon ? af.toSLON(v) : stringify(v, __, "")
+                        v = v.replace(/"/g, params.dsvquote)
+                        v = `"${v}"`
+                    }
+                    return v
+                })
+                _out.push(_row.join(params.dsvsep))
+            })
+            if (params.dsvnl.length > 0 && _out.length > 0 && _out[_out.length - 1] != params.dsvnl && r.length > 1) {
+                _out.push(params.dsvnl)
+            }
+        } else {
+            _exit(-1, "For out=dsv, input needs to be an array or map.")
+        }
+        _print(_out.join(""))
     }]
 ])

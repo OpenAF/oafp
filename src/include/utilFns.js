@@ -256,6 +256,69 @@ const _o$o = (a, b, c) => {
         if (isDef(_s)) _print(_s)
     }
 }
+
+// Parallel execution initialization
+const _parInit = () => {
+    return {
+        _resC: $atomic(),
+        _nc  : getNumberOfCores(),
+        times: $atomic(),
+        execs: $atomic(0, "long"),
+        _opar: (isDef(params.parallel) && toBoolean(params.parallel)) || String(getEnv("OAFP_PARALLEL")).toLowerCase() == "true",
+        _par : false,
+        _ts  : []
+    }
+}
+
+// Parallel execution check
+const _parCheck = _par => {
+    // If execution time per call is too low, go sequential
+    if ( _par._opar && _par._nc >= 3 ) {
+        if ( ((_par.times.get() / _par.execs.get() ) / 1000000) < __flags.PFOREACH.seq_thrs_ms || __getThreadPools().active / getNumberOfCores() > __flags.PFOREACH.seq_ratio) {
+            _par._par = true
+        } else {
+            _par._par = false
+        }
+    }
+
+    return _par
+}
+
+// Parallel execution done
+const _parDone = _par => {
+	var tries = 0
+	do {
+		$doWait($doAll(_par._ts))
+		if (_par._resC.get() > 0) sleep(__getThreadPools().queued * __flags.PFOREACH.waitms, true)
+		tries++
+	} while(_par._resC.get() > 0 && tries < 100)
+}
+
+// Parallel execution
+const _parExec = (_par, fn) => {
+    var init = nowNano(), _e
+    if (_par._par) {
+        _par._ts.push($do(() => {
+            _par._resC.inc()
+            return fn(_par.execs.inc())
+        }).then(() => {
+            return _par._resC.dec()
+        }).catch(e => {
+            _e = e
+        }))
+        if (isDef(_e)) throw _e
+    } else {
+        fn(_par.execs.inc())
+    }
+    _par.times.getAdd(nowNano() - init)
+
+	// Cool down and go sequential if too many threads
+    var _tpstats = __getThreadPools()
+    if (_tpstats.queued > _tpstats.poolSize / __flags.PFOREACH.threads_thrs) {
+        $doWait(_par._ts.pop())
+    }
+}
+
 const _getSec = (aM, aPath) => {
 	aM = _$(aM).isMap().default({})
 	if (isDef(aM.secKey)) {
