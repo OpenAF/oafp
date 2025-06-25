@@ -304,8 +304,6 @@ complete:
       desc: If true the output of value objects will be a SLON format -default is false-
     - name: dsvheader=
       desc: If true will try to output the first line as header -default is true-
-    - name: dsvfields=
-      desc: Comma delimited list of fields to use for the DSV format -defaults to all fields-
   - name: out=ctable
     desc: A table-like forcely colored format -only for list outputs-
   - name: out=ctree
