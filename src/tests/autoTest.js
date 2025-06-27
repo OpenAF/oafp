@@ -89,6 +89,68 @@
       ow.test.assert(compare(jsonParse(_s.stdout), data), true, "Problem with input/output base64 (simple)")
    }
 
+   exports.testNDJSON2JSON = function() {
+      var _f  = io.createTempFile("testNDJSON2JSON", ".ndjson")
+      var data = { a: 123, b: true, c: [ 1, 2, 3 ] }
+      var data2 = { a: 456, b: false, c: [ 4, 5, 6 ] }
+      var data3 = { a: 789, b: true, c: [ 7, 8, 9 ] }
+
+      var out = stringify(data, __, "") + "\n" + stringify(data2, __, "") + "\n" + stringify(data3, __, "")
+      io.writeFileString(_f, out)
+
+      var _r = $sh([getOpenAFPath() + "/oaf", "-f", "../oafp.source.js", "-e", "file=" + _f + " in=ndjson ndjsonjoin=true out=json"]).get(0)
+      var _d = jsonParse(_r.stdout)
+
+      ow.test.assert(_d.length, 3, "Problem with input ndjson and json output")
+      ow.test.assert(compare(_d[0], data), true, "Problem with input ndjson and json output (1)")
+      ow.test.assert(compare(_d[1], data2), true, "Problem with input ndjson and json output (2)")
+      ow.test.assert(compare(_d[2], data3), true, "Problem with input ndjson and json output (3)")
+   }
+
+   exports.testNDJSON2JSON_2 = function() {
+      var _f = io.createTempFile("testNDJSON2JSON_2", ".ndjson")
+      var tdata = { a: 123, b: true, c: [ 1, 2, 3 ] }
+      var indata = []
+
+      for (var i = 0; i < 100; i++) {
+         var data = clone(tdata)
+         data.a = i
+         data.c = [ i, i + 1, i + 2 ]
+         indata.push(data)
+      }
+      indata = indata.map(r => stringify(r, __, "")).join("\n")
+      io.writeFileString(_f, indata)
+
+      var _r = $sh([getOpenAFPath() + "/oaf", "-f", "../oafp.source.js", "-e", "file=" + _f + " in=ndjson ndjsonjoin=true out=json"]).get(0)
+      var _d = jsonParse(_r.stdout)
+      ow.test.assert(_d.length, 100, "Problem with input ndjson and json output (2)")
+      for (var i = 0; i < _d.length; i++) {
+         ow.test.assert($from(_d).equals("a", i).count(), 1, "Problem with input ndjson and json output (2) - " + i)
+      }
+   }
+
+   exports.testNDJSON2JSON_2p = function() {
+      var _f = io.createTempFile("testNDJSON2JSON_2p", ".ndjson")
+      var tdata = { a: 123, b: true, c: [ 1, 2, 3 ] }
+      var indata = []
+
+      for (var i = 0; i < 100; i++) {
+         var data = clone(tdata)
+         data.a = i
+         data.c = [ i, i + 1, i + 2 ]
+         indata.push(data)
+      }
+      indata = indata.map(r => stringify(r, __, "")).join("\n")
+      io.writeFileString(_f, indata)
+
+      var _r = $sh([getOpenAFPath() + "/oaf", "-f", "../oafp.source.js", "-e", "file=" + _f + " in=ndjson parallel=true out=json"]).get(0)
+      var _d = _r.stdout.split("\n").filter(r => r.trim() !== "").map(r => jsonParse(r))
+      ow.test.assert(_d.length, 100, "Problem with input ndjson and json output (3)")
+      for (var i = 0; i < _d.length; i++) {
+         ow.test.assert($from(_d).equals("a", i).count(), 1, "Problem with input ndjson and json output (3) - " + i)
+      }
+   }
+
    // Transforms
    // ----------
    exports.testMerge = function() {
