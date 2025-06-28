@@ -296,6 +296,63 @@ var _inputFns = new Map([
             _$o(_s, options)
         }
     }],
+    ["mdcode", (_res, options) => {
+        _showTmpMsg()
+        
+        if (toBoolean(params.inmdcodejoin)) {
+            var _d = []
+            var lines = _res.split("\n")
+            var inCodeBlock = false
+            var currentBlock = { language: "", code: [], startLine: -1, endLine: -1 }
+            
+            lines.forEach((line, index) => {
+                var codeBlockMatch = line.match(/^```(\w+)?/)
+                var endBlockMatch = line.match(/^```$/)
+                
+                if (codeBlockMatch && !inCodeBlock) {
+                    // Start of code block
+                    inCodeBlock = true
+                    currentBlock = {
+                        language: codeBlockMatch[1] || "",
+                        code: [],
+                        startLine: index + 1,
+                        endLine: -1
+                    }
+                } else if (endBlockMatch && inCodeBlock) {
+                    // End of code block
+                    inCodeBlock = false
+                    currentBlock.endLine = index + 1
+                    currentBlock.code = currentBlock.code.join("\n")
+                    _d.push(currentBlock)
+                    currentBlock = { language: "", code: [], startLine: -1, endLine: -1 }
+                } else if (inCodeBlock) {
+                    // Inside code block
+                    currentBlock.code.push(line)
+                }
+            })
+            
+            // Handle unclosed code block
+            if (inCodeBlock) {
+                currentBlock.endLine = lines.length
+                currentBlock.code = currentBlock.code.join("\n")
+                _d.push(currentBlock)
+            }
+            
+            _$o(_d, options)
+        } else {
+            // Extract single code block from input
+            var match = _res.match(/```(\w+)?\n([\s\S]*?)\n```/)
+            if (match) {
+                var _s = {
+                    language: match[1] || "",
+                    code: match[2]
+                }
+                _$o(_s, options)
+            } else {
+                _$o({ language: "", code: _res }, options)
+            }
+        }
+    }],
     ["ask", (_res, options) => {
         var _d = []
         _res = af.fromJSSLON(_res)
@@ -672,7 +729,7 @@ var _inputFns = new Map([
                     // JDK 8 with +PrintHeapAtGC
                     /([^ ]+) (\d+\.\d+): \[(Full GC) \((.*?)\) \[PSYoungGen: (\d+K)->(\d+K)\((.*?)\)\] \[ParOldGen: (\d+K)->(\d+K)\((.*?)\)\] (\d+K)->(\d+K)\((.*?)\), \[Metaspace: (\d+K)->(\d+K)\((.*?)\)\], (\d+\.\d+) secs\] \[Times: user=(\d+\.\d+) sys=(\d+\.\d+), real=(\d+\.\d+) secs\]/,
                     // JDK 8 with +PrintHeapAtGC and +PrintTenuringDistribution
-                    /([^ ]+) (\d+\.\d+): \[(Full GC) \((.*?)\) \[PSYoungGen: (\d+K)->(\d+K)\((.*?)\)\] \[ParOldGen: (\d+K)->(\d+K)\((.*?)\)\] (\d+K)->(\d+K)\((.*?)\), \[Metaspace: (\d+K)->(\d+K)\((.*?)\)\], (\d+\.\d+) secs\]/,
+                    /([^ ]+) (\d+\.\d+): \[(Full GC) \((.*?)\) \[PSYoungGen: (\d+K)->(\d+K)\((.*?)\)\] \[ParOldGen: (\d+K)->(\d+K)\((.*?)\)\] (\d+K)->(\d+K)\((.*?)\), \[Metaspace: (\d+K)->(\d+K)\((.*?)\)\], (\d+\.\d+) secs\] \[Times: user=(\d+\.\d+) sys=(\d+\.\d+), real=(\d+\.\d+) secs\]/,
                     // JDK 8 with +PrintTenuringDistribution
                     /([^ ]+) (\d+\.\d+): \[(GC) \((.*?)\) \[PSYoungGen: (\d+K)->(\d+K)\((.*?)\)\] (\d+K)->(\d+K)\((.*?)\), (\d+\.\d+) secs\] \[Times: user=(\d+\.\d+) sys=(\d+\.\d+), real=(\d+\.\d+) secs\]/,
                     // JDK 9+ style regexes

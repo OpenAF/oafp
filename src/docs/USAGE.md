@@ -85,6 +85,7 @@ List of data input types that can be auto-detected (through the file extension o
 | ls | Returns a list of files and folders for a given directory path or zip or tar or tgz file |
 | md | A Markdown format |
 | mdtable | A Markdown table format |
+| mdcode | A Markdown code blocks format |
 | ndjson | A NDJSON (new-line delimited JSON) format |
 | ndslon | A NDSLON (new-line delimited SLON) format |
 | oaf | Takes an OpenAF scripting code to execute and use the result as input |
@@ -359,6 +360,16 @@ List of options to use when _in=mdtable_:
 | Option | Type | Description |
 |--------|------|-------------|
 | inmdtablejoin | Boolean | Scans an entire markdown input for tables and returns an array with the data of each markdown table |
+
+---
+
+### 🧾 MDCode input options
+
+List of options to use when _in=mdcode_:
+
+| Option | Type | Description |
+|--------|------|-------------|
+| inmdcodejoin | Boolean | Scans an entire markdown input for code blocks and returns an array with the data of each markdown code block |
 
 ---
 
