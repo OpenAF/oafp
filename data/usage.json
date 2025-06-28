@@ -223,6 +223,10 @@
       "Description": "A Markdown table format"
     },
     {
+      "Input type": "mdcode",
+      "Description": "A Markdown code blocks format"
+    },
+    {
       "Input type": "ndjson",
       "Description": "A NDJSON (new-line delimited JSON) format"
     },
@@ -950,6 +954,13 @@
       "Option": "inmdtablejoin",
       "Type": "Boolean",
       "Description": "Scans an entire markdown input for tables and returns an array with the data of each markdown table"
+    }
+  ],
+  [
+    {
+      "Option": "inmdcodejoin",
+      "Type": "Boolean",
+      "Description": "Scans an entire markdown input for code blocks and returns an array with the data of each markdown code block"
     }
   ],
   [
