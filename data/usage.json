@@ -958,13 +958,6 @@
   ],
   [
     {
-      "Option": "inmdcodejoin",
-      "Type": "Boolean",
-      "Description": "Scans an entire markdown input for code blocks and returns an array with the data of each markdown code block"
-    }
-  ],
-  [
-    {
       "Option": "ndjsonjoin",
       "Type": "Boolean",
       "Description": "If true will join the ndjson records to build an output array"
