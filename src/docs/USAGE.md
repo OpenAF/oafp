@@ -363,16 +363,6 @@ List of options to use when _in=mdtable_:
 
 ---
 
-### 🧾 MDCode input options
-
-List of options to use when _in=mdcode_:
-
-| Option | Type | Description |
-|--------|------|-------------|
-| inmdcodejoin | Boolean | Scans an entire markdown input for code blocks and returns an array with the data of each markdown code block |
-
----
-
 ### 🧾 ndJSON input options
 
 List of options to use when _in=ndjson_:

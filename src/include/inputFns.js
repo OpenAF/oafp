@@ -299,59 +299,59 @@ var _inputFns = new Map([
     ["mdcode", (_res, options) => {
         _showTmpMsg()
         
-        if (toBoolean(params.inmdcodejoin)) {
-            var _d = []
-            var lines = _res.split("\n")
-            var inCodeBlock = false
-            var currentBlock = { language: "", code: [], startLine: -1, endLine: -1 }
-            
-            lines.forEach((line, index) => {
-                var codeBlockMatch = line.match(/^```(\w+)?/)
-                var endBlockMatch = line.match(/^```$/)
-                
-                if (codeBlockMatch && !inCodeBlock) {
-                    // Start of code block
-                    inCodeBlock = true
-                    currentBlock = {
-                        language: codeBlockMatch[1] || "",
-                        code: [],
-                        startLine: index + 1,
-                        endLine: -1
-                    }
-                } else if (endBlockMatch && inCodeBlock) {
-                    // End of code block
-                    inCodeBlock = false
-                    currentBlock.endLine = index + 1
-                    currentBlock.code = currentBlock.code.join("\n")
-                    _d.push(currentBlock)
-                    currentBlock = { language: "", code: [], startLine: -1, endLine: -1 }
-                } else if (inCodeBlock) {
-                    // Inside code block
-                    currentBlock.code.push(line)
+        var _d = []
+        var lines = _res.split("\n")
+        var inCodeBlock = false
+        var currentBlock = { language: "", code: [], startLine: -1, endLine: -1 }
+        
+        lines.forEach((line, index) => {
+            var oneLineCodeBlock = line.trim().match(/^```+[^`]+```+$/)
+            var codeBlockMatch = line.trim().match(/^```+(.+)?$/)
+            var endBlockMatch = inCodeBlock && (line.trim().match(/^```+$/) || line.trim().match(/[^`]```+$/))
+
+            if (oneLineCodeBlock) {
+                inCodeBlock = false
+                currentBlock = {
+                    language : __,
+                    code     : line.replace(/^```+/, "").replace(/```+$/, "").trim(),
+                    startLine: index + 1,
+                    endLine  : index + 1
                 }
-            })
-            
-            // Handle unclosed code block
-            if (inCodeBlock) {
-                currentBlock.endLine = lines.length
+                _d.push(currentBlock)
+                return
+            }
+
+            if (codeBlockMatch && !inCodeBlock) {
+                // Start of code block
+                inCodeBlock = true
+                currentBlock = {
+                    language : codeBlockMatch[1],
+                    code     : [],
+                    startLine: index + 1,
+                    endLine  : -1
+                }
+            } else if (endBlockMatch && inCodeBlock) {
+                // End of code block
+                inCodeBlock = false
+                currentBlock.endLine = index + 1
                 currentBlock.code = currentBlock.code.join("\n")
                 _d.push(currentBlock)
+                currentBlock = { language: "", code: [], startLine: -1, endLine: -1 }
+            } else if (inCodeBlock) {
+                // Inside code block
+                currentBlock.code.push(line)
             }
-            
-            _$o(_d, options)
-        } else {
-            // Extract single code block from input
-            var match = _res.match(/```(\w+)?\n([\s\S]*?)\n```/)
-            if (match) {
-                var _s = {
-                    language: match[1] || "",
-                    code: match[2]
-                }
-                _$o(_s, options)
-            } else {
-                _$o({ language: "", code: _res }, options)
-            }
+        })
+        
+        // Handle unclosed code block
+        if (inCodeBlock) {
+            currentBlock.endLine = lines.length
+            currentBlock.code = currentBlock.code.join("\n")
+            _d.push(currentBlock)
         }
+        
+        _$o(_d, options)
+
     }],
     ["ask", (_res, options) => {
         var _d = []
