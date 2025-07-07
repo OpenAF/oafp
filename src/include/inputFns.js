@@ -832,7 +832,6 @@ var _inputFns = new Map([
             if (tA) return fnFromTimeAbbr(String(v))
             return String(v)
         }
-        ow.loadFormat()
 
         var _r = []
         lines.forEach(line => {
@@ -994,7 +993,6 @@ var _inputFns = new Map([
                 _exit(-2, "Error parsing Java GC log: " + e)
             }
         }
-        ow.loadFormat()
 
         _showTmpMsg()
         if (isString(_res)) {

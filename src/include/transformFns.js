@@ -196,7 +196,6 @@ var _transformFns = {
     },
     "correcttypes"  : _r => {
         if (toBoolean(params.correcttypes) && isObject(_r)) {
-            ow.loadFormat()
             traverse(_r, (aK, aV, aP, aO) => {
                 switch(descType(aV)) {
                 case "number": if (isString(aV)) aO[aK] = Number(aV); break
@@ -551,7 +550,7 @@ var _transformFns = {
             default      :
             case "default": th = _t.d; break
             }
-            ow.loadFormat()
+
             traverse(_r, (aK, aV, aP, aO) => {
                 if (isUnDef(aV) || isNull(aV)) {
                     aO[aK] = th[0]

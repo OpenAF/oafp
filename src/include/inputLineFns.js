@@ -150,8 +150,6 @@ var _inputLineFns = {
             }
         }
 
-        ow.loadFormat()
-
         global.__javagc_buffer += r
         var _res = _procLine(r)
         if (isMap(_res)) {
