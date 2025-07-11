@@ -496,12 +496,15 @@ var _outputFns = new Map([
             _db.usArray(_sqlH, vals, params.dbbatchsize)
         } catch(dbe) {
             if (isDef(_db)) _db.rollback()
-            printErr(dbe)
             _exit(-1, "Error connecting to the database: " + dbe)
         } finally {
-            if (isDef(_db)) {
-                _db.commit()
-                _db.close()
+            try {
+                if (isDef(_db)) {
+                    _db.commit()
+                    _db.close()
+                }
+            } catch(ee) {
+                _exit(-1, "Error closing the database connection: " + ee)
             }
         }
     }],

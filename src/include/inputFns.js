@@ -594,6 +594,7 @@ var _inputFns = new Map([
                 if (isDef(params.indblib)) loadLib("jdbc-" + params.indblib + ".js")
                 _db = new DB(params.indbjdbc, params.indbuser, params.indbpass, params.indbtimeout)
                 _db.convertDates(true)
+                if (toBoolean(params.indbautocommit)) _db.setAutoCommit(true)
                 if (toBoolean(params.indbexec)) {
                     var _r = _db.u(r)
                     _$o({ affectedRows: _r }, options)
@@ -1254,7 +1255,7 @@ var _inputFns = new Map([
             else if (io.fileExists(params.llmimage))
                 img = af.fromBytes2String(af.toBase64Bytes(io.readFileBytes(params.llmimage)))
         } 
-        if (params.output == "md" || params.output == "mdtable" || params.output == "raw") {
+        if (params.out == "md" || params.out == "mdtable" || params.out == "raw") {
             __res = isDef(img) ? res.promptImage(_res, img) : res.prompt(_res)
         } else {
             if (isDef(img)) {
