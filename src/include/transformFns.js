@@ -269,30 +269,33 @@ var _transformFns = {
         if (isString(params.llmprompt)) {
             params.llmenv     = _$(params.llmenv, "llmenv").isString().default("OAFP_MODEL")
             params.llmoptions = _$(params.llmoptions, "llmoptions").isString().default(__)
+            if (isUnDef(params.llmoptions) && !isString(getEnv(params.llmenv))) 
+                _exit(-1, "llmoptions not defined and " + params.llmenv + " not found.")
 
             var res = $llm( _getSec(isDef(params.llmoptions) ? params.llmoptions : $sec("system", "envs").get(params.llmenv)) )
             if (isDef(params.llmconversation) && io.fileExists(params.llmconversation)) 
                 res.getGPT().setConversation(io.readFileJSON(params.llmconversation))
             var type = "json", shouldStr = true
-            if (isString(params.input)) {
-                if (params.input == "md") {
+            if (isString(params.in)) {
+                if (params.in == "md") {
                     type = "markdown"
                     shouldStr = false
                 }
-                if (params.input == "mdtable") {
+                if (params.in == "mdtable") {
                     type = "markdown table"
                     shouldStr = false
                 }
-                if (params.input == "hsperf") type = "java hsperf file"
-                if (params.input == "raw") {
+                if (params.in == "hsperf") type = "java hsperf file"
+                if (params.in == "raw") {
                     type = "raw"
                     shouldStr = false
                 }
             }
             
             res = res.withContext(shouldStr ? stringify(_r,__,true) : _r, (isDef(params.llmcontext) ? params.llmcontext : `${type} input data`))
-            if (isString(params.output)) {
-                if (params.output == "md" || params.output == "mdtable" || params.output == "raw") {
+            if (isString(params.out)) {
+                if (params.out == "md" || params.out == "mdtable" || params.out == "raw") {
+                    cprint(res.getGPT().getConversation())
                     let _res = res.prompt(params.llmprompt)
                     if (isDef(params.llmconversation)) io.writeFileJSON( params.llmconversation, res.getGPT().getConversation(), "" )
                     return _res
@@ -597,6 +600,31 @@ var _transformFns = {
                 aO[aK] = _fromJSSLON(aV)
             }
         })
+        return _r
+    },
+    "field2str": _r => {
+        let _lst = params.field2str.split(",").map(r => r.trim())
+        traverse(_r, (aK, aV, aP, aO) => {
+            if (_lst.indexOf(aP.length > 0 && !aP.startsWith("[") ? aP.substring(1) + "." + aK : aK) >= 0 && !isString(aV)) {
+                aO[aK] = isMap(aO[aK]) || isArray(aO[aK]) ? af.toSLON(aO[aK]) : String(aO[aK])
+            }
+        })
+        return _r
+    },
+    "allstrings": _r => {
+        if (toBoolean(params.allstrings)) {
+            traverse(_r, (aK, aV, aP, aO) => {
+                if (isDef(aV) && !isString(aV)) {
+                    if (isNumber(aV)) {
+                        aO[aK] = String(aV)
+                    } else if (isBoolean(aV)) {
+                        aO[aK] = String(aV)
+                    } else if (isNull(aV)) {
+                        aO[aK] = ""
+                    }
+                }
+            })
+        }
         return _r
     },
     "oaf": _r => {
