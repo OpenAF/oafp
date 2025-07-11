@@ -116,6 +116,7 @@ These options will change the parsed input data included any filters provided.
 | arraytomap | Boolean | If true will try to convert the input array to a map (see arraytomapkey, arraytomapkeepkey) |
 | arraytomapkeepkey | Boolean | If true and arraytomap=true the defined arraytomapkey won't be removed from each map |
 | arraytomapkey | String | For arraytomap=true defines the name of the map property that will be each element key (see arraytomapkeepkey) |
+| allstrings | Boolean | If true will try to convert all values to strings |
 | cmlt | Boolean | If true will accumulate the input values into an output array (useful with loop) |
 | correcttypes | Boolean | If true will try to convert alpha-numeric field values with just numbers to number fields, string date fields to dates and boolean fields |
 | denormalize | String | Reverses 'normalize' given a JSON/SLON map with a normalize schema (see OpenAF's ow.ai.normalize.withSchema) |
@@ -123,6 +124,7 @@ These options will change the parsed input data included any filters provided.
 | field2byte | String | A comma delimited list of fields whose value should be converted to a byte abbreviation |
 | field2date | String | A comma delimited list of fields whose value should be converted to date values |
 | field2si | String | A comma delimited list of fields whose value should be converted to a SI abbreviation |
+| field2str | String | A comma delimited list of fields whose value should be converted to a string representation |
 | field4map | Boolean | A comma delimited list of fields whose value should be converted from JSON/SLON string representation to a map |
 | flatmap | Boolean | If true a map structure will be flat to just one level (optionally flatmapsep=[char] to use a different separator that '.') |
 | getlist | Number | If true will try to find the first array on the input value (if number will stop only after the number of checks) |

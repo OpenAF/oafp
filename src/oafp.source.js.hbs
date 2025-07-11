@@ -20,7 +20,7 @@ var procParams = () => {
     params.in = params.type
     params.input = params.type
     if (isUnDef(params._id)) {
-        params._id = genUUID()
+        params._id = nowNano()
     }
 }
 procParams()
@@ -203,7 +203,7 @@ if ("undefined" == typeof params.file && "undefined" == typeof params.cmd && "un
     if (isDef(bkprms)) bkprms.file = _found
 }
 
-params.debug = toBoolean(params.debug)
+if (typeof params.debug !== "undefined") params.debug = toBoolean(params.debug)
 if (isDef(params["-debug"])) params.debug = true
 
 // Verify the data param
@@ -347,7 +347,7 @@ var _cs = getEnv("OAFP_CODESET")
 if (isDef(_drev)) {
     if (toBoolean(_drev)) {
         _dr = false
-    } else {
+    } else {
         _dr = true
     }
 }
@@ -440,7 +440,7 @@ if (params["-examples"] == "" || (isString(params.examples) && params.examples.l
 var _res = "", noFurtherOutput = false
 
 // Check for output streams
-if (isDef(params.outfile)) {
+if (typeof params.outfile !== "undefined") {
     if ("undefined" === typeof global.__oafp_streams) global.__oafp_streams = {}
     if ("undefined" === typeof global.__oafp_streams[params.outfile] && toBoolean(params.outfileappend))
         global.__oafp_streams[params.outfile] = { s: io.writeFileStream(params.outfile, toBoolean(params.outfileappend)) }
@@ -471,7 +471,7 @@ var _run = () => {
         params.jsonprefix = _$(params.jsonprefix, "jsonprefix").isString().default(__)
         params.jsondesc   = toBoolean(_$(params.jsondesc, "jsondesc").default("false"))
 
-        if (isDef(params.insecure) && toBoolean(params.insecure)) {
+        if (typeof params.insecure !== "undefined" && toBoolean(params.insecure)) {
             ow.loadJava().setIgnoreSSLDomains()
         }
 
@@ -514,7 +514,7 @@ var _run = () => {
             if (params.jsondesc) _exit(-1, "ERROR: jsondesc only available for file input.")
             if (params.jsonprefix) _exit(-1, "ERROR: jsonprefix only available for file input.")
 
-            if (isDef(params.cmd)) {
+            if (typeof params.cmd !== "undefined") {
                 _res = _runCmd2Bytes(params.cmd, true)
             } else {
                 if (isString(params.data)) {
@@ -647,6 +647,6 @@ if (isNumber(params.loop)) {
 }
 
 // Close streams
-if (isDef(global.__oafp_streams)) Object.keys(global.__oafp_streams).forEach(s => global.__oafp_streams[s].s.close())
+if (typeof global.__oafp_streams !== "undefined") Object.keys(global.__oafp_streams).forEach(s => global.__oafp_streams[s].s.close())
 }
 oafp(_params)

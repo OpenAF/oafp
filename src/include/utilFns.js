@@ -129,6 +129,8 @@ const _$o = (r, options, lineByLine) => {
             } else {
                 r = _$f(r, nOptions)
             }
+        } else {
+            r = _transform(r)
         }
     }
 
