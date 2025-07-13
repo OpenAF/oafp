@@ -308,6 +308,11 @@
       "Description": "For arraytomap=true defines the name of the map property that will be each element key (see arraytomapkeepkey)"
     },
     {
+      "Option": "allstrings",
+      "Type": "Boolean",
+      "Description": "If true will try to convert all values to strings"
+    },
+    {
       "Option": "cmlt",
       "Type": "Boolean",
       "Description": "If true will accumulate the input values into an output array (useful with loop)"
@@ -341,6 +346,11 @@
       "Option": "field2si",
       "Type": "String",
       "Description": "A comma delimited list of fields whose value should be converted to a SI abbreviation"
+    },
+    {
+      "Option": "field2str",
+      "Type": "String",
+      "Description": "A comma delimited list of fields whose value should be converted to a string representation"
     },
     {
       "Option": "field4map",

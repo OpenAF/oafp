@@ -1266,7 +1266,7 @@ var _inputFns = new Map([
         }
         if (isDef(params.llmconversation)) {
             var _conv = res.getGPT().getConversation()
-            _conv.push({ role: "assistant", content: stringify(__res, __, "") })
+            //_conv.push({ role: "assistant", content: stringify(__res, __, "") })
             io.writeFileJSON( params.llmconversation, _conv, "" )
         }
 
