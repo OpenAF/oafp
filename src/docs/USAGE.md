@@ -974,7 +974,7 @@ oafp file=someFile.md input=md
 curl -s -L https://blog.google/rss | oafp path="rss.channel.item" sql="select title, pubDate" output=ctable
 
 # ask an LLM model to summarise some text
-echo "OpenAF rocks!" | oafp llmprompt="summarize this" llmoptions="(type: ollama, model: llama3)"
+echo "A very long text to be summarized" | oafp llmprompt="summarize this" llmoptions="(type: ollama, model: llama3)"
 ```
 
 ```bash
