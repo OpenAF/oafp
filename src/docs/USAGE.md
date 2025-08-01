@@ -992,6 +992,21 @@ oafp examples=kubectl
 oafp examples=openaf::oafp
 # list examples for category 'kubernetes'
 oafp examples=kubernetes::
+
+# yaml options input to link to oafp executions
+echo '
+data:
+  set:
+  - 1
+  - 2
+  - 3
+path: "set[].{ x: @ }"
+out : json
+pipe:
+  isql : |
+    SELECT sum("x") "SUM"
+  opath: "[0].SUM"
+' | oafp -f -
 ```
 
 ---
