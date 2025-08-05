@@ -129,11 +129,52 @@ var _outputFns = new Map([
             }
         }
     }],
+    ["rawascii", (r, options) => {
+        if (isDef(params.rawasciistart) && !isNumber(params.rawasciistart)) _exit(-1, "rawasciistart must be a number")
+        if (isDef(params.rawasciiend) && !isNumber(params.rawasciiend)) _exit(-1, "rawasciiend must be a number")
+
+        var _s = String(r).split("\n")
+        var _extraLine = 0
+        if (isNumber(params.rawasciistart) && params.rawasciistart > 0 && params.rawasciistart <= _s.length) {
+            _s = _s.slice(params.rawasciistart - 1)
+            _extraLine = Number(params.rawasciistart - 1)
+        }
+        if (isNumber(params.rawasciiend) && params.rawasciiend > 0 && params.rawasciiend < _s.length) {
+            _s = _s.slice(0, params.rawasciiend - (isNumber(params.rawasciistart - 1) ? params.rawasciistart - 1 : 0))
+        }
+        var _t
+        if (!toBoolean(params.rawasciinovisual)) {
+            _t = pForEach(_s, (_r, i) => {
+                // replace non-visual characters by their hex representation
+                _r = _r.replace(/[\x00-\x08\x0A-\x1F\x80-\xFF]/g, (c) => {
+                    return ansiColor("FG(8),UNDERLINE", "\\u{" + c.charCodeAt(0).toString(16).padStart(2, '0') + "}")
+                })
+                // replace above FF characters by their hex representation
+                _r = _r.replace(/[\u0100-\uFFFF]/g, (c) => {
+                    return ansiColor("FG(8),UNDERLINE", "\\u{" + c.charCodeAt(0).toString(16).padStart(4, '0') + "}")
+                })
+                // replace CR, LF, TAB and SPACE by their visual representation
+                _r = _r.replace(/$/, ansiColor("RED", "␊")).replace(/\r/, ansiColor("RED", "␍"))
+                _r = _r.replace(/\t/, ansiColor("FG(8)", "→→→→")).replace(/ /g, ansiColor("FG(8)", "·"))
+                return _r
+            })
+        } else {
+            _t = _s
+        }
+
+        if (toBoolean(params.rawasciinolinenum)) {
+            _print(_t.map(l => l).join("\n"))
+        } else {
+            var sep = ansiColor("FG(8)", "│"), maxl = "%" + String(_t.length).length + ".0f"
+            _print(_t.map((l, i) => [ansiColor("FG(8)", $f(maxl, Number(i+1) + _extraLine)), sep, l].join("")).join("\n"))
+        }
+    }],
     ["raw", (r, options) => {
-        if (isString(r))
+        if (isString(r)) {
             _print(r)
-        else
+        } else {
             _print(stringify(r,__,""))
+        }
     }],
     ["lines", (r, options) => {
         if (isArray(r)) {

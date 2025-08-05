@@ -426,6 +426,17 @@ complete:
       desc: A prefix added to all XML tags
   - name: out=raw
     desc: Tries to output the internal representation -string or json- of the input transformed data
+  - name: out=rawascii
+    desc: Outputs text data line by line with visual representation of non-visual characters
+    opts:
+    - name: rawasciistart=
+      desc: Starting line number to display
+    - name: rawasciiend=
+      desc: Ending line number to display
+    - name: rawasciinovisual=
+      desc: If true, non-visual characters won't be replaced by their visual representation
+    - name: rawasciinolinenum=
+      desc: If true, line numbers won't be displayed
   - name: out=schart
     desc: A static line-chart like chart -for a fixed list/array of values-
     opts:

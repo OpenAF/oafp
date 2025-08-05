@@ -206,6 +206,7 @@ List of available formats to use with the _output_ option:
 | prettyjson | A JSON format with spacing |
 | pxml | Tries to output the input data into pretty xml |
 | raw | Tries to output the internal representation (string or json) of the input transformed data |
+| rawascii | Outputs text data line by line with visual representation of non-visual characters |
 | res | Outputs data to an OpenAF global 'res' (used in oJobs) | 
 | schart | A static line-chart like chart (for a fixed list/array of values) |
 | slon | A SLON format |
@@ -859,6 +860,19 @@ List of options to use when _out=pxml_:
 | Option | Type | Description |
 |--------|------|-------------|
 | pxmlprefix | String | A prefix added to all XML tags |
+
+---
+
+### 🧾 RAWASCII output options
+
+List of options to use when _out=rawascii_:
+
+| Option | Type | Description |
+|--------|------|-------------|
+| rawasciistart | Number | Starting line number to display |
+| rawasciiend | Number | Ending line number to display |
+| rawasciinovisual | Boolean | If true, non-visual characters won't be replaced by their visual representation |
+| rawasciinolinenum | Boolean | If true, line numbers won't be displayed |
 
 ---
 

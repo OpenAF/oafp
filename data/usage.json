@@ -10,7 +10,7 @@
     },
     {
       "Option": "file",
-      "Description": "The file to parse (if not provide stdin is used)"
+      "Description": "The file to parse (if not provided stdin is used)"
     },
     {
       "Option": "cmd",
@@ -29,12 +29,24 @@
       "Description": "The input type (if not provided it will try to be auto-detected)"
     },
     {
+      "Option": "ifrom",
+      "Description": "An OpenAF nLinq expression to filter input data"
+    },
+    {
+      "Option": "isql",
+      "Description": "A SQL expression to filter input data"
+    },
+    {
       "Option": "from",
       "Description": "An OpenAF nLinq path expression to filter output"
     },
     {
       "Option": "sql",
       "Description": "A SQL expression to filter output"
+    },
+    {
+      "Option": "opath",
+      "Description": "A JMESPath expression to filter output data"
     },
     {
       "Option": "sqlfilter",
@@ -54,7 +66,7 @@
     },
     {
       "Option": "outkey",
-      "Description": "If defined the map/list output will be prefix with the provided key"
+      "Description": "If defined the map/list output will be prefixed with the provided key"
     },
     {
       "Option": "outfile",
@@ -91,6 +103,10 @@
     {
       "Option": "urldata",
       "Description": "If 'url' is provided a JSON/SLON/text data can be provided"
+    },
+    {
+      "Option": "insecure",
+      "Description": "If true will ignore SSL/TLS certificate validation"
     },
     {
       "Option": "chs",
@@ -131,6 +147,10 @@
     {
       "Option": "-v",
       "Description": "Changes the input to a map with the tool's version info"
+    },
+    {
+      "Option": "debug",
+      "Description": "If true prints debugging messages"
     }
   ],
   [
@@ -370,7 +390,7 @@
     {
       "Option": "forcearray",
       "Type": "Boolean",
-      "Description": "If true and if the input is map it will force it to be an array with that map as the only element"
+      "Description": "If true and if the input is a map it will force it to be an array with that map as the only element"
     },
     {
       "Option": "jsonschema",
@@ -475,7 +495,7 @@
     {
       "Option": "spacekeys",
       "Type": "String",
-      "Description": "Replaces spaces in keys with the provided string (for example, helpful to xml output)"
+      "Description": "Replaces spaces in keys with the provided string (for example, helpful for XML output)"
     },
     {
       "Option": "trim",
@@ -529,7 +549,7 @@
     },
     {
       "Output format": "chart",
-      "Description": "A line-chart like chart (usefull together with 'loop')"
+      "Description": "A line-chart style chart (useful together with 'loop')"
     },
     {
       "Output format": "cjson",
@@ -573,7 +593,7 @@
     },
     {
       "Output format": "grid",
-      "Description": "A multiple output ascii grid (usefull together with 'loop')"
+      "Description": "A multiple output ascii grid (useful together with 'loop')"
     },
     {
       "Output format": "html",
@@ -650,6 +670,10 @@
     {
       "Output format": "raw",
       "Description": "Tries to output the internal representation (string or json) of the input transformed data"
+    },
+    {
+      "Output format": "rawascii",
+      "Description": "Outputs text data line by line with visual representation of non-visual characters"
     },
     {
       "Output format": "res",
@@ -751,6 +775,11 @@
       "Option": "indbexec",
       "Type": "Boolean",
       "Description": "If true the input SQL is not a query but a DML statement"
+    },
+    {
+      "Option": "indbautocommit",
+      "Type": "Boolean",
+      "Description": "If true the input SQL will be executed with autocommit enabled"
     },
     {
       "Option": "indbdesc",
@@ -1203,7 +1232,7 @@
     {
       "Option": "diffsentences",
       "Type": "Boolean",
-      "Description": "If true and the input is text based will perfom the diff at the sentence level"
+      "Description": "If true and the input is text based will perform the diff at the sentence level"
     },
     {
       "Option": "diffchars",
@@ -1259,7 +1288,7 @@
     {
       "Option": "setop",
       "Type": "String",
-      "Description": "Allows to choose a different set operation between 'union', 'diffa', 'diffb', 'diffab' (symetric difference), 'diff' and 'intersect' (default)"
+      "Description": "Allows to choose a different set operation between 'union', 'diffa', 'diffb', 'diffab' (symmetric difference), 'diff' and 'intersect' (default)"
     }
   ],
   [
@@ -1493,6 +1522,28 @@
   ],
   [
     {
+      "Option": "rawasciistart",
+      "Type": "Number",
+      "Description": "Starting line number to display"
+    },
+    {
+      "Option": "rawasciiend",
+      "Type": "Number",
+      "Description": "Ending line number to display"
+    },
+    {
+      "Option": "rawasciinovisual",
+      "Type": "Boolean",
+      "Description": "If true, non-visual characters won't be replaced by their visual representation"
+    },
+    {
+      "Option": "rawasciinolinenum",
+      "Type": "Boolean",
+      "Description": "If true, line numbers won't be displayed"
+    }
+  ],
+  [
+    {
       "Option": "metricsprefix",
       "Type": "String",
       "Description": "The prefix to use for each metric (defaults to 'metrics')"
@@ -1546,7 +1597,7 @@
     {
       "Option": "templatetmpl",
       "Type": "String",
-      "Description": "If true the 'template' will be interpreted as the template defintion instead of a file path"
+      "Description": "If true the 'template' will be interpreted as the template definition instead of a file path"
     }
   ],
   [
