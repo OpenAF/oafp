@@ -1532,6 +1532,11 @@
       "Description": "Ending line number to display"
     },
     {
+      "Option": "rawasciitab",
+      "Type": "Number",
+      "Description": "Tab size for tab character visualization (defaults to 8)"
+    },
+    {
       "Option": "rawasciinovisual",
       "Type": "Boolean",
       "Description": "If true, non-visual characters won't be replaced by their visual representation"
