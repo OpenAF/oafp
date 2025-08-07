@@ -185,8 +185,8 @@ var _outputFns = new Map([
         if (toBoolean(params.rawasciinolinenum)) {
             _print(_t.map(l => l).join("\n"))
         } else {
-            var sep = ansiColor("FG(8)", "│"), maxl = "%" + String(_t.length).length + ".0f"
-            _print(_t.map((l, i) => [ansiColor("FG(8)", $f(maxl, Number(i+1) + _extraLine)), sep, l].join("")).join("\n"))
+            const sep = [cFg8, "│", cReset].join(""), maxl = "%" + String(_t.length).length + ".0f"
+            _print(_t.map((l, i) => [cFg8, $f(maxl, Number(i+1) + _extraLine), cReset, sep, l].join("")).join("\n"))
         }
     }],
     ["raw", (r, options) => {
