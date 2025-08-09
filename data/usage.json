@@ -648,6 +648,10 @@
       "Description": "A NDSLON (new-line delimited SLON) format"
     },
     {
+      "Output format": "ndcslon",
+      "Description": "A NDSLON (new-line delimited SLON) format forcely colored"
+    },
+    {
       "Output format": "openmetrics",
       "Description": "Converts a map or list to OpenMetrics/Prometheus compatible format"
     },
