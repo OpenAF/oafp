@@ -576,6 +576,14 @@
       "Description": "A tree-like forcely colored format"
     },
     {
+      "Output format": "clkyaml",
+      "Description": "A Kubernetes YAML without new-lines colored format"
+    },
+    {
+      "Output format": "ckyaml",
+      "Description": "A Kubernetes YAML colored format"
+    },
+    {
       "Output format": "cyaml",
       "Description": "An YAML colored format"
     },
@@ -614,6 +622,14 @@
     {
       "Output format": "key",
       "Description": "Stores data into an OpenAF global (used inside OpenAF)"
+    },
+    {
+      "Output format": "kyaml",
+      "Description": "A Kubernetes YAML format"
+    },
+    {
+      "Output format": "lkyaml",
+      "Description": "A Kubernetes YAML format without new-lines"
     },
     {
       "Output format": "lines",
