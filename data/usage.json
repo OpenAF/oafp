@@ -247,6 +247,10 @@
       "Description": "A Markdown code blocks format"
     },
     {
+      "Input type": "mcp",
+      "Description": "A Model Context Protocol (MCP) input"
+    },
+    {
       "Input type": "ndjson",
       "Description": "A NDJSON (new-line delimited JSON) format"
     },
@@ -1013,6 +1017,18 @@
       "Option": "inmdtablejoin",
       "Type": "Boolean",
       "Description": "Scans an entire markdown input for tables and returns an array with the data of each markdown table"
+    }
+  ],
+  [
+    {
+      "Option": "inmcptoolslist",
+      "Type": "Boolean",
+      "Description": "If true will list all available MCP tools"
+    },
+    {
+      "Option": "inmcplistprompts",
+      "Type": "Boolean",
+      "Description": "If true will list all available MCP prompts"
     }
   ],
   [
