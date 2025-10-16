@@ -1,3 +1,13 @@
+if (typeof _resolveLLMEnvName === "undefined") {
+    var _resolveLLMEnvName = function (aEnv) {
+        var _env = aEnv
+        if (_env == "OAFP_MODEL" && isUnDef(getEnv("OAFP_MODEL")) && isDef(getEnv("OAF_MODEL"))) {
+            _env = "OAF_MODEL"
+        }
+        return _env
+    }
+}
+
 var _transformFns = {
     "transforms"    : _r => {
         if (toBoolean(params.transforms)) {
@@ -268,8 +278,9 @@ var _transformFns = {
     "llmprompt": _r => {
         if (isString(params.llmprompt)) {
             params.llmenv     = _$(params.llmenv, "llmenv").isString().default("OAFP_MODEL")
+            params.llmenv     = _resolveLLMEnvName(params.llmenv)
             params.llmoptions = _$(params.llmoptions, "llmoptions").isString().default(__)
-            if (isUnDef(params.llmoptions) && !isString(getEnv(params.llmenv))) 
+            if (isUnDef(params.llmoptions) && !isString(getEnv(params.llmenv)))
                 _exit(-1, "llmoptions not defined and " + params.llmenv + " not found.")
 
             var res = $llm( _getSec(isDef(params.llmoptions) ? params.llmoptions : $sec("system", "envs").get(params.llmenv)) )
