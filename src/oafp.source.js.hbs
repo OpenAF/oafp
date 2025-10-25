@@ -469,7 +469,7 @@ var _run = () => {
     } else {
         // JSON base options
         params.jsonprefix = _$(params.jsonprefix, "jsonprefix").isString().default(__)
-        params.jsondesc   = toBoolean(_$(params.jsondesc, "jsondesc").default("false"))
+        params.jsondesc   = _$(toBoolean(params.jsondesc), "jsondesc").isBoolean().default(false)
 
         if (typeof params.insecure !== "undefined" && toBoolean(params.insecure)) {
             ow.loadJava().setIgnoreSSLDomains()

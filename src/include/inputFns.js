@@ -41,21 +41,21 @@ var _inputFns = new Map([
         _showTmpMsg()
         params.xmlignored = _$(params.xmlignored, "xmlignored").isString().default(__)
         params.xmlprefix = _$(params.xmlprefix, "xmlprefix").isString().default(__)
-        params.xmlfiltertag = toBoolean(_$(params.xmlfiltertag, "xmlfiltertag").isString().default(__))
+        params.xmlfiltertag = _$(toBoolean(params.xmlfiltertag), "xmlfiltertag").isBoolean().default(__)
         //if (_res.indexOf("<?xml") >= 0) _res = _res.substring(_res.indexOf("?>") + 2).trim()
         //if (_res.indexOf("<!DOCTYPE") >= 0) _res = _res.substring(_res.indexOf(">") + 1).trim()
         var _r = af.fromXML2Obj(_res, params.xmlignored, params.xmlprefix, !params.xmlfiltertag)
         _$o(_r, options)
     }],
     ["lines", (_res, options) => {
-        if (!isBoolean(params.linesjoin)) params.linesjoin = toBoolean(_$(params.linesjoin, "linesjoin").isString().default(__))
+        params.linesjoin = _$(toBoolean(params.linesjoin), "linesjoin").isBoolean().default(false)
 
         _showTmpMsg()
 
         let _linesvisual_header = __
         let _linesvisual_header_pos = []
 
-        params.linesvisualheadsep = toBoolean(_$(params.linesvisualheadsep, "linesvisualheadsep").isString().default(__))
+        params.linesvisualheadsep = _$(toBoolean(params.linesvisualheadsep), "linesvisualheadsep").isBoolean().default(false)
         let _headTitles = false
         let _headSep    = false
         if (isUnDef(params.linesvisualsepre)) params.linesvisualsepre = (params.linesvisualheadsep ? "\\s+" : " \\s+")
@@ -162,7 +162,7 @@ var _inputFns = new Map([
         }
     }],
     ["ndjson", (_res, options) => {
-        if (!isBoolean(params.ndjsonjoin)) params.ndjsonjoin = toBoolean(_$(params.ndjsonjoin, "ndjsonjoin").isString().default(__))
+        params.ndjsonjoin = _$(toBoolean(params.ndjsonjoin), "ndjsonjoin").isBoolean().default(false)
 
         _showTmpMsg()
         global.__ndjsonbuf = __, noOut = true
@@ -221,7 +221,7 @@ var _inputFns = new Map([
         if (noOut) _clearTmpMsg()
     }],
     ["ndslon", (_res, options) => {
-        if (!isBoolean(params.ndslonjoin)) params.ndslonjoin = toBoolean(_$(params.ndslonjoin, "ndslonjoin").isString().default(__))
+        params.ndslonjoin = _$(toBoolean(params.ndslonjoin), "ndslonjoin").isBoolean().default(false)
 
         _showTmpMsg()
         global.__ndslonbuf = __, noOut = true
@@ -759,7 +759,7 @@ var _inputFns = new Map([
         }
 
         params.inxlssheet        = _$(params.inxlssheet || params.xlssheet, "xlssheet").isString().default(0)
-        params.inxlsevalformulas = toBoolean(_$(params.inxlsevalformulas || params.xlsevalformulas, "xlsevalformulas").isString().default(true))
+        params.inxlsevalformulas = _$(toBoolean(params.inxlsevalformulas || params.xlsevalformulas), "xlsevalformulas").isBoolean().default(true)
         params.inxlscol          = _$(params.inxlscol || params.xlscol, "xlscol").isString().default("A")
         params.inxlsrow          = _$(params.inxlsrow || params.xlsrow, "xlsrow").isString().default(1)
 
@@ -919,7 +919,7 @@ var _inputFns = new Map([
         _$o(_r, options)
     }],
     ["javagc", (_res, options) => {
-        if (!isBoolean(params.javagcjoin)) params.javagcjoin = toBoolean(_$(params.javagcjoin, "javagcjoin").isString().default(__))
+        params.javagcjoin = _$(toBoolean(params.javagcjoin), "javagcjoin").isBoolean().default(false)
 
         // Pre-compile regex patterns for performance (moved outside hot path)
         const regexes = [
@@ -1153,9 +1153,9 @@ var _inputFns = new Map([
         ow.loadJava()
         if (isUnDef(ow.java.parseJFR)) _exit(-1, "jfr not available.")
 
-        if (!isBoolean(params.jfrjoin)) params.jfrjoin = toBoolean(_$(params.jfrjoin, "jfrjoin").isString().default(__))
-        if (!isBoolean(params.jfrdesc)) params.jfrdesc = toBoolean(_$(params.jfrdesc, "jfrdesc").isString().default(__))
-        
+        if (!isBoolean(params.jfrjoin)) params.jfrjoin = _$(toBoolean(params.jfrjoin), "jfrjoin").isBoolean().default(false)
+        if (!isBoolean(params.jfrdesc)) params.jfrdesc = _$(toBoolean(params.jfrdesc), "jfrdesc").isBoolean().default(false)
+
         _showTmpMsg()
         var _r
         if (isDef(params.file) && isUnDef(params.cmd)) {

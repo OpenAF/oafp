@@ -12,13 +12,13 @@ var _outputFns = new Map([
     ["html", (r, options) => {
         let html, tmpf, res = false
 
-        params.htmlopen = toBoolean(_$(params.htmlopen, "htmlopen").isString().default("true"))
+        params.htmlopen = _$(toBoolean(params.htmlopen), "htmlopen").isBoolean().default(true)
         params.htmlwait = _$(params.htmlwait, "htmlwait").isNumber().default(2500)
 
         if (params.htmlopen) tmpf = io.createTempFile("oafp_", ".html")
 
         ow.loadTemplate()
-        params.htmldark = toBoolean(_$(params.htmldark, "htmldark").isString().default("false"))
+        params.htmldark = _$(toBoolean(params.htmldark), "htmldark").isBoolean().default(false)
         if (isString(r)) {
             html = ow.template.html.genStaticVersion(ow.template.parseMD2HTML(r, !toBoolean(params.htmlpart), !toBoolean(params.htmlcompact),__,params.htmldark))
             html = html.replace("<html>", "<html><meta charset=\"utf-8\">")
@@ -525,8 +525,8 @@ var _outputFns = new Map([
     ["db", (r, options) => {
         if (!isArray(r) || r.length < 1) _exit(-1, "db is only supported for filled arrays/lists")
         params.dbtable = _$(params.dbtable, "outdbtable").isString().default("data")
-        params.dbnocreate = toBoolean(_$(params.dbnocreate, "outdbnocreate").isString().default("false"))
-        params.dbicase = toBoolean(_$(params.dbicase, "outdbicase").isString().default("false"))
+        params.dbnocreate = _$(toBoolean(params.dbnocreate), "outdbnocreate").isBoolean().default(false)
+        params.dbicase = _$(toBoolean(params.dbicase), "outdbicase").isBoolean().default(false)
         params.dbbatchsize = _$(params.dbbatchsize, "dbbatchsize").isNumber().default(__)
 
         ow.loadObj()
@@ -593,8 +593,8 @@ var _outputFns = new Map([
     ["sql", (r, options) => {
         if (!isArray(r) || r.length < 1) _exit(-1, "sql is only supported for filled arrays/lists")
         params.sqltable = _$(params.sqltable, "sqltable").isString().default("data")
-        params.sqlicase = toBoolean(_$(params.sqlicase, "sqlicase").isString().default("false"))
-        params.sqlnocreate = toBoolean(_$(params.sqlnocreate, "sqlnocreate").isString().default("false"))
+        params.sqlicase = _$(toBoolean(params.sqlicase), "sqlicase").isBoolean().default(false)
+        params.sqlnocreate = _$(toBoolean(params.sqlnocreate), "sqlnocreate").isBoolean().default(false)
 
         ow.loadObj()
         if (!params.sqlnocreate) _print(ow.obj.fromObj2DBTableCreate(params.sqltable, r, __, !params.sqlicase)+";\n")
@@ -668,7 +668,7 @@ var _outputFns = new Map([
             xls.close()
     
             params.xlsopenwait = _$(params.xlsopenwait, "xlsopenwait").isNumber().default(5000)
-            params.xlsopen     = toBoolean(_$(params.xlsopen, "xlsopen").isString().default("true"))
+            params.xlsopen     = _$(toBoolean(params.xlsopen), "xlsopen").isBoolean().default(true)
             if (params.xlsopen) {
                 if (ow.format.isWindows()) {
                     $sh("start " + params.xlsfile).exec()

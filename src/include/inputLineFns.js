@@ -1,8 +1,8 @@
 var _inputLineFns = {
     "lines": (r, options) => {
-        if (!isBoolean(params.linesjoin)) params.linesjoin = toBoolean(_$(params.linesjoin, "linesjoin").isString().default(__))
+        params.linesjoin = _$(toBoolean(params.linesjoin), "linesjoin").isBoolean().default(false)
 
-        if (!params.linesjoin && isString(r)) {
+        if (!params.linesjoin && isBoolean(r)) {
             if (r.trim().length == 0) {
                 noFurtherOutput = true
                 return
@@ -17,7 +17,7 @@ var _inputLineFns = {
         }
     },
     "javagc": (r, options) => {
-        if (!isBoolean(params.javagcjoin)) params.javagcjoin = toBoolean(_$(params.javagcjoin, "javagcjoin").isString().default(__))
+        params.javagcjoin = _$(toBoolean(params.javagcjoin), "javagcjoin").isBoolean().default(false)
 
         if (params.javagcjoin) return true
 
@@ -158,7 +158,7 @@ var _inputLineFns = {
         }
     },
     "ndjson": (r, options) => {
-        if (!isBoolean(params.ndjsonjoin)) params.ndjsonjoin = toBoolean(_$(params.ndjsonjoin, "ndjsonjoin").isString().default(__))
+        params.ndjsonjoin = _$(toBoolean(params.ndjsonjoin), "ndjsonjoin").isBoolean().default(false)
         
         if (!params.ndjsonjoin) {
             if (isUnDef(global.__ndjsonbuf) && r.length != 0 && r.trim().startsWith("{")) global.__ndjsonbuf = ""
@@ -179,7 +179,7 @@ var _inputLineFns = {
         }
     },
     "ndslon": (r, options) => {
-        if (!isBoolean(params.ndslonjoin)) params.ndslonjoin = toBoolean(_$(params.ndslonjoin, "ndslonjoin").isString().default(__))
+        params.ndslonjoin = _$(toBoolean(params.ndslonjoin), "ndslonjoin").isBoolean().default(false)
         
         if (!params.ndslonjoin) {
             if (isUnDef(global.__ndslonbuf) && r.length != 0 && r.trim().startsWith("(")) global.__ndslonbuf = ""
