@@ -247,7 +247,7 @@ const _print = (m) => {
                     io.writeFileBytes(params.outfile, isString(m) ? af.fromString2Bytes(m) : m)
                 }
             } else {
-                io.writeFileBytes(params.outfile, isString(m) ? af.fromString2Bytes(m) : m)
+                io.writeFileBytes(params.outfile, isString(m) || m instanceof java.lang.String ? af.fromString2Bytes(m) : m)
             }
         }
     }
