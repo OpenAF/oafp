@@ -151,6 +151,12 @@
       "Example": "format(string, '%10s')"
     },
     {
+      "Function": "from_base64(str)",
+      "OpenAF": "20251115",
+      "Description": "Given a base64 encoded string will decode it",
+      "Example": "from_base64('SGVsbG8gV29ybGQh')"
+    },
+    {
       "Function": "from_bytesAbbr(x)",
       "OpenAF": "20240209",
       "Description": "Given a string with a byte abbreviation will convert to bytes",
@@ -167,6 +173,12 @@
       "OpenAF": "20240228",
       "Description": "Converts a date type into a string given a 'format' (equivalent to OpenAF's ow.format.fromDate)",
       "Example": "from_datef(to_datef('20240202', 'yyyyMMdd'), 'yyyy')"
+    },
+    {
+      "Function": "from_kyaml(str)",
+      "OpenAF": "20251115",
+      "Description": "Converts a KYAML string representation into an object",
+      "Example": "from_kyaml(@)"
     },
     {
       "Function": "from_json(str)",
@@ -209,6 +221,18 @@
       "OpenAF": "20240502",
       "Description": "Given a TOML format string tries to convert it to an object",
       "Example": "from_toml(@)"
+    },
+    {
+      "Function": "from_xml(str)",
+      "OpenAF": "20251115",
+      "Description": "Given an XML format string tries to convert it to an object",
+      "Example": "from_xml(@)"
+    },
+    {
+      "Function": "from_yaml(str)",
+      "OpenAF": "20240215",
+      "Description": "Converts a YAML string representation into an object",
+      "Example": "from_yaml(@)"
     },
     {
       "Function": "get(nameOrPath)",
@@ -389,6 +413,12 @@
       "Example": "oafp('(file:data.json)')"
     },
     {
+      "Function": "oafpd(data, str)",
+      "OpenAF": "20240812",
+      "Description": "Executes an oafp (inception) with the provided data and options map in JSON or SLON string format",
+      "Example": "oafpd(data, '(path:\"name\")')"
+    },
+    {
       "Function": "ojob(file, jsslon)",
       "OpenAF": "20241116",
       "Description": "Executes a 'file' oJob, with 'jsslon' as args, returning the output (if ow.ojob.output is used)",
@@ -465,6 +495,12 @@
       "OpenAF": "20240305",
       "Description": "Given an object will set the value to a name given the provided path",
       "Example": "set(@, 'version', 'ver').packages[].{ name: name, parentVersion: get('ver') }"
+    },
+    {
+      "Function": "semver(version, operation, arg)",
+      "OpenAF": "20240605",
+      "Description": "Performs semantic version operations (e.g. 'isGreaterThan', 'isLessThan') on a version string",
+      "Example": "semver('1.2.3', 'isGreaterThan', '1.2.0')"
     },
     {
       "Function": "sh(cmd, stdin)",
@@ -611,6 +647,12 @@
       "Example": "to_array(`true`)"
     },
     {
+      "Function": "to_base64(str)",
+      "OpenAF": "20251115",
+      "Description": "Given a string will return the base64 encoded version of it",
+      "Example": "to_base64('Hello World!')"
+    },
+    {
       "Function": "to_bytesAbbr(x)",
       "OpenAF": "20240209",
       "Description": "Given an absolute number of bytes will return a string with unit abbreviation.",
@@ -645,6 +687,12 @@
       "OpenAF": "20240215",
       "Description": "Given an object will return the JSON string representation of it with the provided spacing",
       "Example": "to_json(@, '')"
+    },
+    {
+      "Function": "to_kyaml(obj)",
+      "OpenAF": "20251115",
+      "Description": "Given an object will return the KYAML representation of it.",
+      "Example": "to_kyaml(@)"
     },
     {
       "Function": "to_map(arr, 'field')",
@@ -693,6 +741,18 @@
       "OpenAF": "20240502",
       "Description": "Given an object outputs a TOML format string if possible",
       "Example": "to_toml(@)"
+    },
+    {
+      "Function": "to_xml(obj)",
+      "OpenAF": "20251115",
+      "Description": "Given an object will return the XML representation of it.",
+      "Example": "to_xml(@)"
+    },
+    {
+      "Function": "to_yaml(obj, inline)",
+      "OpenAF": "20240215",
+      "Description": "Given an object will return the YAML representation of it with optional inline boolean flag",
+      "Example": "to_yaml(@, `true`)"
     },
     {
       "Function": "trim(str)",
