@@ -11,6 +11,7 @@ todo:
 - oafp::NDJSON2JSON
 - oafp::NDJSON2JSON_2
 - oafp::NDJSON2JSON_2p
+- oafp::interactiveRequiresInput
 
 - oafp::merge
 - oafp::sortMapKeys
@@ -140,6 +141,13 @@ jobs:
   args:
     func: "global.test.testNDJSON2JSON_2p()"
 
+# -------------------------------
+- name: oafp::interactiveRequiresInput
+  to  : oJob Test
+  deps: Load test
+  args:
+    func: "global.test.testInteractiveRequiresInput()"
+
 # -----------------
 - name: oafp::merge
   to  : oJob Test
@@ -223,4 +231,3 @@ jobs:
     if (args.results.fail > 0) printErr("There are failed tests")
     io.writeFileString("oafp-test.md", ow.test.toMarkdown())
     io.writeFileJSON("oafp-test.json", args.results)
-

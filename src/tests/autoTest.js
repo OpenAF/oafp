@@ -151,6 +151,12 @@
       }
    }
 
+   exports.testInteractiveRequiresInput = function() {
+      var _r = $sh([getOpenAFPath() + "/oaf", "-f", "../oafp.source.js", "-e", "-i"]).get(0)
+      ow.test.assert(_r.exitcode > 0, true, "Problem with -i requires file or data (exitcode)")
+      ow.test.assert(String(_r.stderr).indexOf("requires file= or data=") >= 0, true, "Problem with -i requires file or data (message)")
+   }
+
    // Transforms
    // ----------
    exports.testMerge = function() {

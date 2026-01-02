@@ -524,6 +524,8 @@ complete:
     desc: A YAML format
 - name: '-h'        
   desc: Shows the help document
+- name: '-i'
+  desc: Start an interactive prompt (requires file= or data=) to configure input, transforms, and output
 - name: help=
   desc: If true will show the help document or other available -e.g. filters, template-
   opts:
