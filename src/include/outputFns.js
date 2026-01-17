@@ -66,6 +66,9 @@ var _outputFns = new Map([
     ["clkyaml", (r, options) => {
         _o$o(r, options)
     }],
+    ["toon", (r, options) => {
+        _o$o(r, options)
+    }],
     ["cjson", (r, options) => {
         _o$o(r, options)
     }],

@@ -307,6 +307,10 @@
       "Description": "TOML format"
     },
     {
+      "Input type": "toon",
+      "Description": "TOON format"
+    },
+    {
       "Input type": "xls",
       "Description": "A XLSx compatible file (requires file=abc.xlsx)"
     },
@@ -738,6 +742,10 @@
     {
       "Output format": "toml",
       "Description": "A TOML format (arrays will have outkey=list)"
+    },
+    {
+      "Output format": "toon",
+      "Description": "A TOON format"
     },
     {
       "Output format": "tree",

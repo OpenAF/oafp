@@ -1498,6 +1498,11 @@ var _inputFns = new Map([
         if (isUnDef(af.fromTOML)) _exit(-1, "TOML support not found.")
         _$o(af.fromTOML(_res), options)
     }],
+    ["toon", (_res, options) => {
+        _showTmpMsg()
+        if (isUnDef(af.fromTOON)) _exit(-1, "TOON support not found.")
+        _$o(af.fromTOON(_res), options)
+    }],
     ["slon", (_res, options) => {
         _showTmpMsg()
         _$o(af.fromSLON(_res), options)

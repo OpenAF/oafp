@@ -7,6 +7,7 @@ todo:
 - oafp::YAML2JSON
 - oafp::JSON2Base64
 - oafp::JSON2Base64Gzip
+- oafp::JSON2TOON
 - oafp::CSV2JSON
 - oafp::NDJSON2JSON
 - oafp::NDJSON2JSON_2
@@ -120,6 +121,13 @@ jobs:
     func: "global.test.testJSON2Base64Gzip()"
 
 # -----------------------
+- name: oafp::JSON2TOON
+  to  : oJob Test
+  deps: Load test
+  args:
+    func: "global.test.testJSON2TOON()"
+
+# -----------------------
 - name: oafp::NDJSON2JSON
   to  : oJob Test
   deps: Load test
@@ -223,4 +231,3 @@ jobs:
     if (args.results.fail > 0) printErr("There are failed tests")
     io.writeFileString("oafp-test.md", ow.test.toMarkdown())
     io.writeFileJSON("oafp-test.json", args.results)
-

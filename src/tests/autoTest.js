@@ -89,6 +89,20 @@
       ow.test.assert(compare(jsonParse(_s.stdout), data), true, "Problem with input/output base64 (simple)")
    }
 
+   exports.testJSON2TOON = function() {
+      var _f = io.createTempFile("testJSON2TOON", ".json")
+      var data = { a: 123, b: true, c: [ 1, 2, 3 ] }
+
+      io.writeFileJSON(_f, data)
+      var _r = $sh([getOpenAFPath() + "/oaf", "-f", "../oafp.source.js", "-e", "file=" + _f + " input=json output=toon"]).get(0)
+
+      var _fs = io.createTempFile("testTOON2JSON", ".toon")
+      io.writeFileString(_fs, _r.stdout)
+      var _s = $sh([getOpenAFPath() + "/oaf", "-f", "../oafp.source.js", "-e", "file=" + _fs + " input=toon output=json"]).get(0)
+
+      ow.test.assert(compare(jsonParse(_s.stdout), data), true, "Problem with input/output toon")
+   }
+
    exports.testNDJSON2JSON = function() {
       var _f  = io.createTempFile("testNDJSON2JSON", ".ndjson")
       var data = { a: 123, b: true, c: [ 1, 2, 3 ] }
