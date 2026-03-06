@@ -1460,9 +1460,9 @@ var _inputFns = new Map([
                 }
             } else {
                 if (toBoolean(params.lsrecursive)) {
-                    _r = listFilesRecursive(_res, isPosix)
+                    _r = af.fromJavaArray(listFilesRecursive(_res, isPosix))
                 } else {
-                    _r = io.listFiles(_res, isPosix).files
+                    _r = af.fromJavaMap(io.listFiles(_res, isPosix)).files
                 }
             }
             _$o(_r, options)
