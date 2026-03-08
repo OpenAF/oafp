@@ -13,6 +13,7 @@ Takes an input, usually a data structure such as json, and transforms it to an e
 | Option | Description | 
 |--------|-------------|
 | -h     | Show this document |
+| -i     | Start an interactive prompt (requires file= or data=) to configure input, transforms, and output |
 | help   | Alternative way to show this document or others (e.g. filters, template) |
 | file   | The file to parse (if not provided stdin is used) |
 | cmd    | Alternative to file and stdin to execute a command (e.g. kubectl, docker) to get the file contents |

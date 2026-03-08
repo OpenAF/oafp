@@ -194,7 +194,7 @@ const showVersion = () => {
 if ("undefined" == typeof params.file && "undefined" == typeof params.cmd && "undefined" == typeof params.data && "undefined" == typeof params.url) {
     let _found = __
     for (let key in params) {
-        if ("undefined" == typeof _found && params[key] === "" && key != "-debug" && key != "-v" && key != "-examples") {
+        if ("undefined" == typeof _found && params[key] === "" && key != "-debug" && key != "-v" && key != "-examples" && key != "-i") {
             _found = key
             break;
         }
@@ -435,6 +435,69 @@ if (params["-examples"] == "" || (isString(params.examples) && params.examples.l
 
     delete params["-examples"]
 }
+
+const _askInteractive = () => {
+    if (isUnDef(askStruct)) _exit(-1, "ERROR: -i requires OpenAF askStruct support.")
+    if (isUnDef(params.file) && isUnDef(params.data)) _exit(-1, "ERROR: -i requires file= or data=.")
+
+    let inputTypes = Array.from(_inputFns.keys()).filter(r => r != "?").sort()
+    let outputTypes = Array.from(_outputFns.keys()).filter(r => r != "?").sort()
+    let questions = [
+        { name: "inputType", prompt: "Input type (auto to detect)", type: "choose", options: [ "auto" ].concat(inputTypes) },
+        { name: "inputOptions", prompt: "Input options (JSON/SLON map; leave empty to skip): ", type: "question" },
+        { name: "inputFilters", prompt: "Input filters (JSON/SLON map for ifrom/isql; leave empty to skip): ", type: "question" },
+        { name: "transformOptions", prompt: "Transform options (JSON/SLON map; leave empty to skip): ", type: "question" },
+        { name: "outputType", prompt: "Output format (default to keep)", type: "choose", options: [ "default" ].concat(outputTypes) },
+        { name: "outputOptions", prompt: "Output options (JSON/SLON map; leave empty to skip): ", type: "question" },
+        { name: "outputFilters", prompt: "Output filters (JSON/SLON map for path/from/sql/opath; leave empty to skip): ", type: "question" },
+        { name: "extraOptions", prompt: "Extra options (JSON/SLON map; leave empty to skip): ", type: "question" }
+    ]
+
+    __initializeCon()
+    __conConsole = true
+    __con.getTerminal().settings.set("-icanon min 1 -echo")
+    let answers = askStruct(questions)
+    __con.getTerminal().settings.set("icanon echo")
+    print("")
+
+    let answersMap = {}
+    if (isArray(answers)) {
+        answers.forEach(r => {
+            if (isMap(r) && isDef(r.name)) answersMap[r.name] = r.answer
+        })
+    }
+
+    const _applyMap = (label, value) => {
+        if (!isString(value)) return
+        let _v = value.trim()
+        if (_v.length == 0) return
+        let _m = _fromJSSLON(_v)
+        if (!isMap(_m)) _exit(-1, "ERROR: " + label + " must be a JSON/SLON map.")
+        Object.keys(_m).forEach(k => params[k] = _m[k])
+    }
+
+    if (isString(answersMap.inputType)) {
+        let _t = answersMap.inputType.trim()
+        if (_t.length > 0 && _t != "auto") params.type = _t
+    }
+
+    if (isString(answersMap.outputType)) {
+        let _t = answersMap.outputType.trim()
+        if (_t.length > 0 && _t != "default") params.format = _t
+    }
+
+    _applyMap("Input options", answersMap.inputOptions)
+    _applyMap("Input filters", answersMap.inputFilters)
+    _applyMap("Transform options", answersMap.transformOptions)
+    _applyMap("Output options", answersMap.outputOptions)
+    _applyMap("Output filters", answersMap.outputFilters)
+    _applyMap("Extra options", answersMap.extraOptions)
+
+    procParams()
+    delete params["-i"]
+}
+
+if (params["-i"] == "" || toBoolean(params["-i"]) || toBoolean(params.interactive)) _askInteractive()
 
 // Read input from stdin or file
 var _res = "", noFurtherOutput = false
