@@ -223,6 +223,12 @@
       "Example": "from_toml(@)"
     },
     {
+      "Function": "from_toon(str)",
+      "OpenAF": "20260116",
+      "Description": "Given a TOON format string tries to convert it to an object",
+      "Example": "from_toon(@)"
+    },
+    {
       "Function": "from_xml(str)",
       "OpenAF": "20251115",
       "Description": "Given an XML format string tries to convert it to an object",
@@ -741,6 +747,12 @@
       "OpenAF": "20240502",
       "Description": "Given an object outputs a TOML format string if possible",
       "Example": "to_toml(@)"
+    },
+    {
+      "Function": "to_toon(obj)",
+      "OpenAF": "20260116",
+      "Description": "Given an object will return the TOON representation of it.",
+      "Example": "to_toon(@)"
     },
     {
       "Function": "to_xml(obj)",
