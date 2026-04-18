@@ -51,7 +51,7 @@ jobs:
     ## to use a more updated runtime.
     # --------------------------
     - name: Cache OpenAF runtime
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         key : oaf-t8
         path: /tmp/oaf
