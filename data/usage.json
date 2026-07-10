@@ -5,6 +5,10 @@
       "Description": "Show this document"
     },
     {
+      "Option": "-i",
+      "Description": "Start an interactive prompt (requires file= or data=) to configure input, transforms, and output"
+    },
+    {
       "Option": "help",
       "Description": "Alternative way to show this document or others (e.g. filters, template)"
     },
