@@ -235,7 +235,11 @@ const _print = (m) => {
                     oafp(_m)
                 }
             } else {
-                print(m)
+                if (toBoolean(params.pause) && isDef(ow.format.string.pauseString) && isString(m)) {
+                    ow.format.string.pauseString(m)
+                } else {
+                    print(m)
+                }
             }
         } else {
             if ("undefined" === typeof global.__oafp_streams) global.__oafp_streams = {}

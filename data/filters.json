@@ -67,6 +67,12 @@
       "Example": "ch('a', 'set', 'a', 'abc').ch('a', 'get', 'a', __)"
     },
     {
+      "Function": "chq(name, op, max, value)",
+      "OpenAF": "20260423",
+      "Description": "Wrapper for OpenAF's channel functions in queue mode over a 'name' channel, an 'op' operation between push/add (adds entry removing oldest if over 'max'), pop (removes/returns last), shift (removes/returns first), size (returns count), get/all (returns all entries); 'max' set to -1 for unlimited",
+      "Example": "chq('myq', 'push', `10`, @)"
+    },
+    {
       "Function": "concat(x, y)",
       "OpenAF": "20240209",
       "Description": "Concats arrays or strings",
