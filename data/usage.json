@@ -82,7 +82,7 @@
     },
     {
       "Option": "pause",
-      "Description": "If 'true' will try to pause contents in alternative to _less -r_"
+      "Description": "If 'true' (or `-p`) will try to pause contents in alternative to _less -r_"
     },
     {
       "Option": "color",
