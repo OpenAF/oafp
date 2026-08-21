@@ -512,7 +512,7 @@ var _outputFns = new Map([
             if (params.ch.type == "remote") {
                 $ch("oafp::outdata").createRemote(params.ch.url)
             } else {
-                $ch("oafp::outdata").create(params.ch.type, isDef($sec().procMap) ? $sec().procMap(params.ch.options) : params.ch.options)
+                $ch("oafp::outdata").create(params.ch.type, (isMap(params.ch.options) && isDef(params.ch.options.secKey)) ? $sec().procMap(params.ch.options) : params.ch.options)
             }
 
             if (toBoolean(params.chunset)) {

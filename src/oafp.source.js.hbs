@@ -4,7 +4,7 @@ const oafp = params => {
 if (isUnDef(params) || isDef(params.____ojob)) return 
 
 // Process secBuckets
-if (isDef($sec().procMap)) params = $sec().procMap(params)
+if (isDef(params.secKey)) params = $sec().procMap(params)
 
 // --- Util functions
 {{{srcUtilFns}}}

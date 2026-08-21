@@ -581,7 +581,7 @@ var _inputFns = new Map([
             if (params.inch.type == "remote") {
                 $ch("oafp::indata").createRemote(params.inch.url)
             } else {
-                $ch("oafp::indata").create(params.inch.type, isDef($sec().procMap) ? $sec().procMap(params.inch.options) : params.inch.options) 
+                $ch("oafp::indata").create(params.inch.type, (isMap(params.inch.options) && isDef(params.inch.options.secKey)) ? $sec().procMap(params.inch.options) : params.inch.options)
             }
 
             var _r = _fromJSSLON(r, true)
