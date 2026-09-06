@@ -1635,6 +1635,11 @@
       "Option": "mdtemplate",
       "Type": "Boolean",
       "Description": "If true will apply a template output without any input data"
+    },
+    {
+      "Option": "mdformat",
+      "Type": "String",
+      "Description": "For map or array values: `structured` (default) renders headings, scalar tables, and lists; `json` or `yaml` emits the value in a fenced code block."
     }
   ],
   [

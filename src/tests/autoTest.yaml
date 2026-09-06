@@ -8,6 +8,7 @@ todo:
 - oafp::JSON2Base64
 - oafp::JSON2Base64Gzip
 - oafp::JSON2TOON
+- oafp::JSON2Markdown
 - oafp::CSV2JSON
 - oafp::NDJSON2JSON
 - oafp::NDJSON2JSON_2
@@ -126,6 +127,13 @@ jobs:
   deps: Load test
   args:
     func: "global.test.testJSON2TOON()"
+
+# ---------------------------
+- name: oafp::JSON2Markdown
+  to  : oJob Test
+  deps: Load test
+  args:
+    func: "global.test.testJSON2Markdown()"
 
 # -----------------------
 - name: oafp::NDJSON2JSON

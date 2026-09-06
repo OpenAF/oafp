@@ -103,6 +103,24 @@
       ow.test.assert(compare(jsonParse(_s.stdout), data), true, "Problem with input/output toon")
    }
 
+   exports.testJSON2Markdown = function() {
+      var data = { title: "Example", metadata: { active: true, owner: "Ada" }, entries: [ { name: "first", score: 1 }, { name: "second", score: 2 } ], tags: [ "one", "two" ] }
+      var _f = io.createTempFile("testJSON2Markdown", ".json")
+      io.writeFileJSON(_f, data)
+
+      var _r = $sh([getOpenAFPath() + "/oaf", "-f", "../oafp.source.js", "-e", "file=" + _f + " input=json output=md"]).get(0)
+      ow.test.assert(_r.stdout.indexOf("# title") >= 0, true, "Problem with structured Markdown headings")
+      ow.test.assert(_r.stdout.indexOf("| Field | Value |") >= 0, true, "Problem with structured Markdown map table")
+      ow.test.assert(_r.stdout.indexOf("| name | score |") >= 0, true, "Problem with structured Markdown array table")
+      ow.test.assert(_r.stdout.indexOf("- one") >= 0, true, "Problem with structured Markdown list")
+
+      _r = $sh([getOpenAFPath() + "/oaf", "-f", "../oafp.source.js", "-e", "file=" + _f + " input=json output=md mdformat=json"]).get(0)
+      ow.test.assert(_r.stdout.indexOf("```json") >= 0 && _r.stdout.indexOf('"metadata"') >= 0, true, "Problem with JSON Markdown code block")
+
+      _r = $sh([getOpenAFPath() + "/oaf", "-f", "../oafp.source.js", "-e", "file=" + _f + " input=json output=md mdformat=yaml"]).get(0)
+      ow.test.assert(_r.stdout.indexOf("```yaml") >= 0 && _r.stdout.indexOf("metadata:") >= 0, true, "Problem with YAML Markdown code block")
+   }
+
    exports.testNDJSON2JSON = function() {
       var _f  = io.createTempFile("testNDJSON2JSON", ".ndjson")
       var data = { a: 123, b: true, c: [ 1, 2, 3 ] }
