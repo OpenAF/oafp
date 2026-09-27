@@ -1,0 +1,9 @@
+data:
+  values: [1, 2, 3]
+in: json
+path: 'values[].{value:@}'
+out: json
+pipe:
+  in: json
+  path: '{total:sum([].value),count:length(@)}'
+  out: json

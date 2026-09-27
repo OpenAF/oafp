@@ -1,0 +1,11 @@
+data:
+  items:
+    - { name: alpha, active: true, score: "10" }
+    - { name: beta, active: true, score: "20" }
+    - { name: gamma, active: false, score: "30" }
+in: json
+path: 'items[?active == `true`]'
+correcttypes: true
+from: sort(-score)
+opath: '[:2].{name:name,score:score}'
+out: json
