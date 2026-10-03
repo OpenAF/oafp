@@ -176,6 +176,8 @@ Input is often auto-detected from file extension or content. Override with `in=<
 | `xfn=<code>` | String | Execute JS code (`args` = input, return result) |
 | `xrfn=<code>` | String | Execute JS code per array record |
 | `jsonschema=<file>` | String | Validate data against JSON schema |
+| `jsonschemacmd="command"` | String | Read the validation schema from command JSON output |
+| `jsonschemaoptions="(format: full)"` | String/Map | Ajv options merged with allErrors=true; see [JSON Schema](src/docs/JSON-SCHEMA.md) for defaults, drafts and v8 errors |
 | `jsonschemagen=true` | Boolean | Generate JSON schema from data |
 | `normalize=<schema>` | String | Normalize data with schema |
 | `denormalize=<schema>` | String | Reverse normalization |

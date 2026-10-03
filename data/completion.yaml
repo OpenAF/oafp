@@ -650,6 +650,8 @@ complete:
   desc: The JSON schema file to use for validation returning a map with a boolean valid and errors if exist
 - name: jsonschemacmd=
   desc: Alternative option to 'jsonschema' to retrieve the JSON schema data to use for validation returning a map with a boolean valid and errors if exist
+- name: jsonschemaoptions=
+  desc: JSON or SLON Ajv options for jsonschema or jsonschemacmd merged with allErrors=true
 - name: jsonschemagen=
   desc: If true will taken the provided input map as an example to generate an output json schema
 - name: kmeans=

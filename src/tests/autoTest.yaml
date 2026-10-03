@@ -26,6 +26,7 @@ todo:
 - oafp::set
 
 - oafp::jsonSchema
+- oafp::jsonSchemaOptions
 
 # --------------------------------
 - (test     ): oafp::JSON2Template
@@ -226,6 +227,13 @@ jobs:
   deps: Load test
   args:
     func: "global.test.testJsonSchema()"
+
+# -----------------------------
+- name: oafp::jsonSchemaOptions
+  to  : oJob Test
+  deps: Load test
+  args:
+    func: "global.test.testJsonSchemaOptions()"
 
 # -------------
 - name: Results

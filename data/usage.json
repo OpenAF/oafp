@@ -415,6 +415,11 @@
       "Description": "Alternative option to 'jsonschema' to retrieve the JSON schema data to use for validation returning a map with a boolean valid and errors if exist"
     },
     {
+      "Option": "jsonschemaoptions",
+      "Type": "String/Map",
+      "Description": "JSON/SLON Ajv options for jsonschema or jsonschemacmd, merged with allErrors=true; see [JSON Schema](JSON-SCHEMA.md)"
+    },
+    {
       "Option": "jsonschemagen",
       "Type": "Boolean",
       "Description": "If true will taken the provided input map as an example to generate an output json schema"
@@ -1824,6 +1829,10 @@
     {
       "Help": "help=examples",
       "Description": "Provide several examples"
+    },
+    {
+      "Help": "help=jsonschema",
+      "Description": "JSON Schema validation, options, drafts and sample generation"
     },
     {
       "Help": "help=readme",

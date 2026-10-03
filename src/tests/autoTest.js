@@ -12,14 +12,21 @@
       eval(io.readFileString("../include/inputFns.js"))
       var eq = (a,b,msg) => ow.test.assert(a,b,msg)
       try {
-         var b = java.nio.ByteBuffer.allocate(96)
-         b.putInt(-889274176); b.put(1); b.put(2); b.put(0); b.put(1)
-         b.order(java.nio.ByteOrder.LITTLE_ENDIAN)
-         b.putInt(96); b.putInt(0); b.putLong(0); b.putInt(32); b.putInt(1)
-         b.putInt(64); b.putInt(20); b.putInt(0); b.put(74); b.put(1); b.put(1); b.put(3); b.putInt(32)
-         b.put(af.fromString2Bytes("test.value")); b.position(64); b.putLong(42)
-         var stream = new java.io.FileOutputStream(file)
-         try { stream.write(b.array()) } finally { stream.close() }
+         // Test oafp's parser contract independently of the installed OpenAF version.
+         // Binary decoding and metadata support belong to OpenAF's parser tests.
+         io.writeFileBytes(file, af.fromString2Bytes("fixture"))
+         ow.java.parseHSPerf = (input, flat, options) => {
+            eq(flat,false,"nested parser output")
+            eq(options.metadata,params.hsperfmetadata,"metadata parser option")
+            if (isDef(params.cmd)) {
+               eq(isByteArray(input),true,"command parser bytes")
+               eq(af.fromBytes2String(input),"fixture","command parser content")
+            } else {
+               eq(input,file,"file parser path")
+            }
+            var values = {test:{value:"42"}}
+            return options.metadata ? {values:values,header:{numEntries:1},entries:{"test.value":{type:"J"}}} : values
+         }
          ;[undefined, "false", "true"].forEach(flag => {
             params = {file:file,hsperfmetadata:flag}
             _inputFns.get("hsperf")("", {})
@@ -396,6 +403,46 @@
       io.writeFileString(_f3, _r2.stdout)
       var _r3 = $sh([getOpenAFPath() + "/oaf", "-f", "../oafp.source.js", "-e", "in=json out=json jsonschema=" + _f2 + " file=" + _f3]).get(0)
       ow.test.assert(jsonParse(_r3.stdout).valid, true, "Problem with validating generated data from a jsonschema")
+   }
+
+   // Run each validation in a fresh CLI process so options cannot leak between cases.
+   exports.testJsonSchemaOptions = function() {
+      var dataFile = io.createTempFile("schemaData", ".json")
+      var schemaFile = io.createTempFile("schemaDefinition", ".json")
+      var run = function(data, schema, options, command) {
+         io.writeFileJSON(dataFile, data)
+         io.writeFileJSON(schemaFile, schema)
+         var expr = "in=json out=json file=" + dataFile + (command ? ' jsonschemacmd="cat ' + schemaFile + '"' : " jsonschema=" + schemaFile)
+         if (isDef(options)) expr += ' jsonschemaoptions="' + options.replace(/"/g, '\\"') + '"'
+         return $sh([getOpenAFPath() + "/oaf", "-f", "../oafp.source.js", "-e", expr]).get(0)
+      }
+      try {
+         var schema = { type: "object", required: ["name"], properties: { age: { type: "integer" }, name: { type: "string", default: "sample" } } }
+         var result = jsonParse(run({ age: "2" }, schema).stdout)
+         ow.test.assert(result.valid, false, "Default validation must not coerce types or insert defaults")
+         ow.test.assert(result.errors.length, 2, "Default validation must collect all errors")
+         var modernAjv = result.errors.some(e => isDef(e.instancePath))
+         ow.test.assert(result.errors.some(e => (modernAjv ? e.instancePath == "/age" : e.dataPath == ".age") && e.keyword == "type"), true, "Validation error must identify age using the runtime's Ajv path")
+         ow.test.assert(jsonParse(run({ age: "2" }, schema, '(useDefaults: true, coerceTypes: true)').stdout), { valid: true, errors: null }, "SLON mutation options not applied")
+         ow.test.assert(jsonParse(run({ age: "2" }, schema, '{"allErrors":false}').stdout).errors.length, 1, "JSON allErrors override not applied")
+         ow.test.assert(jsonParse(run({ age: 2, name: "ok" }, schema, '(strict: true)', true).stdout).valid, true, "Options must work with command schemas")
+         var dateSchema = { type: "object", properties: { date: { type: "string", format: "date" } } }
+         ow.test.assert(jsonParse(run({ date: "2023-02-31" }, dateSchema, '(format: full)').stdout).valid, false, "Full format checks missing")
+         ow.test.assert(jsonParse(run({ date: "invalid" }, dateSchema, '(format: false)').stdout).valid, true, "Format checks were not disabled")
+         // Newer drafts require OpenAF's Ajv 8 upgrade; legacy runtimes use draft-07.
+         var drafts = modernAjv ? ["2019-09", "2020-12"] : []
+         drafts.forEach(draft => {
+            var s = { "$schema": "https://json-schema.org/draft/" + draft + "/schema", type: "object", properties: { allowed: { type: "integer" } }, unevaluatedProperties: false }
+            ow.test.assert(jsonParse(run({ allowed: 1 }, s).stdout).valid, true, "Draft " + draft + " valid data rejected")
+            ow.test.assert(jsonParse(run({ extra: 1 }, s).stdout).valid, false, "Draft " + draft + " unevaluatedProperties ignored")
+         })
+         var badOptions = run({}, { type: "object" }, '[]')
+         ow.test.assert(badOptions.exitcode != 0, true, "Non-map options must fail")
+         ow.test.assert(badOptions.stderr.indexOf("jsonschemaoptions must be a JSON/SLON map") >= 0, true, "Options error is not actionable")
+      } finally {
+         io.rm(dataFile)
+         io.rm(schemaFile)
+      }
    }
 
    // CSV 
