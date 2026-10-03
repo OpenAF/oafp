@@ -449,6 +449,9 @@ if (typeof params.outfile !== "undefined") {
         global.__oafp_streams[params.outfile] = { s: io.writeFileStream(params.outfile, toBoolean(params.outfileappend)) }
 }
 
+// Decision samples do not consume input or require provider configuration.
+if (params.type == "llmdecide" && isDef(params.llmdecidesample)) params.data = ""
+
 // Check chs
 if (isString(params.chs) || isMap(params.chs)) {
     var _chs = af.fromJSSLON(params.chs)
@@ -467,6 +470,10 @@ if (isString(params.chs) || isMap(params.chs)) {
 }
 
 var _run = () => {
+    if (params.type == "llmdecide" && isDef(params.llmdecidesample)) {
+        _inputFns.get("llmdecide")("", options)
+        return
+    }
     if (_version) {
         _res = showVersion()
     } else {

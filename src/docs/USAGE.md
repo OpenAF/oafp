@@ -89,6 +89,7 @@ List of data input types that can be auto-detected (through the file extension o
 | jwt | Decodes and/or verifies a JSON Web Token (JWT) |
 | lines | A given string/text to be processed line by line |
 | llm | A large language model input (uses 'llmenv' or 'llmoptions') |
+| llmdecide | Stateless decisions over a whole state and named questions using OpenAF $llm().decide() |
 | llmmodels | Lists the large language models available (using 'llmenv' or 'llmoptions') |
 | ls | Returns a list of files and folders for a given directory path or zip or tar or tgz file |
 | md | A Markdown format |
@@ -682,12 +683,14 @@ List of options to use when _diff=..._:
 
 ### 🧾 LLM input/transform options
 
-List of options to use when _in=llm_ or _llmprompt=..._:
+List of options to use when _in=llm_, _in=llmdecide_ or _llmprompt=..._:
 
 | Option | Type | Description |
 |--------|------|-------------|
 | llmenv | String | The environment variable containing the value of 'llmoptions' (defaults to OAFP_MODEL) |
 | llmoptions | String | A JSON or SLON string with OpenAF's LLM 'type' (e.g. openai/ollama), 'model' name, 'timeout' in ms for answers, 'url' for the ollama type or 'key' for openai type | 
+| llmdecidesample | String | With in=llmdecide, emit a gemini or ollama request sample without reading input, credentials or inference; use out=yaml or out=json |
+| llmdecidestats | Boolean | With in=llmdecide, return {response, stats} from one decideWithStats() execution (default false) |
 | llmconversation | String | File to keep the LLM conversation |
 | llmimage | String | For visual models you can provide a base64 image or an image file path or an URL of an image |
 
@@ -1134,3 +1137,48 @@ pipe:
 ### HotSpot perfdata metadata
 
 Use `oafp file=/tmp/hsperfdata_user/123 in=hsperf hsperfmetadata=true out=json` to include metadata. This also works with `cmd=` input. Use `path=header` or `path=entries` to inspect metadata; use `path=values.java` for Java counters and enrichment in metadata mode. Without the option, existing paths such as `path=java` remain unchanged. Counter longs are exact decimal strings. Missing counter groups are omitted; timer calculations require the reported frequency. Nonzero header overflow means some counters were not stored by the JVM.
+
+## Stateless LLM decisions (in=llmdecide)
+
+Requires an updated OpenAF runtime exposing `$llm().decide()` (and
+`decideWithStats()` for `llmdecidestats=true`). Supply JSON, SLON or YAML via
+`file=`, stdin or `data=` containing exactly `{state, questions, options?}`.
+State is text, a map or an array; the entire state is evaluated once, including
+arrays. Questions are a nonempty map of named OpenAF definitions: `choice`
+with named criteria, `boolean`, or `score` with ordered criteria. Each has
+`type` and `instructions`. OpenAF validates the question definitions and options.
+
+Optional request `options` are `strategy` (`auto`, the OpenAF default, `native`
+or `structured`), `model` (request model override), `requireProbabilities` and
+`providerOptions`. Unknown envelope fields are rejected. `llmconversation`,
+`llmimage`, `llmcontext` and `llmprompt` conflict with this input.
+
+Configuration uses the existing `llmoptions`, `llmenv`, environment fallback
+and sBucket secret resolution described above. The default environment is
+`OAFP_MODEL`, falling back to `OAF_MODEL` when absent. No conversation is saved.
+Failures propagate without retry or fallback.
+
+Output is the full normalized OpenAF envelope
+`{contractVersion, provider, model, strategy, answers}`. With
+`llmdecidestats=true`, output is `{response, stats}` from the same execution.
+Normal filters and output formats apply, for example
+`path=answers.route.value out=raw` (or `path=response.answers.route.value` with stats).
+Score `level` is zero-based. `selectedProbability` is the selected alternative's
+probability; `providerConfidence` describes provider confidence independently;
+`expectedScore` is the ordinal expectation, not the selected score level.
+Structured probability fields are null.
+
+See `oafp help=examples` for complete Gemini and Ollama request files,
+configuration commands and provider requirements. Users supply the common
+OpenAF question syntax; provider HTTP payloads are not needed.
+
+Generate an editable request without provider configuration or inference:
+
+```sh
+oafp in=llmdecide llmdecidesample=gemini out=yaml > gemini-request.yaml
+oafp in=llmdecide llmdecidesample=ollama out=json > ollama-request.json
+```
+
+Edit the sample state and questions, then run it with `file=` and your usual
+`llmoptions` or environment configuration. Samples use OpenAF's common input
+contract with provider-specific strategy options.

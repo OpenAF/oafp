@@ -1,6 +1,7 @@
 todo:
 - Load test
 - oafp::HSPerfInputs
+- oafp::LLMDecide
 
 - oafp::JSON2JSON
 - oafp::JSON2YAML
@@ -254,3 +255,9 @@ jobs:
   deps: Load test
   args:
     func: "global.test.testHSPerfInputs()"
+
+- name: oafp::LLMDecide
+  to: oJob Test
+  deps: Load test
+  args:
+    func: "global.test.testLLMDecide()"

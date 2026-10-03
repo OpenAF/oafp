@@ -227,6 +227,10 @@
       "Description": "A large language model input (uses 'llmenv' or 'llmoptions')"
     },
     {
+      "Input type": "llmdecide",
+      "Description": "Stateless decisions over a whole state and named questions using OpenAF $llm().decide()"
+    },
+    {
       "Input type": "llmmodels",
       "Description": "Lists the large language models available (using 'llmenv' or 'llmoptions')"
     },
@@ -1327,6 +1331,16 @@
       "Option": "llmoptions",
       "Type": "String",
       "Description": "A JSON or SLON string with OpenAF's LLM 'type' (e.g. openai/ollama), 'model' name, 'timeout' in ms for answers, 'url' for the ollama type or 'key' for openai type"
+    },
+    {
+      "Option": "llmdecidesample",
+      "Type": "String",
+      "Description": "With in=llmdecide, emit a gemini or ollama request sample without reading input, credentials or inference; use out=yaml or out=json"
+    },
+    {
+      "Option": "llmdecidestats",
+      "Type": "Boolean",
+      "Description": "With in=llmdecide, return {response, stats} from one decideWithStats() execution (default false)"
     },
     {
       "Option": "llmconversation",

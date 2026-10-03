@@ -1,5 +1,162 @@
 (function() {
 
+   exports.testLLMDecide = function() {
+      var eq = (a, b, msg) => ow.test.assert(a, b, msg)
+      var env = {}, calls = [], configs = [], secretCalls = [], failure, clientMode = "normal"
+      var getEnv = name => env[name]
+      var __flags = clone(global.__flags); __flags.OAFP = {libs:[]}
+      var processExpr = () => undefined
+      var printed, helpRoot = ".."
+      var print = msg => { printed = String(msg) }
+      var getOPackPath = name => name == "oafproc" ? helpRoot : undefined
+      var $sec = function(repo, bucket) {
+         return {get: key => {
+            secretCalls.push([repo, bucket, key])
+            return repo == "system" ? af.fromJSSLON(env[key]) : {key:"fixture-secret"}
+         }}
+      }
+      var response = {contractVersion:1,provider:"fixture",model:"fixture-model",strategy:"native",answers:{
+         route:{type:"choice",value:"billing",probabilities:{billing:0.8,technical:0.2},selectedProbability:0.8,providerConfidence:0.6,probabilitySource:"provider"},
+         urgent:{type:"boolean",value:true,probabilityTrue:0.9},
+         priority:{type:"score",level:2,expectedScore:1.8}
+      }}
+      var $llm = config => {
+         configs.push(config)
+         var execute = (method, state, questions, options) => {
+            calls.push({method:method,state:state,questions:questions,options:options})
+            if (failure) throw failure
+            return method == "decide" ? response : {response:response,stats:{prompt:0,total:12}}
+         }
+         if (clientMode == "missing") return {}
+         return {
+            decide: (s,q,o) => execute("decide",s,q,o),
+            decideWithStats: (s,q,o) => execute("decideWithStats",s,q,o),
+            promptJSON: s => { calls.push({method:"promptJSON",state:s}); return '{"legacy":true}' },
+            prompt: s => { calls.push({method:"prompt",state:s}); return "legacy" },
+            getModels: () => ["fixture-model"]
+         }
+      }
+      // Run the generated entrypoint with real parsing, configuration, filters and output.
+      var loadEntrypoint = path => eval(io.readFileString(path) + "\noafp")
+      var runOafp = loadEntrypoint("../oafp.source.js")
+      var originalPipeLn = io.pipeLn
+      var key = genUUID(), file = io.createTempFile("oafp-decide", ".yaml")
+      var request = {state:{ticket:"Charged twice"},questions:{
+         route:{type:"choice",instructions:"Route",criteria:{billing:"Payments",technical:"Errors"}},
+         urgent:{type:"boolean",instructions:"Urgent?"},
+         priority:{type:"score",instructions:"Priority",criteria:["Routine","Soon","Urgent"]}
+      },options:{strategy:"auto",model:"override",requireProbabilities:true,providerOptions:{keepAlive:0}}}
+      var run = (data, extra) => {
+         runOafp(merge({in:"llmdecide",data:data,out:"key",__key:key,noexit:true,__inception:true,llmoptions:{type:"fixture"}},extra || {}))
+         return $get(key)
+      }
+      var rejects = (data, extra, text) => {
+         var before = calls.length, thrown
+         try { run(data, extra) } catch(e) { thrown = e }
+         eq(isDef(thrown),true,"reject " + text)
+         if (text) eq(String(thrown).indexOf(text) >= 0,true,"diagnostic " + text)
+         eq(calls.length,before,"invalid request never executes")
+      }
+      try {
+         ;[stringify(request),af.toSLON(request).replace("[Routine | Soon | Urgent]", '["Routine"|"Soon"|"Urgent"]'),af.toYAML(request)].forEach(data => {
+            var before = calls.length
+            eq(run(data),response,"normalized envelope")
+            eq(calls.length,before+1,"one execution")
+            eq(calls[calls.length-1],{method:"decide",state:request.state,questions:request.questions,options:request.options},"forward all questions and options")
+         })
+         ;["whole text",[{id:1},{id:2}]].forEach(state => {
+            var r = clone(request); r.state = state; delete r.options
+            run(stringify(r))
+            eq(calls[calls.length-1].state,state,"whole state")
+            eq(isUnDef(calls[calls.length-1].options),true,"preserve OpenAF defaults")
+         })
+         var statsBefore = calls.length
+         eq(run(stringify(request),{llmdecidestats:"true"}),{response:response,stats:{prompt:0,total:12}},"stats wrapper")
+         eq(calls.length,statsBefore+1,"exactly one stats execution")
+         eq(calls[calls.length-1].method,"decideWithStats","stats method")
+         eq(run(stringify(request),{llmdecidestats:"false",path:"answers.route.value"}),"billing","normal output filtering")
+         eq(run(stringify(request),{llmdecidestats:true,path:"response.answers.priority.level"}),2,"stats filtering")
+         io.writeFileString(file,af.toYAML(request))
+         run(undefined,{file:file})
+         eq(calls[calls.length-1].state,request.state,"file input")
+         io.pipeLn = fn => { af.toYAML(request).split("\n").forEach(line => fn(line)) }
+         run(undefined)
+         eq(calls[calls.length-1].state,request.state,"stdin input")
+         io.pipeLn = () => { throw new Error("sample must not read stdin") }
+         run(undefined,{llmdecidesample:"gemini",llmoptions:undefined,file:"missing-sample-input"})
+         io.pipeLn = originalPipeLn
+         env.OAF_MODEL = '(type: fixture, model: fallback)'
+         run(stringify(request),{llmoptions:undefined})
+         eq(configs[configs.length-1].model,"fallback","OAF_MODEL fallback")
+         env.OAFP_MODEL = '(type: fixture, model: preferred)'
+         run(stringify(request),{llmoptions:undefined})
+         eq(configs[configs.length-1].model,"preferred","OAFP_MODEL priority")
+         env.CUSTOM_MODEL = '(type: fixture, model: custom)'
+         run(stringify(request),{llmoptions:undefined,llmenv:"CUSTOM_MODEL"})
+         eq(configs[configs.length-1].model,"custom","custom environment")
+         run(stringify(request),{llmoptions:'(type: fixture, model: explicit)'})
+         eq(configs[configs.length-1].model,"explicit","explicit string configuration")
+         run(stringify(request),{llmoptions:{type:"fixture",secKey:"test",secRepo:"repo",secBucket:"bucket"}})
+         eq(configs[configs.length-1],{type:"fixture",key:"fixture-secret"},"secret resolution")
+         eq(secretCalls[secretCalls.length-1],["repo","bucket","test"],"secret selector")
+         env = {}
+         ;["gemini", "ollama"].forEach(provider => {
+            var before = calls.length, configBefore = configs.length
+            var sample = run(undefined,{llmdecidesample:provider,llmoptions:undefined})
+            eq(sample.options.strategy,provider == "gemini" ? "structured" : "native","sample strategy")
+            eq(calls.length,before,"sample makes no inference")
+            eq(configs.length,configBefore,"sample needs no configuration")
+            run(af.toYAML(sample))
+            eq(calls[calls.length-1].questions,sample.questions,"sample can be submitted")
+         })
+         rejects(undefined,{llmdecidesample:"invalid"},"gemini or ollama")
+         rejects(stringify(request),{llmoptions:undefined},"llmoptions not defined")
+         ;["invalid","[]","{}",'{"state":2,"questions":{}}','{"state":{},"questions":[]}',
+           '{"state":{},"questions":{},"options":[]}', '{"state":{},"questions":{},"extra":true}'].forEach(data => rejects(data,{},"requires"))
+         ;["llmconversation","llmimage","llmcontext","llmprompt"].forEach(name => {
+            var extra = {}; extra[name] = "forbidden"
+            rejects(stringify(request),extra,name)
+         })
+         clientMode = "missing"
+         rejects(stringify(request),{},"updated OpenAF")
+         rejects(stringify(request),{llmdecidestats:true},"decideWithStats")
+         clientMode = "normal"
+         failure = new Error("fixture OpenAF failure"); failure.code = "LLM_DECISION_INVALID_REQUEST"
+         var before = calls.length, caught
+         try { run(stringify(request)) } catch(e) { caught = e }
+         eq(caught === failure,true,"preserve OpenAF error identity and code")
+         eq(calls.length,before+1,"no retry on failure")
+         failure = undefined
+         eq(run("hello",{in:"llm"}),{legacy:true},"existing JSON LLM input")
+         eq(run("",{in:"llmmodels"}),["fixture-model"],"existing model listing")
+         var docs = io.readFileString("../docs/EXAMPLES.md")
+         var decisionDocs = docs.substring(docs.indexOf("## Stateless LLM decisions"))
+         var fixtures = decisionDocs.match(/```yaml\n[\s\S]*?```/g)
+         var exampleConfigs = decisionDocs.match(/export OAFP_MODEL="[^"]+"/g).map(line => line.replace(/^export OAFP_MODEL="/, "").replace(/"$/, ""))
+         ;[fixtures[0],fixtures[2]].forEach((block,i) => {
+            var r = af.fromYAML(block.replace(/^```yaml\n/,"").replace(/```$/, ""))
+            run(af.toYAML(r),{llmoptions:exampleConfigs[i]})
+            eq(configs[configs.length-1],af.fromJSSLON(exampleConfigs[i]),"documented provider configuration")
+            eq(calls[calls.length-1].state,r.state,"documented state fixture")
+            eq(calls[calls.length-1].questions,r.questions,"documented question fixture")
+            eq(calls[calls.length-1].options,r.options,"documented provider options")
+            eq(r.options.strategy,i == 0 ? "structured" : "native","documented strategy")
+         })
+         // Verify the compiled artifact and both help entrypoints against local docs.
+         runOafp = loadEntrypoint("../oafp.js")
+         eq(run(undefined,{llmdecidesample:"ollama",llmoptions:undefined}).options.strategy,"native","compiled sample")
+         eq(run(stringify(request),{path:"answers.route.value"}),"billing","compiled decision filter")
+         ;["usage","examples"].forEach(help => {
+            printed = ""
+            try { run(undefined,{help:help,out:"raw"}) } catch(e) {
+               eq(String(e),"exit: 0","help exits normally")
+            }
+            eq(printed.indexOf("llmdecidesample") >= 0,true,"generated help exposes samples")
+            eq(printed.indexOf("in=llmdecide") >= 0,true,"generated help exposes decisions")
+         })
+      } finally { io.pipeLn = originalPipeLn; io.rm(file); $unset(key) }
+   }
+
    exports.testHSPerfInputs = function() {
       ow.loadJava()
       var params = {}, output, cmdCalls = 0
