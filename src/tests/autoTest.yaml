@@ -1,5 +1,6 @@
 todo:
 - Load test
+- oafp::HSPerfInputs
 
 - oafp::JSON2JSON
 - oafp::JSON2YAML
@@ -239,3 +240,9 @@ jobs:
     if (args.results.fail > 0) printErr("There are failed tests")
     io.writeFileString("oafp-test.md", ow.test.toMarkdown())
     io.writeFileJSON("oafp-test.json", args.results)
+
+- name: oafp::HSPerfInputs
+  to: oJob Test
+  deps: Load test
+  args:
+    func: "global.test.testHSPerfInputs()"

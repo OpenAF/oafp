@@ -1,5 +1,70 @@
 (function() {
 
+   exports.testHSPerfInputs = function() {
+      ow.loadJava()
+      var params = {}, output, cmdCalls = 0
+      var _showTmpMsg = () => {}, _$o = value => { output = value }
+      var _exit = (code, message) => { throw new Error(message) }
+      var file = io.createTempFile("oafp-hsperf", ".bin")
+      var _runCmd2Bytes = cmd => { cmdCalls++; return io.readFileBytesRO(file) }
+      var plugin = () => {}, JMX = function() { this.getLocals = () => ({Locals:[{id:"123",name:"a"},{id:456,name:"b"},{id:String(getPid()),name:"self"}]}) }
+      var parse = ow.java.parseHSPerf, pids = ow.java.getLocalJavaPIDs
+      eval(io.readFileString("../include/inputFns.js"))
+      var eq = (a,b,msg) => ow.test.assert(a,b,msg)
+      try {
+         var b = java.nio.ByteBuffer.allocate(96)
+         b.putInt(-889274176); b.put(1); b.put(2); b.put(0); b.put(1)
+         b.order(java.nio.ByteOrder.LITTLE_ENDIAN)
+         b.putInt(96); b.putInt(0); b.putLong(0); b.putInt(32); b.putInt(1)
+         b.putInt(64); b.putInt(20); b.putInt(0); b.put(74); b.put(1); b.put(1); b.put(3); b.putInt(32)
+         b.put(af.fromString2Bytes("test.value")); b.position(64); b.putLong(42)
+         var stream = new java.io.FileOutputStream(file)
+         try { stream.write(b.array()) } finally { stream.close() }
+         ;[undefined, "false", "true"].forEach(flag => {
+            params = {file:file,hsperfmetadata:flag}
+            _inputFns.get("hsperf")("", {})
+            var values = flag == "true" ? output.values : output
+            eq(values.test.value,"42","hsperf values")
+            eq(isDate(values.__ts),true,"hsperf enrichment")
+            eq(isDef(output.header),flag == "true","opt-in metadata")
+         })
+         params = {cmd:"fixture",hsperfmetadata:true}
+         _inputFns.get("hsperf")("", {})
+         eq(cmdCalls,1,"command input")
+         eq(output.header.numEntries,1,"header")
+         eq(output.entries["test.value"].type,"J","entry metadata")
+         ow.java.parseHSPerf = () => ({sun:{os:{hrt:{frequency:"1000"}},gc:{generation:[{space:[{name:"heap",used:"2",capacity:"10"}]}],collector:[{name:"PSScavenge",time:"200",invocations:"2"}]}}})
+         params = {file:file}
+         _inputFns.get("hsperf")("",{})
+         eq(output.java.__mem.total,10,"string capacity")
+         eq(output.sun.gc.__ygct,0.2,"timer frequency")
+         eq(isUnDef(output.sun.gc.__percUsed_meta),true,"absent metaspace")
+         params.hsperfmetadata = true
+         var failed = false
+         try { _inputFns.get("hsperf")("",{}) } catch(e) { failed = String(e).indexOf("updated OpenAF") >= 0 }
+         eq(failed,true,"old runtime metadata diagnostic")
+         ow.java.parseHSPerf = () => 4
+         failed = false
+         try { _inputFns.get("hsperf")("",{}) } catch(e) { failed = String(e).indexOf("Invalid") >= 0 }
+         eq(failed,true,"invalid parser result")
+         ow.java.getLocalJavaPIDs = () => [{pid:123,path:"/tmp/hsperf/123"},{pid:String(getPid()),path:"/tmp/hsperf/self"}]
+         params = {}
+         _inputFns.get("javas")("",{})
+         eq(output.length,2,"exclude self")
+         eq(output[0].path,"/tmp/hsperf/123","match numeric/string pid")
+         eq(isUnDef(output[1].path),true,"unmatched process")
+         params = {javasinception:true}
+         _inputFns.get("javas")("",{})
+         eq(output[2].path,"/tmp/hsperf/self","include self")
+         ow.java.getLocalJavaPIDs = () => { throw new Error("unavailable") }
+         _inputFns.get("javas")("",{})
+         eq(output.length,3,"retain processes without perfdata")
+      } finally {
+         ow.java.parseHSPerf = parse; ow.java.getLocalJavaPIDs = pids
+         io.rm(file)
+      }
+   }
+
    // Inputs & outputs
    // ----------------
 

@@ -65,10 +65,13 @@ complete:
     desc: Equivalent to in=base64 and base64gzip=true
   - name: in=hsperf
     desc: A Java hsperfdata* file -requires file=hsperfdata_user/123-
+    opts:
+    - name: hsperfmetadata=
+      desc: If true includes header and counter metadata alongside values
   - name: in=ini
     desc: INI/Properties format
   - name: in=javas
-    desc: Tries to list java processes running locally
+    desc: Lists local java processes with matching hsperf paths when available
     opts:
     - name: javasinception=
       desc: If true will include also oafp itself

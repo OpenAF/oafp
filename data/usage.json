@@ -188,7 +188,7 @@
     },
     {
       "Input type": "javas",
-      "Description": "Tries to list java processes running locally (javainception=true to include itself)"
+      "Description": "Tries to list java processes running locally (javasinception=true to include itself). Adds the hsperf file path when the process id matches ow.java.getLocalJavaPIDs()"
     },
     {
       "Input type": "javagc",
@@ -882,6 +882,13 @@
       "Option": "javathreadpid",
       "Type": "Number",
       "Description": "Optional you can provider the local java process pid to try to get the thread stack trace (*)"
+    }
+  ],
+  [
+    {
+      "Option": "hsperfmetadata",
+      "Type": "Boolean",
+      "Description": "With in=hsperf, returns {values, header, entries}, including header and per-counter metadata. Defaults to false; requires an updated OpenAF runtime."
     }
   ],
   [
