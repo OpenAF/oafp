@@ -706,42 +706,24 @@ var _outputFns = new Map([
         if (isUnDef(params.dsvnl))      params.dsvnl = "\n"
         if (isUnDef(params.dsvheader))  params.dsvheader = true
 
-        if (isDef(params.dsvfields)) params.dsvfields = String(params.dsvfields).split(",")
+        if (isString(params.dsvfields)) params.dsvfields = params.dsvfields.split(",").map(f => f.trim())
+        params.dsvuseslon = toBoolean(params.dsvuseslon)
 
         if (isMap(r)) {
             r = [ r ]
         }
         if (isArray(r)) {
             var _out = []
-            if (toBoolean(params.dsvheader) && isArray(r) && r.length > 0) {
-                if (isDef(params.dsvfields) && isArray(params.dsvfields)) {
-                    _out.push(params.dsvfields.map(f => {
-                        if (isString(f)) {
-                            f = f.replace(/"/g, '""')
-                            f = `"${f}"`
-                        } else if (isNull(f)) {
-                            f = ""
-                        }
-                        return f
-                    }))
-                } else {
-                    _out.push(Object.keys(r[0]).map(f => {
-                        if (isString(f)) {
-                            f = f.replace(/"/g, '""')
-                            f = `"${f}"`
-                        } else if (isNull(f)) {
-                            f = ""
-                        }
-                        return f
-                    }))
-                }
+            // Use one schema for the entire table, regardless of each row's key order.
+            var _fields = isArray(params.dsvfields) ? params.dsvfields : (r.length > 0 ? Object.keys(r[0]) : [])
+            if (toBoolean(params.dsvheader) && r.length > 0) {
+                _out.push(_fields.map(f => '"' + String(f).replace(/"/g, '""') + '"').join(params.dsvsep))
                 if (params.dsvnl.length > 0) _out.push(params.dsvnl)
             }
-            if (!isArray(params.dsvfields)) params.dsvfields = __
 
             r.forEach((row, i) => {
                 if (i > 0) _out.push(params.dsvnl)
-                var _row = pForEach(isDef(params.dsvfields) ? params.dsvfields : Object.keys(row), k => {
+                var _row = pForEach(_fields, k => {
                     var v = row[k]
                     if (isString(v)) {
                         v = v.replace(/"/g, '""')

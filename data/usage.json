@@ -400,8 +400,8 @@
     },
     {
       "Option": "getlist",
-      "Type": "Number",
-      "Description": "If true will try to find the first array on the input value (if number will stop only after the number of checks)"
+      "Type": "Boolean/Number",
+      "Description": "If true, selects the first nested array; a positive number selects the nth nested array in traversal order. If disabled or no matching array is found, preserves the input, including scalar values."
     },
     {
       "Option": "forcearray",
@@ -481,7 +481,7 @@
     {
       "Option": "removedups",
       "Type": "Boolean",
-      "Description": "If true will try to remove duplicates from an array"
+      "Description": "Removes duplicate array entries, retaining the first occurrence. Map key order is ignored recursively; array order and the distinction between arrays and maps are preserved."
     },
     {
       "Option": "removeempty",
@@ -506,12 +506,12 @@
     {
       "Option": "set",
       "Type": "String",
-      "Description": "Performs set operations (intersection by default) over an 'a' and 'b' path to an array defined in a JSON/SLON map"
+      "Description": "Performs set operations (intersection by default) over an 'a' and 'b' path to an array defined in a JSON/SLON map. Comparisons ignore map key order recursively while preserving array order and distinguishing arrays from maps."
     },
     {
       "Option": "sortmapkeys",
       "Type": "Boolean",
-      "Description": "If true the resulting map keys will be sorted"
+      "Description": "Recursively sorts map keys, including maps inside arrays. Preserves arrays, their element order, and scalar values."
     },
     {
       "Option": "spacekeys",
@@ -885,22 +885,22 @@
     {
       "Option": "indsvheader",
       "Type": "Boolean",
-      "Description": "If true will try to use the first line as header (default is true)"
+      "Description": "Uses the first non-comment line as column names (default is true). When false, provide indsvfields."
     },
     {
       "Option": "indsvtrim",
       "Type": "Boolean",
-      "Description": "If true will trim all values (default is true)"
+      "Description": "Trims header names and values (default is true). Set false to preserve leading and trailing whitespace."
     },
     {
       "Option": "indsvjoin",
       "Type": "Boolean",
-      "Description": "If true it will return an array with each processed line"
+      "Description": "Returns one array of records when true; otherwise emits each record once (default is false). Applies to stdin, file, cmd and data input."
     },
     {
       "Option": "indsvfields",
       "Type": "String",
-      "Description": "Comma separated list of fields to use as header (overrides indsvheader)"
+      "Description": "Comma separated column names. When provided, every non-comment line is data, including the first; no input header is consumed."
     }
   ],
   [
@@ -1579,12 +1579,12 @@
     {
       "Option": "dsvquote",
       "Type": "String",
-      "Description": "The quote character to use (default is '\"')"
+      "Description": "Replacement for double quotes inside serialized object/array cells (default is a backslash followed by a double quote). String cells and headers always use double quotes, with embedded quotes doubled."
     },
     {
       "Option": "dsvfields",
       "Type": "String",
-      "Description": "Comma separated list of fields to use as header (overrides dsvheader)"
+      "Description": "Comma separated output columns in the requested order. Defaults to the first row's keys for the whole table. Missing values are empty; additional keys in later rows are omitted. Does not override dsvheader=false."
     },
     {
       "Option": "dsvuseslon",

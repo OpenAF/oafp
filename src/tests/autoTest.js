@@ -423,6 +423,35 @@
       ow.test.assert(_r.stdout.indexOf("```yaml") >= 0 && _r.stdout.indexOf("metadata:") >= 0, true, "Problem with YAML Markdown code block")
    }
 
+   exports.testDSV = function() {
+      var fixture = io.createTempFile("oafp-dsv", ".txt")
+      var input = "name,n\nalpha,1\nbeta,2\n"
+      io.writeFileString(fixture, input)
+      var eq = (a, b, msg) => ow.test.assert(a, b, msg)
+      try {
+         ["../oafp.source.js", "../oafp.js"].forEach(file => {
+            var run = (args, data) => {
+               var result = $sh([getOpenAFPath() + "/oaf", "-f", file, "-e", args], data).get(0)
+               eq(result.exitcode, 0, file + ": DSV CLI exits successfully: " + result.stderr)
+               return result.stdout.trim().split(/\r?\n/).filter(line => line.length > 0)
+            }
+            var rows = [{name:"alpha",n:"1"},{name:"beta",n:"2"}]
+            eq(run("in=dsv out=json", input).map(line => jsonParse(line)), rows, file + ": stdin emits each row once and skips header")
+            eq(run("in=dsv out=json indsvjoin=false indsvtrim=false", "name,n\n alpha , 1 \n").map(line => jsonParse(line)), [{name:" alpha ",n:" 1 "}], file + ": CLI false flags preserve whitespace and stream rows")
+            eq(run("in=dsv out=json indsvjoin=true", input).map(line => jsonParse(line)), [rows], file + ": joined stdin")
+            eq(run("in=dsv out=json indsvjoin=false file=" + fixture, "").map(line => jsonParse(line)), rows, file + ": file false flag streams rows")
+            eq(run("in=dsv out=json indsvfields=name,n indsvheader=false", "# comment\nalpha,1\n\nbeta,2\n").map(line => jsonParse(line)), rows, file + ": explicit fields and comments")
+            eq(run("in=dsv out=json indsvjoin=true indsvtrim=false", " name , n \n alpha , 1 \n").map(line => jsonParse(line)), [[{" name ":" alpha "," n ":" 1 "}]], file + ": joined parser preserves header and value whitespace")
+            eq(run("in=dsv out=json", "# comment\n\n"), [], file + ": comment-only stdin emits nothing")
+            eq(run("in=json out=dsv dsvheader=false dsvuseslon=false dsvquote=~", '{"nested":{"x":1}}'), ['"{~x~:1}"'], file + ": explicit false keeps nested cells in JSON")
+            var records = [{name:"alpha",n:1},{n:2,name:"beta"},{name:"gamma",extra:3}]
+            var outputArgs = "in=json out=dsv dsvsep=;"
+            eq(run(outputArgs, stringify(records)), ['"name";"n"','"alpha";1','"beta";2','"gamma";'], file + ": output header separator and stable column order")
+            eq(run(outputArgs + " dsvfields=n,name dsvheader=false", stringify(records)), ['1;"alpha"','2;"beta"',';"gamma"'], file + ": explicit field order without header")
+         })
+      } finally { io.rm(fixture) }
+   }
+
    exports.testNDJSON2JSON = function() {
       var _f  = io.createTempFile("testNDJSON2JSON", ".ndjson")
       var data = { a: 123, b: true, c: [ 1, 2, 3 ] }
@@ -498,6 +527,38 @@
       var _r = $sh([getOpenAFPath() + "/oaf", "-f", "../oafp.source.js", "-e", "input=ndjson output=json ndjsonjoin=true merge=true file=" + _f]).getJson(0)
 
       ow.test.assert(compare(_r.stdout, { a: 123, b: true, c: [ 1, 2, 3, 1, 2, 3 ], d: "test" }), true, "Problem with merge")
+   }
+
+   exports.testTransformDataIntegrity = function() {
+      var processExpr = () => undefined
+      var key = genUUID()
+      var eq = (a, b, msg) => ow.test.assert(a, b, msg)
+      try {
+         ["../oafp.source.js", "../oafp.js"].forEach(file => {
+            var runOafp = eval(io.readFileString(file) + "\noafp")
+            var run = (data, options) => {
+               $unset(key)
+               runOafp(merge({in:"json",data:stringify(data),out:"key",__key:key,noexit:true,__inception:true},options))
+               return $get(key)
+            }
+            var nested = [{z:1,a:2}, [[{z:3,a:4}], null], []]
+            var sorted = run(nested, {sortmapkeys:true})
+            eq(isArray(sorted), true, file + ": sorting preserves root arrays")
+            eq(stringify(sorted, __, ""), '[{"a":2,"z":1},[[{"a":4,"z":3}],null],[]]', file + ": recursive sorting preserves array shape and order")
+            eq(run({z:nested,a:0}, {sortmapkeys:true}).z, sorted, file + ": nested arrays")
+            var distinct = [[1], {"0":1}, {n:{b:2,a:1}}, {n:{a:1,b:2}}, [2,1], [1,2]]
+            eq(run(distinct, {removedups:true}), [distinct[0],distinct[1],distinct[2],distinct[4],distinct[5]], file + ": dedup preserves types and ignores nested key order")
+            eq(run({a:[[1]],b:[{"0":1}]}, {set:"(a: a, b: b)",setop:"intersect"}), [], file + ": set comparison distinguishes arrays and maps")
+            eq(run({a:[{n:{b:2,a:1}}],b:[{n:{a:1,b:2}}]}, {set:"(a: a, b: b)",setop:"intersect"}), [{n:{b:2,a:1}}], file + ": set comparison ignores nested key order")
+            eq(run({a:[[1]],b:[{"0":1}]}, {set:"(a: a, b: b)",setop:"union"}), [[1],{"0":1}], file + ": union retains distinct shapes")
+            eq(run({a:[{id:{x:[1]},label:"a"}],b:[{id:{x:{"0":1}},label:"b"}]}, {set:"(a: a, b: b)",setkeys:"id",setop:"intersect"}), [], file + ": selected set keys preserve nested shapes")
+            eq(run([null, false, 0, "0", null, false, 0], {removedups:true}), [null,false,0,"0"], file + ": primitive dedup preserves types")
+            eq(run({rows:[1,2]}, {getlist:false}), {rows:[1,2]}, file + ": disabled getlist preserves input")
+            ;["plain", 42, false].forEach(value => eq(run(value, {getlist:true}), value, file + ": getlist preserves scalars"))
+            eq(run({first:[1],second:[2]}, {getlist:2}), [2], file + ": getlist selects requested array")
+            eq(run({value:1}, {getlist:true}), {value:1}, file + ": missing list preserves input")
+         })
+      } finally { $unset(key) }
    }
 
    exports.testSortMapKeys = function() {

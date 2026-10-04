@@ -13,12 +13,14 @@ todo:
 - oafp::JSON2TOON
 - oafp::JSON2Markdown
 - oafp::CSV2JSON
+- oafp::DSV
 - oafp::NDJSON2JSON
 - oafp::NDJSON2JSON_2
 - oafp::NDJSON2JSON_2p
 
 - oafp::merge
 - oafp::sortMapKeys
+- oafp::TransformDataIntegrity
 - oafp::correctTypes
 - oafp::searchKeys
 - oafp::searchValues
@@ -268,3 +270,15 @@ jobs:
   deps: Load test
   args:
     func: "global.test.testLLMDecide()"
+
+- name: oafp::TransformDataIntegrity
+  to: oJob Test
+  deps: Load test
+  args:
+    func: "global.test.testTransformDataIntegrity()"
+
+- name: oafp::DSV
+  to: oJob Test
+  deps: Load test
+  args:
+    func: "global.test.testDSV()"

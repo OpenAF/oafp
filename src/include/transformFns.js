@@ -8,6 +8,19 @@ if (typeof _resolveLLMEnvName === "undefined") {
     }
 }
 
+// Canonicalize map keys without changing array shape or element order.
+var _sortTransformKeys = value => {
+    if (isArray(value)) return value.map(_sortTransformKeys)
+    if (!isMap(value) || isDate(value)) return value
+    var result = {}
+    Object.keys(value).sort().forEach(key => {
+        Object.defineProperty(result, key, {
+            value: _sortTransformKeys(value[key]), enumerable: true, writable: true, configurable: true
+        })
+    })
+    return result
+}
+
 var _transformFns = {
     "transforms"    : _r => {
         if (toBoolean(params.transforms)) {
@@ -163,36 +176,7 @@ var _transformFns = {
         return { valid: res, errors: validate.errors}
     },
     "sortmapkeys"   : _r => {
-        if (toBoolean(params.sortmapkeys) && isObject(_r)) {
-            let _sortMapKeys = (aMap, moreLevels) => {
-                let keys = Object.keys(aMap).sort()
-                let result = {}
-            
-                for(let i = 0; i < keys.length; i++) {
-                    let key = keys[i]
-                    let value = aMap[key]
-            
-                    if (Array.isArray(value)) {
-                        result[key] = value.map(item => {
-                            if (typeof item === 'object' && item !== null && item !== undefined) {
-                                return sortMapKeys(item, moreLevels)
-                            } else {
-                                return item
-                            }
-                        })
-                    } else if (moreLevels && typeof value === 'object' && value !== null && value !== undefined) {
-                        result[key] = _sortMapKeys(value, moreLevels)
-                    } else {
-                        result[key] = value
-                    }
-                }
-            
-                return result
-            }
-            return _sortMapKeys(_r, true)
-        } else {
-            return _r
-        }
+        return toBoolean(params.sortmapkeys) ? _sortTransformKeys(_r) : _r
     },
     "searchkeys"    : _r => (isObject(_r) ? searchKeys(_r, params.searchkeys) : _r),
     "searchvalues"  : _r => (isObject(_r) ? searchValues(_r, params.searchvalues) : _r),
@@ -267,7 +251,7 @@ var _transformFns = {
                 var _r2 = []
                 _r.forEach(r => {
                     var rs = r
-                    if (isObject(r)) rs = sortMapKeys(rs)
+                    if (isObject(r)) rs = _sortTransformKeys(rs)
                     rs = stringify(rs, __, true)
                     if (!_dups.has(rs)) {
                         _dups.add(rs)
@@ -425,6 +409,7 @@ var _transformFns = {
             else
                 return _r
         }
+        return _r
     },
     "set": _r => {
         var _d = _fromJSSLON(params.set)
@@ -442,10 +427,10 @@ var _transformFns = {
         if (isString(params.setkeys)) {
             ow.loadObj()
             var _ks = params.setkeys.split(",").map(r => r.trim())
-            toOrdStr  = r => stringify(isObject(r) ? sortMapKeys(ow.obj.filterKeys(_ks, r), true) : r, __, "")
+            toOrdStr  = r => stringify(isObject(r) ? _sortTransformKeys(ow.obj.filterKeys(_ks, r)) : r, __, "")
             toOrdStrs = r => pForEach(r, toOrdStr).reduce((pV, cV) => pV.concat(cV), [])
         } else {
-            toOrdStr  = r => stringify(isObject(r) ? sortMapKeys(r, true) : r, __, "")
+            toOrdStr  = r => stringify(isObject(r) ? _sortTransformKeys(r) : r, __, "")
             toOrdStrs = r => pForEach(r, toOrdStr).reduce((pV, cV) => pV.concat(cV), [])
         }
 

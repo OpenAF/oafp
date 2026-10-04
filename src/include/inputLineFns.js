@@ -209,6 +209,9 @@ var _inputLineFns = {
         if (isUnDef(params.indsvtrim)) params.indsvtrim = true
         if (isUnDef(params.indsvjoin)) params.indsvjoin = false
         if (isUnDef(params.indsvfields)) params.indsvfields = __
+        params.indsvheader = toBoolean(params.indsvheader)
+        params.indsvtrim = toBoolean(params.indsvtrim)
+        params.indsvjoin = toBoolean(params.indsvjoin)
 
         if (isString(params.indsvfields)) params.indsvfields = params.indsvfields.trim().split(",").map(f => f.trim())
         if (isDef(params.indsvfields) && !isArray(params.indsvfields)) params.indsvfields = __
@@ -227,9 +230,9 @@ var _inputLineFns = {
             if (toBoolean(params.indsvheader)) {
                 if (isUnDef(params.indsvfields)) {
                     if (isUnDef(params.indsvsepre)) {
-                        params.indsvfields = rs.trim().split(params.indsvsep)
+                        params.indsvfields = rs.split(params.indsvsep)
                     } else {
-                        params.indsvfields = rs.trim().split(new RegExp(params.indsvsepre))
+                        params.indsvfields = rs.split(new RegExp(params.indsvsepre))
                     }
                     params.indsvfields = params.indsvfields.map(f => {
                         if (params.indsvtrim) f = f.trim()
@@ -275,11 +278,11 @@ var _inputLineFns = {
         }
 
         if (!params.indsvjoin) {
+            noFurtherOutput = true
             r = String(r)
-            if (r.length > 0 && r.trim().substring(0, 1) != params.indsvcomment) {
+            if (r.length > 0 && !r.trim().startsWith(params.indsvcomment)) {
                 var _rs = _dsvproc(r)
                 if (isDef(_rs)) _$o(_rs, options, true)
-                return true
             }
         } else {
             return true

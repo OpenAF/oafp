@@ -290,6 +290,9 @@ var _inputFns = new Map([
         if (isUnDef(params.indsvtrim)) params.indsvtrim = true
         if (isUnDef(params.indsvjoin)) params.indsvjoin = false
         if (isUnDef(params.indsvfields)) params.indsvfields = __
+        params.indsvheader = toBoolean(params.indsvheader)
+        params.indsvtrim = toBoolean(params.indsvtrim)
+        params.indsvjoin = toBoolean(params.indsvjoin)
 
         if (isString(params.indsvfields)) params.indsvfields = params.indsvfields.trim().split(",").map(f => f.trim())
         if (isDef(params.indsvfields) && !isArray(params.indsvfields)) params.indsvfields = __
@@ -307,9 +310,9 @@ var _inputFns = new Map([
             if (toBoolean(params.indsvheader)) {
                 if (isUnDef(params.indsvfields)) {
                     if (isUnDef(params.indsvsepre)) {
-                        params.indsvfields = r.trim().split(params.indsvsep)
+                        params.indsvfields = r.split(params.indsvsep)
                     } else {
-                        params.indsvfields = r.trim().split(new RegExp(params.indsvsepre))
+                        params.indsvfields = r.split(new RegExp(params.indsvsepre))
                     }
                     params.indsvfields = params.indsvfields.map(f => {
                         if (params.indsvtrim) f = f.trim()
