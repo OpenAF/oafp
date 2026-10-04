@@ -1062,6 +1062,11 @@
       "Description": "Emit a gemini or ollama request sample without input, credentials or inference. Use out=yaml or out=json."
     },
     {
+      "Option": "llmimage",
+      "Type": "String",
+      "Description": "Local PNG/JPEG/WebP image file to encode as options.images for Ollama native decisions. Cannot be combined with options.images."
+    },
+    {
       "Option": "llmdecidestats",
       "Type": "Boolean",
       "Description": "Return {response, stats} from one decideWithStats() execution (defaults to false)."
@@ -1081,7 +1086,7 @@
     {
       "Field": "options",
       "Type": "Map",
-      "Description": "Optional OpenAF decision settings: strategy (auto by default, native or structured), model override, requireProbabilities and providerOptions."
+      "Description": "Optional OpenAF decision settings: strategy (auto by default, native or structured), model override, requireProbabilities, providerOptions and images (ordered raw base64 image array for Ollama native decisions)."
     }
   ],
   [

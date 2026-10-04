@@ -359,7 +359,7 @@ oafp in=llmdecide file=ollama-request.yaml out=json llmoptions="(type: ollama, u
 
 Native decisions require Ollama v0.35.0+ and compatible scoring-capable GGUF
 weights/runner; an arbitrary chat model is insufficient. Choice and score
-questions support 2–26 criteria. The entire serialized UTF-8 request body must
+questions support 2–26 criteria. The text-only serialized UTF-8 request body must
 be at most 65,536 bytes; state is never truncated. Root URLs and URLs ending in
 `/v1` are supported; a base ending in `/api` is rejected. Models must already be
 available; decisions do not download or warm them up. `keepAlive` is optional
@@ -371,3 +371,44 @@ Score levels are zero-based (`Routine` = 0, `Soon` = 1, `Urgent` = 2).
 `expectedScore` is the expectation and may differ from the selected level.
 Provider errors and invalid answers remain visible without strategy/model
 fallback. These examples describe the API contract, not verified live inference.
+
+### Ollama image decisions
+
+Use Ollama v0.35.1+ with CLEF/CLEF Flash vision weights and an updated OpenAF
+runtime. Every question receives the same ordered images; state is required.
+For one local PNG, JPEG or WebP file:
+
+```json
+{
+  "state": "Inspect the screenshot for a visible error message.",
+  "questions": {
+    "error": { "type": "boolean", "instructions": "Is an error message visible?" }
+  },
+  "options": { "strategy": "native" }
+}
+```
+
+Save this as `image-request.json`, then run:
+
+```sh
+oafp in=llmdecide file=image-request.json llmimage=screenshot.png out=json llmoptions="(type: ollama, url: 'http://localhost:11434', model: YOUR_VISION_DECISION_MODEL)"
+```
+
+For multiple images, place raw base64 strings in `options.images` in your request
+JSON/SLON/YAML. For example, generate a request with OpenAF:
+
+```javascript
+var request = {
+  state: "Compare the screenshots in order.",
+  questions: { changed: { type: "boolean", instructions: "Did the visible error disappear in the second screenshot?" } },
+  options: { strategy: "native", images: ["before.png", "after.png"].map(file =>
+    af.fromBytes2String(af.toBase64Bytes(io.readFileBytes(file)))) }
+}
+io.writeFileString("image-request.json", stringify(request))
+```
+
+Run that request without `llmimage`; combining the shortcut with `options.images`
+is rejected. `llmdecidestats=true` supports both forms. URLs and data URLs are
+unsupported. OpenAF rejects image options on other providers, while Ollama
+validates image contents and vision support. Image requests may be up to 32 MiB
+including base64 and JSON; images are never truncated.

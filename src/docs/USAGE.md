@@ -441,6 +441,7 @@ List of options to use when _in=llmdecide_:
 | llmenv | String | Environment variable containing the model configuration (defaults to OAFP_MODEL, falling back to OAF_DECIDE_MODEL and then OAF_MODEL when absent). |
 | llmoptions | String/Map | Model configuration as a JSON/SLON string or map; overrides llmenv. Supports the shared sBucket options below. |
 | llmdecidesample | String | Emit a gemini or ollama request sample without input, credentials or inference. Use out=yaml or out=json. |
+| llmimage | String | Local PNG/JPEG/WebP image file to encode as options.images for Ollama native decisions. Cannot be combined with options.images. |
 | llmdecidestats | Boolean | Return {response, stats} from one decideWithStats() execution (defaults to false). |
 
 Requires an updated OpenAF runtime with `$llm().decide()` support (`decideWithStats()` when _llmdecidestats=true_). Supply JSON, SLON or YAML via _file=_, stdin or _data=_ containing `{state, questions, options?}`:
@@ -449,9 +450,11 @@ Requires an updated OpenAF runtime with `$llm().decide()` support (`decideWithSt
 |-------|------|-------------|
 | state | String/Map/Array | Entire state to evaluate once, including arrays. |
 | questions | Map | Nonempty map of named question definitions, each with type and instructions: choice with named criteria, boolean, or score with ordered criteria. |
-| options | Map | Optional OpenAF decision settings: strategy (auto by default, native or structured), model override, requireProbabilities and providerOptions. |
+| options | Map | Optional OpenAF decision settings: strategy (auto by default, native or structured), model override, requireProbabilities, providerOptions and images (ordered raw base64 image array for Ollama native decisions). |
 
-OpenAF validates questions and options; unknown request fields are rejected. _llmconversation_, _llmimage_, _llmcontext_ and _llmprompt_ are unsupported. No conversation is saved; failures propagate without retry or fallback.
+OpenAF validates questions and options; unknown request fields are rejected. _llmconversation_, _llmcontext_ and _llmprompt_ are unsupported. No conversation is saved; failures propagate without retry or fallback.
+
+Images require an updated OpenAF runtime, Ollama v0.35.1+ and CLEF/CLEF Flash vision weights. All questions share the images in order; state remains required. Supply a nonempty `options.images` array of raw base64 strings (no URLs, data URLs or paths), or use _llmimage=screenshot.png_ for one local file. OpenAF validates image options; Ollama validates image contents and model vision support. The serialized UTF-8 request limit is 32 MiB with images (including base64 and JSON), or 64 KiB without images.
 
 Output is `{contractVersion, provider, model, strategy, answers}`, or `{response, stats}` with _llmdecidestats=true_. Normal filters and output formats apply: use _path=answers.route.value out=raw_ (or _path=response.answers.route.value_ with stats). Score levels are zero-based; selectedProbability is the selected alternative's probability, providerConfidence is separate provider confidence, and expectedScore is the ordinal expectation. Structured probability fields are null.
 

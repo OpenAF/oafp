@@ -1321,7 +1321,7 @@ var _inputFns = new Map([
         _$o(_r, options)
     }],
     ["llmdecide", (_res, options) => {
-        ["llmconversation", "llmimage", "llmcontext", "llmprompt"].forEach(key => {
+        ["llmconversation", "llmcontext", "llmprompt"].forEach(key => {
             if (isDef(params[key])) _exit(-1, "in=llmdecide does not support " + key)
         })
         if (isDef(params.llmdecidesample)) {
@@ -1349,6 +1349,14 @@ var _inputFns = new Map([
             (isDef(request.options) && !isMap(request.options)) ||
             Object.keys(request).some(key => ["state", "questions", "options"].indexOf(key) < 0)) {
             _exit(-1, "in=llmdecide requires {state, questions, options?} with text/map/array state, a questions map and optional options map")
+        }
+        if (isDef(params.llmimage)) {
+            if (!isString(params.llmimage) || !io.fileExists(params.llmimage) || !io.fileInfo(params.llmimage).isFile)
+                _exit(-1, "in=llmdecide llmimage requires a local image file")
+            if (isDef(request.options) && Object.prototype.hasOwnProperty.call(request.options, "images"))
+                _exit(-1, "in=llmdecide cannot combine llmimage with options.images")
+            if (isUnDef(request.options)) request.options = {}
+            request.options.images = [af.fromBytes2String(af.toBase64Bytes(io.readFileBytes(params.llmimage)))]
         }
         params.llmenv     = _$(params.llmenv, "llmenv").isString().default("OAFP_MODEL")
         if (params.llmenv == "OAFP_MODEL" && isUnDef(getEnv("OAFP_MODEL")) && isDef(getEnv("OAF_DECIDE_MODEL")))

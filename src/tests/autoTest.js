@@ -70,6 +70,28 @@
             eq(calls[calls.length-1].state,state,"whole state")
             eq(isUnDef(calls[calls.length-1].options),true,"preserve OpenAF defaults")
          })
+         var imageRequest = clone(request)
+         imageRequest.options.images = ["aW1hZ2Ux", "aW1hZ2Uy"]
+         ;[stringify(imageRequest), af.toYAML(imageRequest), af.toSLON(imageRequest).replace("[aW1hZ2Ux | aW1hZ2Uy]", '["aW1hZ2Ux"|"aW1hZ2Uy"]').replace("[Routine | Soon | Urgent]", '["Routine"|"Soon"|"Urgent"]')].forEach(data => {
+            var before = calls.length
+            run(data)
+            eq(calls.length,before+1,"one image decision execution")
+            eq(calls[calls.length-1].options,imageRequest.options,"preserve ordered base64 images and options")
+         })
+         run(stringify(imageRequest),{llmdecidestats:true})
+         eq(calls[calls.length-1].method,"decideWithStats","image stats method")
+         eq(calls[calls.length-1].options.images,imageRequest.options.images,"stats images")
+         io.writeFileString(file,"image fixture")
+         var encoded = af.fromBytes2String(af.toBase64Bytes(io.readFileBytes(file)))
+         run(stringify(request),{llmimage:file})
+         eq(calls[calls.length-1].options,merge(request.options,{images:[encoded]}),"local image encoding preserves options")
+         var defaultImageRequest = clone(request); delete defaultImageRequest.options
+         run(stringify(defaultImageRequest),{llmimage:file,llmdecidestats:true})
+         eq(calls[calls.length-1].options,{images:[encoded]},"local image with default options and stats")
+         rejects(stringify(imageRequest),{llmimage:file},"cannot combine")
+         ;["missing-image.png","https://example.com/image.png",true,".."].forEach(image => {
+            rejects(stringify(request),{llmimage:image},"local image file")
+         })
          var statsBefore = calls.length
          eq(run(stringify(request),{llmdecidestats:"true"}),{response:response,stats:{prompt:0,total:12}},"stats wrapper")
          eq(calls.length,statsBefore+1,"exactly one stats execution")
@@ -120,7 +142,7 @@
          rejects(stringify(request),{llmoptions:undefined},"llmoptions not defined")
          ;["invalid","[]","{}",'{"state":2,"questions":{}}','{"state":{},"questions":[]}',
            '{"state":{},"questions":{},"options":[]}', '{"state":{},"questions":{},"extra":true}'].forEach(data => rejects(data,{},"requires"))
-         ;["llmconversation","llmimage","llmcontext","llmprompt"].forEach(name => {
+         ;["llmconversation","llmcontext","llmprompt"].forEach(name => {
             var extra = {}; extra[name] = "forbidden"
             rejects(stringify(request),extra,name)
          })
@@ -153,6 +175,10 @@
          runOafp = loadEntrypoint("../oafp.js")
          eq(run(undefined,{llmdecidesample:"ollama",llmoptions:undefined}).options.strategy,"native","compiled sample")
          eq(run(stringify(request),{path:"answers.route.value"}),"billing","compiled decision filter")
+         run(stringify(imageRequest))
+         eq(calls[calls.length-1].options.images,imageRequest.options.images,"compiled image decision")
+         run(stringify(request),{llmimage:file})
+         eq(calls[calls.length-1].options.images,[af.fromBytes2String(af.toBase64Bytes(io.readFileBytes(file)))],"compiled local image")
          ;["usage","examples"].forEach(help => {
             printed = ""
             try { run(undefined,{help:help,out:"raw"}) } catch(e) {
