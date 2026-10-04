@@ -88,6 +88,13 @@
          env.OAF_MODEL = '(type: fixture, model: fallback)'
          run(stringify(request),{llmoptions:undefined})
          eq(configs[configs.length-1].model,"fallback","OAF_MODEL fallback")
+         env.OAF_DECIDE_MODEL = '(type: fixture, model: decision)'
+         run(stringify(request),{llmoptions:undefined})
+         eq(configs[configs.length-1].model,"decision","OAF_DECIDE_MODEL overrides OAF_MODEL")
+         run(stringify(request),{llmoptions:undefined,llmenv:"OAF_MODEL"})
+         eq(configs[configs.length-1].model,"fallback","explicit OAF_MODEL environment")
+         run("hello",{in:"llm",llmoptions:undefined})
+         eq(configs[configs.length-1].model,"fallback","ordinary LLM keeps OAF_MODEL fallback")
          env.OAFP_MODEL = '(type: fixture, model: preferred)'
          run(stringify(request),{llmoptions:undefined})
          eq(configs[configs.length-1].model,"preferred","OAFP_MODEL priority")

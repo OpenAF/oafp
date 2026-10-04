@@ -1351,6 +1351,8 @@ var _inputFns = new Map([
             _exit(-1, "in=llmdecide requires {state, questions, options?} with text/map/array state, a questions map and optional options map")
         }
         params.llmenv     = _$(params.llmenv, "llmenv").isString().default("OAFP_MODEL")
+        if (params.llmenv == "OAFP_MODEL" && isUnDef(getEnv("OAFP_MODEL")) && isDef(getEnv("OAF_DECIDE_MODEL")))
+            params.llmenv = "OAF_DECIDE_MODEL"
         params.llmenv     = _resolveLLMEnvName(params.llmenv)
         params.llmoptions = _$(params.llmoptions, "llmoptions").or().isString().isMap().default(__)
         if (isUnDef(params.llmoptions) && !isString(getEnv(params.llmenv)))

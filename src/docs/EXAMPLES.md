@@ -260,7 +260,7 @@ oafp in=llmdecide llmdecidesample=ollama out=yaml > ollama-request.yaml
 Sample output also supports `out=json` and requires no inference,
 input stream or credentials. Replace the explicit model/key placeholders below with your configuration.
 Both providers use the same named question syntax; each command evaluates the
-whole state once. Alternatively set `OAFP_MODEL` (or `OAF_MODEL` as fallback),
+whole state once. Alternatively set `OAFP_MODEL` (or `OAF_DECIDE_MODEL`, then `OAF_MODEL` as fallback),
 use `llmenv=YOUR_CONFIG_ENV`, or use the existing sBucket fields in `llmoptions`
 (`secRepo`, `secBucket`, `secPass`, `secMainPass`, `secFile`) and their
 `OAFP_SEC*` environment counterparts. See `oafp help=usage` for secret setup.

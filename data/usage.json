@@ -1025,6 +1025,67 @@
   ],
   [
     {
+      "Option": "llmenv",
+      "Type": "String",
+      "Description": "Environment variable containing the model configuration (defaults to OAFP_MODEL, falling back to OAF_MODEL when absent)."
+    },
+    {
+      "Option": "llmoptions",
+      "Type": "String/Map",
+      "Description": "Model configuration as a JSON/SLON string or map; overrides llmenv. See the shared LLM input/transform options below."
+    },
+    {
+      "Option": "llmconversation",
+      "Type": "String",
+      "Description": "JSON file to load an existing conversation from and save the updated conversation to."
+    },
+    {
+      "Option": "llmimage",
+      "Type": "String",
+      "Description": "Image file path or HTTP(S) URL to use with a visual model."
+    }
+  ],
+  [
+    {
+      "Option": "llmenv",
+      "Type": "String",
+      "Description": "Environment variable containing the model configuration (defaults to OAFP_MODEL, falling back to OAF_DECIDE_MODEL and then OAF_MODEL when absent)."
+    },
+    {
+      "Option": "llmoptions",
+      "Type": "String/Map",
+      "Description": "Model configuration as a JSON/SLON string or map; overrides llmenv. Supports the shared sBucket options below."
+    },
+    {
+      "Option": "llmdecidesample",
+      "Type": "String",
+      "Description": "Emit a gemini or ollama request sample without input, credentials or inference. Use out=yaml or out=json."
+    },
+    {
+      "Option": "llmdecidestats",
+      "Type": "Boolean",
+      "Description": "Return {response, stats} from one decideWithStats() execution (defaults to false)."
+    }
+  ],
+  [
+    {
+      "Field": "state",
+      "Type": "String/Map/Array",
+      "Description": "Entire state to evaluate once, including arrays."
+    },
+    {
+      "Field": "questions",
+      "Type": "Map",
+      "Description": "Nonempty map of named question definitions, each with type and instructions: choice with named criteria, boolean, or score with ordered criteria."
+    },
+    {
+      "Field": "options",
+      "Type": "Map",
+      "Description": "Optional OpenAF decision settings: strategy (auto by default, native or structured), model override, requireProbabilities and providerOptions."
+    }
+  ],
+  [
+    {
       "Option": "lsext",
       "Type": "String",
       "Description": "Forces the file format parsing of the provided path or file (between zip, tar, tgz)"
@@ -1329,18 +1390,8 @@
     },
     {
       "Option": "llmoptions",
-      "Type": "String",
-      "Description": "A JSON or SLON string with OpenAF's LLM 'type' (e.g. openai/ollama), 'model' name, 'timeout' in ms for answers, 'url' for the ollama type or 'key' for openai type"
-    },
-    {
-      "Option": "llmdecidesample",
-      "Type": "String",
-      "Description": "With in=llmdecide, emit a gemini or ollama request sample without reading input, credentials or inference; use out=yaml or out=json"
-    },
-    {
-      "Option": "llmdecidestats",
-      "Type": "Boolean",
-      "Description": "With in=llmdecide, return {response, stats} from one decideWithStats() execution (default false)"
+      "Type": "String/Map",
+      "Description": "A JSON/SLON string or map with OpenAF's LLM 'type' (e.g. openai/ollama), 'model' name, 'timeout' in ms for answers, 'url' for the ollama type or 'key' for openai type; maps are supported by in=llm and in=llmdecide, while llmprompt requires a string"
     },
     {
       "Option": "llmconversation",
@@ -1350,7 +1401,7 @@
     {
       "Option": "llmimage",
       "Type": "String",
-      "Description": "For visual models you can provide a base64 image or an image file path or an URL of an image"
+      "Description": "With in=llm, image file path or HTTP(S) URL to use with a visual model."
     }
   ],
   [
