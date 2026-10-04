@@ -2,6 +2,8 @@
 
 Run from the oafp repository root. The assets contain synthetic data and do not need network access.
 
+These assets are checked by `testSkillRecipes` in `src/tests/autoTest.js` through the generated CLI. To run the full regression suite after rebuilding, use `cd src && ojob build.yaml op=test`. Installed `oafp` commands below exercise the installed version, which may differ from the checkout.
+
 ## Filter, transform, sort, project
 
 [filter-report.yaml](../assets/filter-report.yaml) selects active rows, converts numeric strings, sorts descending with nLinq, and limits the final output:
@@ -45,6 +47,17 @@ out: json
 ```
 
 Children omit `out` so their structured values are captured. This produces an array of child results before the parent `diff`; it is different from a sequential `pipe`. Inspect `inoafpseq` in the input handler if sequencing matters.
+
+## NDJSON records versus collections
+
+```sh
+oafp -f skills/oafp-author/assets/ndjson-records.yaml
+oafp -f skills/oafp-author/assets/ndjson-joined.yaml
+```
+
+[ndjson-records.yaml](../assets/ndjson-records.yaml) transforms each record separately, emitting two NDJSON records: `{"name":"alpha","double":4}` and `{"name":"beta","double":20}`. This handler presents each record as an array, so the expression uses `[].{...}` rather than treating its root as the record map. [ndjson-joined.yaml](../assets/ndjson-joined.yaml) uses `ndjsonjoin:true` so the expression sees the complete array and returns `{"total":12,"names":["alpha","beta"]}`. Joining retains the collection in memory; per-record processing cannot compute a global sort or total using the same expression.
+
+For schema result handling, use the [validation fixtures](../../oafp-json-schema/references/examples.md). For decision envelopes and offline answer extraction, use the [decision fixtures](../../oafp-decide/references/examples.md).
 
 ## Adapt repository and sibling examples
 

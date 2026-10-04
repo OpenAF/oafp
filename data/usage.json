@@ -565,6 +565,18 @@
       "Description": "A base64 text format"
     },
     {
+      "Output format": "bstable",
+      "Description": "A borderless Unicode table with separators between records and wrapping to the terminal width (for lists or maps)"
+    },
+    {
+      "Output format": "btable",
+      "Description": "A borderless Unicode table without separators between records and with wrapping to the terminal width (for lists or maps)"
+    },
+    {
+      "Output format": "btree",
+      "Description": "A tree-like format without ANSI colors, using plain-text branch characters"
+    },
+    {
       "Output format": "ch",
       "Description": "An OpenAF channel format"
     },
@@ -613,6 +625,10 @@
       "Description": "Output to a JDBC database"
     },
     {
+      "Output format": "dsv",
+      "Description": "A delimiter-separated values format with configurable separator, quoting and headers (for lists or maps; see DSV output options)"
+    },
+    {
       "Output format": "envs",
       "Description": "Tries to output the input data as OS environment variables setting commands"
     },
@@ -635,6 +651,10 @@
     {
       "Output format": "json",
       "Description": "A JSON format without spacing"
+    },
+    {
+      "Output format": "jsmap",
+      "Description": "OpenAF's HTML representation of structured data, printed directly without opening a browser"
     },
     {
       "Output format": "jwt",
@@ -675,6 +695,10 @@
     {
       "Output format": "mdyaml",
       "Description": "A multi document YAML format (only for list outputs)"
+    },
+    {
+      "Output format": "mtree",
+      "Description": "A tree-like format without ANSI colors, using Unicode branch characters (falls back to ctree on older OpenAF versions without TREE.mono support)"
     },
     {
       "Output format": "ndjson",

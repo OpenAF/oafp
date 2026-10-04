@@ -12,6 +12,9 @@ Resolve paths from the oafp repository root. These are live references, not a fr
 | Stage order, raw/streaming behavior, piping and output files | `_$f`, `_$o`, `_print` in `src/include/utilFns.js` |
 | JMESPath/OpenAF functions, nLinq, SQL | `src/docs/FILTERS.md`; `$path` in `../openaf/js/openaf.js` |
 | Handlebars templates and helpers | `src/docs/TEMPLATE.md`; template handler in `src/include/outputFns.js` |
+| Schema validation, inference, sample generation and runtime draft support | `src/docs/JSON-SCHEMA.md`; schema handlers in `src/include/transformFns.js` and `inputFns.js` |
+| Stateless decisions, images, model configuration and result envelopes | LLM Decide in `src/docs/USAGE.md`; Gemini/Ollama examples in `src/docs/EXAMPLES.md`; `llmdecide` handler in `src/include/inputFns.js` |
+| JVM counters, metadata, thread dumps, GC and JFR | HSPERF/JavaThread/JavaGC/JFR options in `src/docs/USAGE.md`; corresponding input and line handlers |
 | Searchable generated data | `data/usage.json`, `data/filters.json`, `data/template.json`, `data/completion.yaml` (may lag source; do not edit) |
 | Real recipes | `src/docs/EXAMPLES.md`, `src/docs/USAGE.md`, `src/tests/`, `../ojob.io/oafp-examples.yaml` |
 
@@ -46,3 +49,4 @@ Important combinations to inspect:
 - `arraytomap`/`maptoarray`, `flatmap`, `merge`, `set`, `diff`, regression and schema transforms: track the new shape before subsequent filters.
 - Charts, grids, templates, Markdown/HTML, XLS, DB, channels and command output: read format-specific parameters and distinguish formatting from side effects.
 - `libs`, `chs`, sBuckets, model options and environment settings: retain the user's intended configuration; do not put credentials into examples.
+- HSPerf metadata changes the root from counters to `{values, header, entries}`. Inspect `hsperfmetadata` runtime requirements before selecting `path=values.java`; without metadata, use `path=java`. Preserve exact decimal-string counters and use the reported timer frequency rather than guessing units.

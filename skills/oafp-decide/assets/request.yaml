@@ -1,0 +1,18 @@
+state:
+  ticket: The customer was charged twice.
+questions:
+  route:
+    type: choice
+    instructions: Select the responsible team.
+    criteria:
+      billing: Charges, payments, and refunds
+      technical: Software errors and outages
+  urgent:
+    type: boolean
+    instructions: Does this require immediate attention?
+  priority:
+    type: score
+    instructions: Assess the urgency.
+    criteria: [Routine, Soon, Urgent]
+options:
+  strategy: structured

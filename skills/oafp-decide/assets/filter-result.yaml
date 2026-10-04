@@ -1,0 +1,6 @@
+in: json
+data:
+  answers:
+    route: {type: choice, value: billing}
+path: answers.route.value
+out: json

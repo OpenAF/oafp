@@ -1,5 +1,6 @@
 todo:
 - Load test
+- oafp::SkillRecipes
 - oafp::HSPerfInputs
 - oafp::LLMDecide
 
@@ -74,6 +75,12 @@ jobs:
 - name: Load test
   exec: |
     global.test = require("autoTest.js")
+
+- name: oafp::SkillRecipes
+  to: oJob Test
+  deps: Load test
+  args:
+    func: "global.test.testSkillRecipes()"
 
 # ---------------------
 - name: oafp::JSON2JSON

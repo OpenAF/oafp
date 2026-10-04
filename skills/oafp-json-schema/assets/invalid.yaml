@@ -1,0 +1,6 @@
+in: json
+data: {name: Ada, age: "37"}
+jsonschema: skills/oafp-json-schema/assets/schema.json
+jsonschemaoptions:
+  allErrors: true
+out: json

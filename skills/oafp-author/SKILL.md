@@ -13,6 +13,8 @@ Locate the oafp checkout (this skill lives at `skills/oafp-author/`); all reposi
 
 Use `src/docs/USAGE.md` for option names, values, defaults and companion options; `src/docs/FILTERS.md` for queries; and the relevant `src/include/*Fns.js` handler to resolve ambiguities. Check the installed runtime separately when executing: it may differ from this checkout. Do not copy suspected documentation mistakes into a recipe.
 
+For stateless decision requests, consult [oafp-decide](../oafp-decide/SKILL.md); for validation, inference or sample generation, consult [oafp-json-schema](../oafp-json-schema/SKILL.md). If those companions are unavailable, use the corresponding documentation listed in the discovery guide.
+
 ## Compose the stages
 
 1. Choose one input source: stdin, `file`, `data`, `cmd`, or `url`; specify `in` when detection is ambiguous. Distinguish a data YAML file (`oafp file=data.yaml in=yaml`) from a parameter YAML file (`oafp -f recipe.yaml`). The latter is a top-level parameter map, not an oJob `todo/jobs` document.
@@ -32,6 +34,6 @@ Use `src/docs/USAGE.md` for option names, values, defaults and companion options
 
 ## Verify and deliver
 
-Start from [tested composition patterns](references/examples.md) or the two runnable YAML assets linked there. Use small local fixtures and `out=json` to verify values, types, empty/missing fields, and the final shape. Test the actual shell quoting or `-f` invocation, not only the underlying expression. Set explicit data for capability probes so they do not wait on stdin.
+Start from [tested composition patterns](references/examples.md) or the runnable YAML assets linked there. Use small local fixtures and `out=json` to verify values, types, empty/missing fields, and the final shape. Test the actual shell quoting or `-f` invocation, not only the underlying expression. Set explicit data for capability probes so they do not wait on stdin.
 
 Creating a recipe does not require executing its database writes, shell commands, network requests, model calls, loops, or channel operations. Verify the pure data path with fixtures and state which external behavior remains untested. Supply the finished artifact, its launch command, relevant prerequisites and a concise explanation of stage placement.

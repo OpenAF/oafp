@@ -63,6 +63,7 @@ Check the main [usage documentation](src/docs/USAGE.md).
 
 Additional documentation:
 
+* [Agent skills](skills/README.md)
 * [JSON Schema](src/docs/JSON-SCHEMA.md)
 * [Filters](src/docs/FILTERS.md)
 * [Template](src/docs/TEMPLATE.md)

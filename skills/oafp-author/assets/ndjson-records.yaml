@@ -1,0 +1,7 @@
+in: ndjson
+data: |
+  {"name":"alpha","score":2}
+  {"name":"beta","score":10}
+ndjsonjoin: false
+path: '[].{name:name,double:mul(score,`2`)}'
+out: ndjson

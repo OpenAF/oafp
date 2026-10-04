@@ -1,0 +1,8 @@
+in: json
+data:
+  response:
+    answers:
+      route: {type: choice, value: billing}
+  stats: {total: 12}
+path: response.answers.route.value
+out: json

@@ -1,5 +1,41 @@
 (function() {
 
+   exports.testSkillRecipes = function() {
+      var run = function(asset, extra) {
+         // Use the documented working directory and the checkout's generated CLI.
+         var result = $sh().pwd("../..").sh([getOpenAFPath() + "/oaf", "-f", "src/oafp.source.js", "-e",
+            "-f skills/" + asset + (extra ? " " + extra : "")]).get(0)
+         ow.test.assert(result.exitcode, 0, "Skill recipe failed: " + asset + " " + result.stderr)
+         return result.stdout
+      }
+      var cases = [
+         ["oafp-author/assets/filter-report.yaml", [{name:"beta",score:20},{name:"alpha",score:10}]],
+         ["oafp-author/assets/pipe-summary.yaml", {total:6,count:3}],
+         ["oafp-author/assets/ndjson-joined.yaml", {total:12,names:["alpha","beta"]}],
+         ["oafp-decide/assets/filter-result.yaml", "billing"],
+         ["oafp-decide/assets/filter-stats.yaml", "billing"],
+         ["oafp-json-schema/assets/validate.yaml", {valid:true,errors:null}],
+         ["openaf-path/assets/edge-cases.yaml", {
+            projected:[],retained:[null,null],rows:[
+               {name:"alpha",region:"eu",enabled:false,count:0},
+               {name:"beta",region:"eu",enabled:null,count:null}
+            ],sorted:["beta","alpha"],emptyCount:0,emptySum:0
+         }]
+      ]
+      cases.forEach(c => ow.test.assert(jsonParse(run(c[0])), c[1], "Skill recipe output: " + c[0]))
+      var records = run("oafp-author/assets/ndjson-records.yaml").trim().split(/\r?\n/).map(line => jsonParse(line))
+      ow.test.assert(records, [{name:"alpha",double:4},{name:"beta",double:20}], "Per-record NDJSON recipe")
+      var invalid = jsonParse(run("oafp-json-schema/assets/invalid.yaml"))
+      ow.test.assert(invalid.valid, false, "Invalid recipe must report false despite successful exit")
+      ow.test.assert(invalid.errors.some(e => e.keyword == "type" && (e.instancePath == "/age" || e.dataPath == ".age")), true, "Invalid recipe must identify age")
+      ow.test.assert(jsonParse(run("openaf-path/assets/edge-cases.yaml", 'data="{items:[],empty:[]}"')), {
+         projected:[],retained:[],rows:[],sorted:[],emptyCount:0,emptySum:0
+      }, "Empty collection and CLI override")
+      ow.test.assert(jsonParse(run("openaf-path/assets/edge-cases.yaml", 'path=items opath="[].{name:name,region:opath(\'region\')}"')), [
+         {name:"alpha",region:null},{name:"beta",region:null}
+      ], "Later output stage cannot recover discarded root context")
+   }
+
    exports.testLLMDecide = function() {
       var eq = (a, b, msg) => ow.test.assert(a, b, msg)
       var env = {}, calls = [], configs = [], secretCalls = [], failure, clientMode = "normal"
@@ -58,6 +94,10 @@
          eq(calls.length,before,"invalid request never executes")
       }
       try {
+         var skillRequest = io.readFileString("../../skills/oafp-decide/assets/request.yaml")
+         var skillMap = af.fromYAML(skillRequest)
+         run(skillRequest)
+         eq(calls[calls.length-1], {method:"decide",state:skillMap.state,questions:skillMap.questions,options:skillMap.options}, "Skill request forwards through the real parser")
          ;[stringify(request),af.toSLON(request).replace("[Routine | Soon | Urgent]", '["Routine"|"Soon"|"Urgent"]'),af.toYAML(request)].forEach(data => {
             var before = calls.length
             eq(run(data),response,"normalized envelope")

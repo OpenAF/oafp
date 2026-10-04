@@ -84,3 +84,19 @@ print(stringify(result))
 ```
 
 `src/docs/EXAMPLES.md` and `../ojob.io/oafp-examples.yaml` contain additional real queries. Inspect parsed example text and verify signatures before reusing it: an example embedded in YAML, shell and a nested SLON string can contain several escape layers.
+
+## Runnable edge cases
+
+Run [edge-cases.yaml](../assets/edge-cases.yaml) from the repository root:
+
+```sh
+oafp -f skills/openaf-path/assets/edge-cases.yaml
+```
+
+Expected output:
+
+```json
+{"projected":[],"retained":[null,null],"rows":[{"name":"alpha","region":"eu","enabled":false,"count":0},{"name":"beta","region":"eu","enabled":null,"count":null}],"sorted":["beta","alpha"],"emptyCount":0,"emptySum":0}
+```
+
+This checks omitted/null projection values, preservation through `map`, false/zero fields, numeric-string sorting, empty collections and parent context. Missing and explicit-null fields both evaluate to null in these expressions; do not claim the query distinguishes their presence. The regression suite also overrides the input with an empty collection and selects `items` in a preceding stage to check that a later `opath('region')` cannot recover the discarded root.

@@ -1,0 +1,10 @@
+in: json
+data:
+  region: eu
+  empty: []
+  items:
+    - {name: alpha, score: "10", optional: null, enabled: false, count: 0}
+    - {name: beta, score: "2"}
+path: >-
+  {projected:items[].optional,retained:map(&optional,items),rows:items[].{name:name,region:opath('region'),enabled:enabled,count:count},sorted:sort_by(items,&to_number(score))[].name,emptyCount:length(empty),emptySum:sum(empty)}
+out: json

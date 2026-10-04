@@ -7,6 +7,8 @@ description: Construct and debug OpenAF $path expressions and oafp path/opath fi
 
 Locate the oafp checkout and its sibling OpenAF source. Read `src/docs/FILTERS.md` for the function and query catalog, then inspect the relevant `$path` custom function's `_signature` and `_func` in `../openaf/js/openaf.js`. Use the implementation when examples and signatures disagree. These paths are relative to the oafp root, not the current working directory of a copied skill.
 
+If either checkout is unavailable, use `oafp help=filters out=raw` and small pure fixtures against the installed runtime. Treat custom-function availability and signatures as unverified until checked there; do not require a sibling checkout or infer support from another version's examples.
+
 ## Establish the input and stage
 
 Get a representative input and intended output shape. Identify whether the root is a map, array or scalar, which fields may be absent/null, and whether numeric values are strings. In oafp, structured data flows through `ifrom` → `isql` → `path` → transforms → `from` → `sql` → `opath`; inspect `src/include/utilFns.js` for raw-string or streaming exceptions.

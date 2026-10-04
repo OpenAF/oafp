@@ -1,0 +1,7 @@
+in: ndjson
+data: |
+  {"name":"alpha","score":2}
+  {"name":"beta","score":10}
+ndjsonjoin: true
+path: '{total:sum([].score),names:sort_by(@,&score)[].name}'
+out: json
