@@ -1353,28 +1353,10 @@ var _inputFns = new Map([
             Object.keys(request).some(key => ["state", "questions", "options"].indexOf(key) < 0)) {
             _exit(-1, "in=llmdecide requires {state, questions, options?} with text/map/array state, a questions map and optional options map")
         }
-        if (isDef(params.llmimage)) {
-            if (!isString(params.llmimage) || !io.fileExists(params.llmimage) || !io.fileInfo(params.llmimage).isFile)
-                _exit(-1, "in=llmdecide llmimage requires a local image file")
-            if (isDef(request.options) && Object.prototype.hasOwnProperty.call(request.options, "images"))
-                _exit(-1, "in=llmdecide cannot combine llmimage with options.images")
-            if (isUnDef(request.options)) request.options = {}
-            request.options.images = [af.fromBytes2String(af.toBase64Bytes(io.readFileBytes(params.llmimage)))]
-        }
-        params.llmenv     = _$(params.llmenv, "llmenv").isString().default("OAFP_MODEL")
-        if (params.llmenv == "OAFP_MODEL" && isUnDef(getEnv("OAFP_MODEL")) && isDef(getEnv("OAF_DECIDE_MODEL")))
-            params.llmenv = "OAF_DECIDE_MODEL"
-        params.llmenv     = _resolveLLMEnvName(params.llmenv)
-        params.llmoptions = _$(params.llmoptions, "llmoptions").or().isString().isMap().default(__)
-        if (isUnDef(params.llmoptions) && !isString(getEnv(params.llmenv)))
-            _exit(-1, "llmoptions not defined and " + params.llmenv + " not found.")
-
+        var decision = _llmDecisionSetup(request.options, "in=llmdecide")
         _showTmpMsg()
-        var client = $llm( _getSec(isDef(params.llmoptions) ? _fromJSSLON(params.llmoptions) : $sec("system", "envs").get(params.llmenv)) )
-        var method = toBoolean(params.llmdecidestats) ? "decideWithStats" : "decide"
-        if (typeof client[method] !== "function")
-            _exit(-1, "in=llmdecide requires an updated OpenAF runtime with $llm()." + method + "() support")
-        _$o(client[method](request.state, request.questions, request.options), options)
+        var client = decision.client()
+        _$o(client[decision.method](request.state, request.questions, decision.options), options)
     }],
     ["llm", (_res, options) => {
         params.llmenv     = _$(params.llmenv, "llmenv").isString().default("OAFP_MODEL")

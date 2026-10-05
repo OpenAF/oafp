@@ -439,6 +439,11 @@
       "Description": "If 'llmprompt' is defined provides extra context to the model regarding the input data"
     },
     {
+      "Option": "llmdecide",
+      "Type": "String/Map",
+      "Description": "Per-entry stateless decisions; inline JSON/SLON configuration or JSON/YAML/SLON file. See [Decision enrichment](#decision-enrichment)."
+    },
+    {
       "Option": "llmprompt",
       "Type": "String",
       "Description": "A large language model prompt to transform the input data to json (uses the same input options 'llmenv' and 'llmoptions')"
@@ -1413,6 +1418,33 @@
   ],
   [
     {
+      "Configuration field": "questions",
+      "Type": "Map",
+      "Description": "Required named OpenAF decision questions, as for in=llmdecide."
+    },
+    {
+      "Configuration field": "options",
+      "Type": "Map",
+      "Description": "Optional OpenAF decision options."
+    },
+    {
+      "Configuration field": "statePath",
+      "Type": "String",
+      "Description": "Optional $path expression evaluated against each entry. Defaults to the entire entry; the result must be text, a map or an array."
+    },
+    {
+      "Configuration field": "assign",
+      "Type": "Map",
+      "Description": "Optional map of literal destination field names to $path expressions evaluated against the decision response. Requires map entries. Multiple fields use the same decision call."
+    },
+    {
+      "Configuration field": "overwrite",
+      "Type": "Boolean",
+      "Description": "Allow assign to replace existing own fields; defaults to false."
+    }
+  ],
+  [
+    {
       "Option": "llmenv",
       "Type": "String",
       "Description": "The environment variable containing the value of 'llmoptions' (defaults to OAFP_MODEL)"
@@ -1420,7 +1452,7 @@
     {
       "Option": "llmoptions",
       "Type": "String/Map",
-      "Description": "A JSON/SLON string or map with OpenAF's LLM 'type' (e.g. openai/ollama), 'model' name, 'timeout' in ms for answers, 'url' for the ollama type or 'key' for openai type; maps are supported by in=llm and in=llmdecide, while llmprompt requires a string"
+      "Description": "A JSON/SLON string or map with OpenAF's LLM 'type' (e.g. openai/ollama), 'model' name, 'timeout' in ms for answers, 'url' for the ollama type or 'key' for openai type; maps are supported by in=llm, in=llmdecide and the llmdecide transform, while llmprompt requires a string"
     },
     {
       "Option": "llmconversation",

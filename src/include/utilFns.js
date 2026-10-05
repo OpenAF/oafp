@@ -175,6 +175,35 @@ const _fromJSSLON = (aString, checkYAML) => {
     }
     return _r
 }
+// Shared stateless decision setup for the input and per-entry transform.
+const _llmDecisionSetup = (decisionOptions, context) => {
+    ["llmconversation", "llmcontext", "llmprompt"].forEach(key => {
+        if (isDef(params[key])) _exit(-1, context + " does not support " + key)
+    })
+    var opts = isDef(decisionOptions) ? clone(decisionOptions) : __
+    if (isDef(params.llmimage)) {
+        if (!isString(params.llmimage) || !io.fileExists(params.llmimage) || !io.fileInfo(params.llmimage).isFile)
+            _exit(-1, context + " llmimage requires a local image file")
+        if (isDef(opts) && Object.prototype.hasOwnProperty.call(opts, "images"))
+            _exit(-1, context + " cannot combine llmimage with options.images")
+        if (isUnDef(opts)) opts = {}
+        opts.images = [af.fromBytes2String(af.toBase64Bytes(io.readFileBytes(params.llmimage)))]
+    }
+    var env = _$(params.llmenv, "llmenv").isString().default("OAFP_MODEL")
+    if (env == "OAFP_MODEL" && isUnDef(getEnv(env)) && isDef(getEnv("OAF_DECIDE_MODEL"))) env = "OAF_DECIDE_MODEL"
+    env = _resolveLLMEnvName(env)
+    var config = _$(params.llmoptions, "llmoptions").or().isString().isMap().default(__)
+    if (isUnDef(config) && !isString(getEnv(env)))
+        _exit(-1, "llmoptions not defined and " + env + " not found.")
+    config = _getSec(isDef(config) ? _fromJSSLON(config) : $sec("system", "envs").get(env))
+    var method = toBoolean(params.llmdecidestats) ? "decideWithStats" : "decide"
+    return { options: opts, client: () => {
+        var client = $llm(clone(config))
+        if (typeof client[method] !== "function")
+            _exit(-1, context + " requires an updated OpenAF runtime with $llm()." + method + "() support")
+        return client
+    }, method: method }
+}
 const _chartPathParse = (r, frmt, prefix, isStatic) => {
     prefix = _$(prefix).isString().default("_oafp_fn_")
     let parts = splitBySepWithEnc(frmt, " ", [["\"","\""],["'","'"]])

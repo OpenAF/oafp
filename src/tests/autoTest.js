@@ -61,6 +61,10 @@
          var execute = (method, state, questions, options) => {
             calls.push({method:method,state:state,questions:questions,options:options})
             if (failure) throw failure
+            if (clientMode == "ordered") {
+               sleep(state == "first" ? 20 : 1, true)
+               return {answers:{route:{value:state}}}
+            }
             return method == "decide" ? response : {response:response,stats:{prompt:0,total:12}}
          }
          if (clientMode == "missing") return {}
@@ -93,7 +97,80 @@
          if (text) eq(String(thrown).indexOf(text) >= 0,true,"diagnostic " + text)
          eq(calls.length,before,"invalid request never executes")
       }
+      var transformCases = () => {
+         var spec = {questions:request.questions,options:request.options,statePath:"ticket",
+            assign:{classification:"answers.route.value",urgent:"answers.urgent.value"}}
+         var rows = [{id:1,ticket:"Charged twice"},{id:2,ticket:"Another charge"}]
+         var expected = rows.map(r => merge(r,{classification:"billing",urgent:true}))
+         var batch = (data, config, extra) => run(stringify(data),merge({in:"json",llmdecide:isDef(config) ? config : spec},extra || {}))
+         var bad = (data, config, extra, diagnostic, inference) => {
+            var before = calls.length, error
+            try {batch(data,config,extra)} catch(e) {error=e}
+            eq(isDef(error),true,"transform rejects " + diagnostic)
+            eq(String(error).indexOf(diagnostic) >= 0,true,"transform diagnostic " + diagnostic)
+            if (!inference) eq(calls.length,before,"transform preflight avoids inference")
+            return error
+         }
+         var before = calls.length
+         eq(batch(rows),expected,"transform enriches entries")
+         eq(calls.length-before,2,"transform one call per entry")
+         eq(calls[before],{method:"decide",state:rows[0].ticket,questions:spec.questions,options:spec.options},"transform forwarded arguments")
+         eq(rows,[{id:1,ticket:"Charged twice"},{id:2,ticket:"Another charge"}],"source entries unchanged")
+         eq(batch(rows,stringify(spec)),expected,"inline JSON config")
+         eq(batch(rows,af.toSLON(spec)),expected,"inline SLON config")
+         ;[stringify(spec),af.toSLON(spec),af.toYAML(spec)].forEach(content => {
+            io.writeFileString(file,content)
+            eq(batch(rows,file),expected,"config file parsing")
+         })
+         eq(batch(rows,spec,{parallel:true}),expected,"parallel results retain association")
+         var savedParallelFlags = clone(global.__flags.PFOREACH)
+         try {
+            global.__flags.PFOREACH.min_par_size = 0
+            global.__flags.PFOREACH.forceSeq = false
+            global.__flags.PFOREACH.seq_ratio = 1000
+            clientMode = "ordered"
+            var ordered = ["first","second","third","fourth"]
+            eq(batch(ordered,{questions:spec.questions},{parallel:true}),
+               ordered.map(v => ({answers:{route:{value:v}}})),"parallel distinct results remain in order")
+         } finally { global.__flags.PFOREACH = savedParallelFlags; clientMode = "normal" }
+         env.OAFP_PARALLEL = "true"
+         eq(batch(rows),expected,"parallel environment")
+         delete env.OAFP_PARALLEL
+         eq(batch(rows[0]),expected[0],"single map enrichment")
+         before = calls.length
+         eq(batch([]),[],"empty array")
+         eq(calls.length,before,"empty array no inference")
+         eq(batch(rows,{questions:spec.questions}),[response,response],"whole-entry replacement")
+         eq(calls[calls.length-1].state,rows[1],"whole-entry state")
+         eq(batch(["text"],{questions:spec.questions}),[response],"string entry replacement")
+         eq(batch(rows,merge(clone(spec),{assign:{classification:"response.answers.route.value",urgent:"response.answers.urgent.value"}}),{llmdecidestats:true}),
+            expected,"stats extraction")
+         eq(batch(rows,spec,{opath:"[].classification"}),["billing","billing"],"post-transform projection")
+         eq(batch(rows,spec,{path:"[0]"}),expected[0],"pre-transform projection")
+         eq(batch(rows,spec,{outkey:"rows"}),{rows:expected},"final output wrapper")
+         eq(batch([{ticket:"text",classification:"old"}],merge(clone(spec),{overwrite:true})),
+            [{ticket:"text",classification:"billing",urgent:true}],"explicit overwrite")
+         eq(batch(rows,merge(clone(spec),{assign:{"class.name":"answers.route.value"}}))[0]["class.name"],"billing","literal field name")
+         bad(rows,"missing-decision-config.yaml",{},"llmdecide requires")
+         io.writeFileString(file,"{}")
+         bad(rows,file,{},"llmdecide requires")
+         bad(rows,merge(clone(spec),{statePath:"missing"}),{},"state must be")
+         bad(["text"],spec,{},"must be a map")
+         bad([{ticket:"text",classification:"old"}],spec,{},"already has")
+         bad(rows,merge(clone(spec),{assign:{classification:42}}),{},"assign requires")
+         bad(rows,merge(clone(spec),{unknown:true}),{},"llmdecide requires")
+         bad(rows,spec,{llmconversation:"conversation.json"},"does not support")
+         clientMode = "missing"
+         bad(rows,spec,{},"updated OpenAF")
+         clientMode = "normal"
+         failure = new Error("fixture transform failure"); failure.code = "FIXTURE"
+         eq(bad(rows,spec,{},"entry 0",true).code,"FIXTURE","provider error code")
+         bad(rows,spec,{parallel:true},"entry ",true)
+         failure = undefined
+         bad(rows,merge(clone(spec),{assign:{classification:"unknown()"}}),{},"entry 0",true)
+      }
       try {
+         transformCases()
          var skillRequest = io.readFileString("../../skills/oafp-decide/assets/request.yaml")
          var skillMap = af.fromYAML(skillRequest)
          run(skillRequest)
@@ -213,6 +290,7 @@
          })
          // Verify the compiled artifact and both help entrypoints against local docs.
          runOafp = loadEntrypoint("../oafp.js")
+         transformCases()
          eq(run(undefined,{llmdecidesample:"ollama",llmoptions:undefined}).options.strategy,"native","compiled sample")
          eq(run(stringify(request),{path:"answers.route.value"}),"billing","compiled decision filter")
          run(stringify(imageRequest))
