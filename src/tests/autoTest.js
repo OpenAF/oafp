@@ -1,5 +1,143 @@
 (function() {
 
+   exports.testDevScope = function() {
+      var processExpr = () => undefined
+      // OpenAF uses an empty string while its console is being initialized.
+      var __con = "", consoleInitializations = 0
+      var __initializeCon = () => { consoleInitializations++ }
+      var __flags = clone(global.__flags); __flags.OAFP = {libs:[]}
+      var output = []
+      var print = value => output.push(String(value))
+      var template = io.readFileString("../oafp.source.js.hbs")
+      ;["Util", "Stream", "InputLine", "Transform", "Output", "Input"].forEach(name => {
+         var file = name.charAt(0).toLowerCase() + name.substring(1) + "Fns"
+         template = template.replace("{{{src" + name + "Fns}}}", 'eval(io.readFileString("../include/' + file + '.js"))')
+      })
+      ;["FileExtensions", "FileExtensionsNoMem"].forEach(name => {
+         var file = name.charAt(0).toLowerCase() + name.substring(1)
+         template = template.replace("{{{src" + name + "}}}", 'io.readFileJSON("../include/' + file + '.json")')
+      })
+      var run = eval(template + "\noafp")
+      var invoke = params => {
+         output = []
+         run(merge({out:"json",noexit:true,__inception:true,parallel:false},params))
+         return output.map(value => jsonParse(value))
+      }
+      ow.test.assert(invoke({in:"json",stream:true,data:'[null,{"z":1,"a":2}]',sortmapkeys:true}),
+         [null,{a:2,z:1}],"Dev streaming helpers capture invocation scope")
+      ow.test.assert(invoke({in:"ndjson",data:'{"z":3}\n{"z":4}'}),
+         [{z:3},{z:4}],"Dev helpers refresh state for each invocation")
+      ow.test.assert(invoke({in:"json",data:'{"z":5}'}),[{z:5}],"Dev aggregate input captures invocation scope")
+      ow.test.assert(invoke({in:"json",data:'[1,2,3]',pipe:{in:"json",path:"{total:sum(@),count:length(@)}",out:"json"}}),
+         [{total:6,count:3}],"Nested pipe tolerates console initialization in progress")
+      ow.test.assert(consoleInitializations,0,"Noninteractive invocations do not initialize the console")
+   }
+
+   exports.testStreamingPerformance = function() {
+      var processExpr = () => undefined
+      var __flags = clone(global.__flags); __flags.OAFP = {libs:[]}
+      var output = [], diagnostics = []
+      var print = value => output.push(String(value))
+      var printErr = value => diagnostics.push(String(value))
+      var printErrnl = value => diagnostics.push(String(value))
+      var runOafp = eval(io.readFileString("../oafp.source.js") + "\noafp")
+      var run = params => {
+         output = [], diagnostics = []
+         runOafp(merge({out:"json",noexit:true,__inception:true,parallel:false},params))
+         return output.map(text => jsonParse(text))
+      }
+      var eq = (a,b,msg) => ow.test.assert(a,b,msg)
+      var rejects = params => {
+         var error
+         try { run(params) } catch(e) { error = e }
+         eq(isDef(error),true,"Invalid streaming input must throw: " + params.in)
+      }
+      eq(run({in:"json",stream:true,data:'[null,true,false,1.25,"€",[],{},[{"x":2}]]'}),
+         [null,true,false,1.25,"€",[],{},[{x:2}]],"JSON array values")
+      eq(run({in:"json",stream:true,data:'[]'}),[],"Empty JSON stream")
+      eq(run({in:"json",stream:true,data:'[{"x":1},{"x":2}]',path:"[].x"}),[1,2],"Per-record filters")
+      ;['{}','[1,]','[','[1]false','[NaN]'].forEach(data => rejects({in:"json",stream:true,data:data}))
+      rejects({in:"json",stream:true,data:'[]',jsonprefix:"x"})
+      rejects({in:"json",stream:true,data:'[]',parallel:"invalid"})
+      eq(run({in:"ndjson",data:'{\n"x":1, "text":"}\\\"{"\n}\n{"x":2}\n'}),
+         [{x:1,text:'}\"{'},{x:2}],"Multiline JSON and quoted braces")
+      eq(run({in:"ndjson",data:'1\n[1,2]\ntrue\n"text"\n'}),[1,[1,2],true,"text"],"Scalar NDJSON")
+      rejects({in:"ndjson",data:'{"unfinished":'});
+      eq(run({in:"ndjson",data:'{"x":3}'}),[{x:3}],"Framing state does not leak after errors")
+      eq(run({in:"ndslon",data:'(x:1)\n(x:2)'}),[{x:1},{x:2}],"NDSLON records")
+      eq(run({in:"lines",data:'hello\r\nworld'}),["hello","world"],"Lines source normalization")
+      eq(run({in:"ndjson",ndjsonjoin:true,data:'{"x":1}\n{"x":2}'}),[[{x:1},{x:2}]],"Joined records retain aggregate semantics")
+      var rows = Array.from({length:1200},(v,i) => ({z:i,a:{z:i,a:i}}))
+      var ndjson = rows.map(r => stringify(r,__,"")).join("\n")
+      ;["false","auto","true"].forEach(parallel => {
+         eq(run({in:"ndjson",data:ndjson,parallel:parallel}),rows,"Ordered bounded records: " + parallel)
+         eq(run({in:"json",stream:true,data:stringify(rows),parallel:parallel}),rows,"Ordered JSON stream: " + parallel)
+      })
+      var sorted = rows.map(r => ({a:{a:r.z,z:r.z},z:r.z}))
+      eq(run({in:"json",data:stringify(rows),sortmapkeys:true,parallel:true}),[sorted],"Parallel pure key sorting")
+      var params = {parallel:true}
+      var makeProcessor = eval(io.readFileString("../include/streamFns.js") + "\n_recordProcessor")
+      var processor = makeProcessor(value => { if (value == 513) throw "worker-failure"; return value }, () => {}, true)
+      var failed = false
+      try { for (var i = 0; i < 1500; i++) processor.add(i); processor.done() } catch(e) {
+         failed = String(e).indexOf("worker-failure") >= 0
+         try { processor.abort() } catch(ignore) {}
+      }
+      eq(failed,true,"Worker errors propagate after settling pending work")
+      params.parallel = "auto"
+      var live = $atomic(), peak = $atomic(), lock = new java.util.concurrent.locks.ReentrantLock()
+      var ordered = [], caller = java.lang.Thread.currentThread().getId()
+      processor = makeProcessor(value => {
+         var count = live.inc()
+         lock.lock()
+         try { peak.set(Math.max(peak.get(),count)) } finally { lock.unlock() }
+         try { sleep(1, true); return value } finally { live.dec() }
+      }, value => {
+         eq(java.lang.Thread.currentThread().getId(),caller,"Output stays on caller thread")
+         ordered.push(value)
+      }, true)
+      for (var i = 0; i < 1200; i++) processor.add(i)
+      processor.done()
+      eq(ordered,Array.from({length:1200},(v,i) => i),"Adaptive workers preserve ordering")
+      eq(live.get(),0,"All workers settled")
+      eq(peak.get() <= Math.min(4,getNumberOfCores()),true,"Concurrency cap")
+      if (getNumberOfCores() > 1) eq(peak.get() > 1,true,"Expensive pure work activates automatic workers")
+
+      eq(diagnostics,[],"Nested processing emits no wait output")
+      var outputFile = io.createTempFile("oafp-output-owner", ".txt")
+      var previousStreams = global.__oafp_streams, borrowed = io.writeFileStream(outputFile, true)
+      try {
+         global.__oafp_streams = {}
+         global.__oafp_streams[outputFile] = {s:borrowed}
+         run({in:"json",data:'{"x":1}',outfile:outputFile,outfileappend:true})
+         ioStreamWrite(borrowed,"parent\n")
+         eq(io.readFileString(outputFile),'{"x":1}\nparent\n',"Nested output keeps borrowed streams open")
+      } finally {
+         borrowed.close()
+         global.__oafp_streams = previousStreams
+         io.rm(outputFile)
+      }
+      var file = io.createTempFile("oafp-stream", ".ndjson")
+      try {
+         io.writeFileString(file, ndjson)
+         eq(run({file:file,parallel:true}),rows,"Extension detection selects streaming reader")
+         var counter = io.createTempFile("oafp-command", ".txt")
+         try {
+            var command = "printf x >> '" + counter + "'; cat '" + file + "'; printf 'diagnostic\\n' >&2"
+            eq(run({in:"ndjson",cmd:command,parallel:true}),rows,"Command stdout streams once")
+            eq(io.readFileString(counter),"x","Command executes once")
+            eq(diagnostics,["diagnostic"],"Command stderr is drained separately")
+         } finally { io.rm(counter) }
+         io.writeFileString(file, "a,b\n1,2\n3,4")
+         eq(run({in:"csv",file:file,correcttypes:true}),[[{a:1,b:2},{a:3,b:4}]],"CSV aggregate")
+         ;["../oafp.source.js","../oafp.js"].forEach(script => {
+            var result = $sh([getOpenAFPath()+"/oaf","-f",script,"-e","in=ndjson out=json parallel=false"],'{"x":1}\n{"x":2}').get(0)
+            eq(result.stdout.trim().split(/\r?\n/).map(text => jsonParse(text)),[{x:1},{x:2}],"Real stdin: " + script)
+            eq(result.stderr,"","Redirected stderr has no progress escapes")
+         })
+      } finally { io.rm(file) }
+   }
+
    exports.testSkillRecipes = function() {
       var run = function(asset, extra) {
          // Use the documented working directory and the checkout's generated CLI.

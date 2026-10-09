@@ -1,9 +1,16 @@
 // Util functions
+var _activeTransforms
 const _transform = r => {
-    var _ks = Object.keys(_transformFns)
-    for(var ikey = 0; ikey < _ks.length; ikey++) {
-        var key = _ks[ikey]
-        if (isDef(params[key])) r = _transformFns[key](r)
+    var keys = _activeTransforms || Object.keys(_transformFns).filter(key => isDef(params[key]))
+    for (var i = 0; i < keys.length; i++) {
+        if (keys[i] == "sortmapkeys" && toBoolean(params.sortmapkeys) && isArray(r) && r.length > 128) {
+            var sorted = [], processor = _recordProcessor(_sortTransformKeys, value => sorted.push(value), true)
+            try { r.forEach(processor.add); processor.done() } catch(e) {
+                try { processor.abort() } catch(ignore) {}
+                throw e
+            }
+            r = sorted
+        } else r = _transformFns[keys[i]](r)
     }
     return r
 }
@@ -101,7 +108,7 @@ const _$f = (r, options) => {
     return r
 }
 const _$o = (r, options, lineByLine) => {
-    if (r == null || ("undefined" == typeof r)) {
+    if ((r == null && !options.__keepNull) || ("undefined" == typeof r)) {
         _clearTmpMsg()
         return
     }
@@ -145,18 +152,18 @@ const _$o = (r, options, lineByLine) => {
         _o$o(r, nOptions, __)
     }
 }
-const _runCmd2Bytes = (cmd, toStr) => {
-    var data = af.fromString2Bytes("")
-    var ostream = af.newOutputStream()
-    $sh(cmd)
-    .cb((o, e, i) => {
-      ioStreamCopy(ostream, o)
-      var ba = ostream.toByteArray()
-      if (ba.length > 0) data = ba
-    })
-    .get()
-    return toStr ? af.fromBytes2String(data) : data
-}
+const _runCmd2Bytes = (cmd, toStr) => _withCommandStream(cmd, stream => {
+    if (toStr) {
+        var text = new java.lang.StringBuilder()
+        ioStreamRead(stream, chunk => { text.append(chunk); return false }, __, true, _cs)
+        return String(text.toString())
+    }
+    var output = af.newOutputStream()
+    try {
+        Packages.org.apache.commons.io.IOUtils.copyLarge(stream, output)
+        return output.toByteArray()
+    } finally { output.close() }
+})
 const _fromJSSLON = (aString, checkYAML) => {
     if ("[object Object]" == Object.prototype.toString.call(aString) || Array.isArray(aString)) return aString
 	if (!isString(aString) || aString == "" || isNull(aString)) return ""
@@ -253,7 +260,8 @@ const _chartPathParse = (r, frmt, prefix, isStatic) => {
     }
     return ""
 }
-const _print = (m) => {
+const _print = m => _progressGuard(() => {
+    _eraseProgress()
     if ("undefined" !== typeof m) {
         if ("undefined" === typeof params.outfile) {
             if (toBoolean(params.loopcls)) cls()
@@ -284,73 +292,11 @@ const _print = (m) => {
             }
         }
     }
-}
+})
 const _o$o = (a, b, c) => {
     if ("undefined" !== typeof a) {
         var _s = $o(a, b, c, true)
         if (isDef(_s)) _print(_s)
-    }
-}
-
-// Parallel execution initialization
-const _parInit = () => {
-    return {
-        _resC: $atomic(),
-        _nc  : getNumberOfCores(),
-        times: $atomic(),
-        execs: $atomic(0, "long"),
-        _opar: (isDef(params.parallel) && toBoolean(params.parallel)) || String(getEnv("OAFP_PARALLEL")).toLowerCase() == "true",
-        _par : false,
-        _ts  : []
-    }
-}
-
-// Parallel execution check
-const _parCheck = _par => {
-    // If execution time per call is too low, go sequential
-    if ( _par._opar && _par._nc >= 3 ) {
-        if ( ((_par.times.get() / _par.execs.get() ) / 1000000) < __flags.PFOREACH.seq_thrs_ms || __getThreadPools().active / getNumberOfCores() > __flags.PFOREACH.seq_ratio) {
-            _par._par = true
-        } else {
-            _par._par = false
-        }
-    }
-
-    return _par
-}
-
-// Parallel execution done
-const _parDone = _par => {
-	var tries = 0
-	do {
-		$doWait($doAll(_par._ts))
-		if (_par._resC.get() > 0) sleep(__getThreadPools().queued * __flags.PFOREACH.waitms, true)
-		tries++
-	} while(_par._resC.get() > 0 && tries < 100)
-}
-
-// Parallel execution
-const _parExec = (_par, fn) => {
-    var init = nowNano(), _e
-    if (_par._par) {
-        _par._ts.push($do(() => {
-            _par._resC.inc()
-            return fn(_par.execs.inc())
-        }).then(() => {
-            return _par._resC.dec()
-        }).catch(e => {
-            _e = e
-        }))
-        if (isDef(_e)) throw _e
-    } else {
-        fn(_par.execs.inc())
-    }
-    _par.times.getAdd(nowNano() - init)
-
-	// Cool down and go sequential if too many threads
-    var _tpstats = __getThreadPools()
-    if (_tpstats.queued > _tpstats.poolSize / __flags.PFOREACH.threads_thrs) {
-        $doWait(_par._ts.pop())
     }
 }
 
@@ -383,6 +329,52 @@ const _getSec = (aM, aPath) => {
 		return aM
 	}
 }
-const _msg = "(processing data...)"
-const _showTmpMsg  = msg => { if (params.out != 'grid' && !params.__inception && !toBoolean(params.loopcls) && !toBoolean(params.chartcls)) printErrnl(_$(msg).default(_msg)) } 
-const _clearTmpMsg = msg => { if (params.out != 'grid' && !params.__inception && !toBoolean(params.loopcls) && !toBoolean(params.chartcls)) printErrnl("\r" + " ".repeat(_$(msg).default(_msg).length) + "\r") }
+const _msg = "(processing data)"
+var _progressActive = false, _progressVisible = false, _progressText = _msg, _progressStart = 0
+var _progressFrame = 0, _progressTTY
+var _progressLock
+const _progressEnabled = () => {
+    if (getEnv("TERM") == "dumb" || params.progress == "off" || params.out == "grid" || params.__inception || toBoolean(params.loopcls) || toBoolean(params.chartcls)) return false
+    if (isUnDef(_progressTTY)) {
+        _progressTTY = false
+        try {
+            // Avoid loading JLine's native library for files and pipes.
+            var mode = Number(java.nio.file.Files.getAttribute(java.nio.file.Paths.get("/dev/fd/2"), "unix:mode"))
+            if ((mode & 61440) == 8192) _progressTTY = Number(Packages.org.jline.nativ.CLibrary.isatty(2)) == 1
+        } catch(ignore) { _progressTTY = java.lang.System.console() != null }
+    }
+    return _progressTTY
+}
+const _progressGuard = fn => {
+    if (isDef(_progressLock)) _progressLock.lock()
+    try { return fn() } finally { if (isDef(_progressLock)) _progressLock.unlock() }
+}
+const _eraseProgress = () => {
+    if (_progressVisible) printErrnl("\r\u001b[2K")
+    _progressVisible = false
+}
+const _showTmpMsg = msg => {
+    if (!_progressEnabled()) return
+    _progressGuard(() => {
+        _progressText = _$(msg).default(_msg)
+        if (!_progressActive) _progressStart = now()
+        _progressActive = true
+    })
+}
+const _clearTmpMsg = () => _progressGuard(() => {
+    _progressActive = false
+    _eraseProgress()
+})
+const _withProgress = fn => {
+    if (!_progressEnabled() || !isFunction(ow.format.progressReport)) return fn()
+    _progressLock = new java.util.concurrent.locks.ReentrantLock()
+    var unicode = /utf-?8/i.test(String(_cs || java.lang.System.getProperty("file.encoding")))
+    var frames = unicode ? ["•", "◦", "·", "◦"] : ["-", "\\", "|", "/"]
+    try {
+        return ow.format.progressReport(fn, () => _progressGuard(() => {
+            if (!_progressActive || now() - _progressStart < 250) return
+            printErrnl("\r\u001b[2K" + frames[_progressFrame++ % frames.length] + " " + _progressText)
+            _progressVisible = true
+        }), 150)
+    } finally { _clearTmpMsg() }
+}

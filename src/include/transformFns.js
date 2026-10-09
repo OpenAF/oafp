@@ -323,7 +323,7 @@ var _transformFns = {
             }
         }
         var indexes = entries.map((entry, index) => index), result
-        var parallel = toBoolean(params.parallel) || String(getEnv("OAFP_PARALLEL")).toLowerCase() == "true"
+        var parallel = _parallelMode() == "true"
         if (parallel && isDef(pForEach)) {
             ow.loadObj()
             var errors = new ow.obj.syncArray()

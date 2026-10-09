@@ -78,7 +78,15 @@
     },
     {
       "Option": "parallel",
-      "Description": "If 'true' and input supports parallel processing it will try to process the input in parallel disregarding input order"
+      "Description": "`auto` (default), `true`, or `false`. Auto measures eligible pure work before using bounded workers. Record output stays ordered; explicit `true` also enables supported specialized parallel operations. `false` overrides `OAFP_PARALLEL`."
+    },
+    {
+      "Option": "progress",
+      "Description": "`auto` (default) or `off`. Shows a delayed wait animation on interactive stderr only."
+    },
+    {
+      "Option": "stream",
+      "Description": "With `in=json`, processes a top-level array one element at a time using record-level filters and output. Default `false`."
     },
     {
       "Option": "pause",

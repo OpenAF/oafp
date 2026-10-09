@@ -111,12 +111,7 @@ var _inputFns = new Map([
         }
 
         if (params.linesjoin) {
-            if (isDef(params.file) && isUnDef(params.cmd)) {
-                _res = io.readFileString(params.file)
-            }
-            if (isDef(params.cmd)) {
-                _res = _runCmd2Bytes(params.cmd, true)
-            }
+            _res = _readInputString(_res)
             _res = _res.split(/\r?\n/)
 
             if (toBoolean(params.linesvisual)) {
@@ -131,153 +126,48 @@ var _inputFns = new Map([
                 _$o(_res, options)
             }
         } else {
-            var _stream
-            if (isDef(params.file) && isUnDef(params.cmd)) {
-                _stream = io.readFileStream(params.file)
-            } else {
-                if (isDef(params.cmd)) {
-                    _stream = af.fromBytes2InputStream(_runCmd2Bytes(params.cmd))
-                } else {
-                    _stream = af.fromString2InputStream(_res)
-                }
-            }
-
-            var _p = _parInit()
-            ioStreamReadLines(_stream, r => {
-                _parExec(_p, () => {
-                    // If linesvisual=true then the first line is the header and the space position of
-                    // each header title determines the column position for the remaining lines
-
-                    if (toBoolean(params.linesvisual)) {
-                        var _r = _visualProc(r)
-                        if (isDef(_r)) _$o(_r, clone(options), true)
-                    } else {
-                        _$o(r, clone(options), true)
-                    }
-                })
-                _p = _parCheck(_p)
-            })
-            _parDone(_p)
-            _stream.close()
+            _processRecords(_res, r => {
+                if (toBoolean(params.linesvisual)) return _visualProc(r)
+                return r
+            }, r => { if (isDef(r)) _$o(r, options, true) }, false)
         }
     }],
     ["ndjson", (_res, options) => {
         params.ndjsonjoin = _$(toBoolean(params.ndjsonjoin), "ndjsonjoin").isBoolean().default(false)
 
         _showTmpMsg()
-        global.__ndjsonbuf = __, noOut = true
-        var _ndjline = (r, fn) => {
-            if (isUnDef(global.__ndjsonbuf) && r.length != 0 && r.trim().startsWith("{")) global.__ndjsonbuf = ""
-            if (isDef(global.__ndjsonbuf)) {
-                if (r.length != 0 && !r.trim().endsWith("}")) { global.__ndjsonbuf += r.trim(); return }
-                if (global.__ndjsonbuf.length > 0) { r = global.__ndjsonbuf + r; global.__ndjsonbuf = __ }
-            }
-            if (r.length == 0 || r.length > 0 && r.trim().substring(0, 1) != "{") { 
-                noOut = false
-                fn(r)
-                global.__ndjsonbuf = __
-                return 
-            }
-            if (r.trim().length > 0) {
-                noOut = false
-                fn(r)
-            }
-        }
-        var _ndjproc = res => {
-            var _j = []
-            res.split("\n").filter(l => l.length > 0).forEach(r => _ndjline(r, r => _j.push(jsonParse(r, __, __, toBoolean(params.ndjsonfilter)))))
-            return _j
-        }
-
         if (params.ndjsonjoin) {
-            if (isDef(params.file) && isUnDef(params.cmd)) {
-                _res = io.readFileString(params.file)
-            }
-            if (isDef(params.cmd)) {
-                _res = _runCmd2Bytes(params.cmd, true)
-            }
-
-            _$o(_ndjproc(_res), options)
+            var records = [], frame = _jsonLineFramer()
+            _readInputString(_res).split(/\r?\n/).forEach(line => frame(line, text => records.push(jsonParse(text, __, __, toBoolean(params.ndjsonfilter)))))
+            frame.end()
+            _$o(records, options)
         } else {
-            var _stream
-            if (isDef(params.file) && isUnDef(params.cmd)) {
-                _stream = io.readFileStream(params.file)
-            } else {
-                if (isDef(params.cmd)) {
-                    _stream = af.fromBytes2InputStream(_runCmd2Bytes(params.cmd))
-                } else {
-                    _stream = af.fromString2InputStream(_res)
-                }
-            }
-
-            var _p = _parInit()
-            ioStreamReadLines(_stream, r => {
-                _parExec(_p, () => _ndjline(r, line => _$o(jsonParse(line, __, __, true), clone(options), true) ) )
-                _p = _parCheck(_p)
-            })
-            _parDone(_p)
-            _stream.close()
+            _processRecords(_res, line => jsonParse(line, __, __, true),
+                r => _$o(r, options, true), true, _jsonLineFramer())
         }
-        if (noOut) _clearTmpMsg()
+        _clearTmpMsg()
     }],
     ["ndslon", (_res, options) => {
-        params.ndslonjoin = _$(toBoolean(params.ndslonjoin), "ndslonjoin").isBoolean().default(false)
-
+        params.ndslonjoin = toBoolean(params.ndslonjoin)
         _showTmpMsg()
-        global.__ndslonbuf = __, noOut = true
-        var _ndslonline = (r, fn) => {
-            if (isUnDef(global.__ndslonbuf) && r.length != 0 && r.trim().startsWith("(")) global.__ndslonbuf = ""
-            if (isDef(global.__ndslonbuf)) {
-                if (r.length != 0 && !r.trim().endsWith(")")) { global.__ndslonbuf += r.trim(); return }
-                if (global.__ndslonbuf.length > 0) { r = global.__ndslonbuf + r; global.__ndslonbuf = __ }
-            }
-            if (r.length == 0 || r.length > 0 && r.trim().substring(0, 1) != "(") { 
-                noOut = false
-                fn(r)
-                global.__ndslonbuf = __
-                return 
-            }
-            if (r.trim().length > 0) {
-                noOut = false
-                fn(r)
-            }
+        var buffer = ""
+        var frame = (line, emit) => {
+            if (line.trim().length == 0) return
+            buffer += line
+            if (buffer.trim().startsWith("(") && !buffer.trim().endsWith(")")) return
+            emit(buffer)
+            buffer = ""
         }
-        var _ndslonproc = res => {
-            var _j = []
-            res.split("\n").filter(l => l.length > 0).forEach(r => _ndslonline(r, r => _j.push(af.fromSLON(r))))
-            return _j
-        }
-
+        frame.end = () => { if (buffer.trim().length > 0) throw "Incomplete NDSLON record" }
         if (params.ndslonjoin) {
-            if (isDef(params.file) && isUnDef(params.cmd)) {
-                _res = io.readFileString(params.file)
-            }
-            if (isDef(params.cmd)) {
-                _res = _runCmd2Bytes(params.cmd, true)
-            }
-
-            _$o(_ndslonproc(_res), options)
+            var records = []
+            _readInputString(_res).split(/\r?\n/).forEach(line => frame(line, text => records.push(af.fromSLON(text))))
+            frame.end()
+            _$o(records, options)
         } else {
-            var _stream
-            if (isDef(params.file) && isUnDef(params.cmd)) {
-                _stream = io.readFileStream(params.file)
-            } else {
-                if (isDef(params.cmd)) {
-                    _stream = af.fromBytes2InputStream(_runCmd2Bytes(params.cmd))
-                } else {
-                    _stream = af.fromString2InputStream(_res)
-                }
-            }
-
-            var _p = _parInit()
-            ioStreamReadLines(_stream, r => {
-                _parExec(_p, () => _ndslonline(r, line => _$o(af.fromSLON(line), clone(options), true) ) )
-                _p = _parCheck(_p)
-            })
-            _parDone(_p)
-            _stream.close()
+            _processRecords(_res, line => af.fromSLON(line), r => _$o(r, options, true), false, frame)
         }
-        if (noOut) _clearTmpMsg()
+        _clearTmpMsg()
     }],
     ["dsv", (_res, options) => {
         _showTmpMsg()
@@ -359,12 +249,7 @@ var _inputFns = new Map([
                 
         var noOut = true
         if (params.indsvjoin) {
-            if (isDef(params.file) && isUnDef(params.cmd)) {
-                _res = io.readFileString(params.file)
-            }
-            if (isDef(params.cmd)) {
-                _res = _runCmd2Bytes(params.cmd, true)
-            }
+            _res = _readInputString(_res)
 
             _$o( _res.split(/\r?\n/).map(r => {
                 if (isUnDef(r) || r.length == 0) return __
@@ -372,33 +257,10 @@ var _inputFns = new Map([
                 return _dsvproc(r)
             }).filter(r => isDef(r)), options)
         } else {
-            var _stream
-            if (isDef(params.file) && isUnDef(params.cmd)) {
-                _stream = io.readFileStream(params.file)
-            } else {
-                if (isDef(params.cmd)) {
-                    _stream = af.fromBytes2InputStream(_runCmd2Bytes(params.cmd))
-                } else {
-                    _stream = af.fromString2InputStream(_res)
-                }
-            }
-
-            var _p = _parInit()
-            ioStreamReadLines(_stream, r => {
-                if (isUnDef(r) || r.length == 0) return
-                if (r.trim().startsWith(params.indsvcomment)) return
-                _parExec(_p, () => {
-                    if (isString(r)) {
-                        var _dsv = _dsvproc(r)
-                        if (isDef(_dsv)) _$o(_dsv, clone(options), true)
-                    }
-                    return true
-                })
-                _p = _parCheck(_p)
-                return false
-            })
-            _parDone(_p)
-            _stream.close()
+            _processRecords(_res, r => {
+                if (r.length == 0 || r.trim().startsWith(params.indsvcomment)) return __
+                return _dsvproc(r)
+            }, r => { if (isDef(r)) _$o(r, options, true) }, false)
         }
         if (noOut) _clearTmpMsg()
     }],
@@ -809,13 +671,7 @@ var _inputFns = new Map([
         var _r
         _showTmpMsg()
         if (isUnDef(params.inputcsv) && isDef(params.incsv)) params.inputcsv = params.incsv
-        if (isDef(params.file) || isDef(params.cmd)) {
-            var is = isDef(params.cmd) ? af.fromBytes2InputStream(_runCmd2Bytes(params.cmd)) : io.readFileStream(params.file)
-            _r = $csv(params.inputcsv).fromInStream(is).toOutArray()
-            is.close()
-        } else {
-            _r = $csv(params.inputcsv).fromInString( _res ).toOutArray()
-        }
+        var _r = _withInputStream(_res, stream => $csv(params.inputcsv).fromInStream(stream).toOutArray())
         _$o(_r, options)
     }],
     ["javathread", (_res, options) => {
@@ -1567,6 +1423,22 @@ var _inputFns = new Map([
     }],
     ["json", (_res, options) => {
         _showTmpMsg()
-        _$o(jsonParse(_res, __, __, isString(_res)), options)
+        if (toBoolean(params.stream)) {
+            if (toBoolean(params.jsondesc) || isDef(params.jsonprefix)) throw "stream=true cannot be combined with jsondesc or jsonprefix"
+            var processor = _recordProcessor(text => jsonParse(text), r => _$o(r, merge(options, { __keepNull: true }), true), true)
+            try {
+                _withInputStream(_res, stream => {
+                    var read = isFunction(io.readJSONArray) ? io.readJSONArray.bind(io) : _readJSONArray
+                    read(stream, text => { processor.add(text); return false }, _cs, true)
+                })
+                processor.done()
+            } catch(e) {
+                try { processor.abort() } catch(ignore) {}
+                throw e
+            }
+        } else {
+            if (isString(_res)) _res = jsonParse(_res, __, __, true)
+            _$o(_res, options)
+        }
     }]
 ])

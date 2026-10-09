@@ -2,7 +2,7 @@ var _inputLineFns = {
     "lines": (r, options) => {
         params.linesjoin = _$(toBoolean(params.linesjoin), "linesjoin").isBoolean().default(false)
 
-        if (!params.linesjoin && isBoolean(r)) {
+        if (!params.linesjoin && isString(r)) {
             if (r.trim().length == 0) {
                 noFurtherOutput = true
                 return

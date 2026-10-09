@@ -206,6 +206,7 @@ jobs:
       srcTransformFns       : io.readFileString(args.path + "/include/transformFns.js"),
       srcOutputFns          : io.readFileString(args.path + "/include/outputFns.js"),
       srcInputFns           : io.readFileString(args.path + "/include/inputFns.js"),
+      srcStreamFns          : io.readFileString(args.path + "/include/streamFns.js"),
       srcUtilFns            : io.readFileString(args.path + "/include/utilFns.js")
     }
 
@@ -217,14 +218,16 @@ jobs:
 # -------------------
 - name : Add dev code
   exec : |
+    // Evaluate includes in each invocation so dev helpers capture the same local scope as built source.
     args.data = {
       srcFileExtensions     : "io.readFileJSON(\"include/fileExtensions.json\")",
       srcFileExtensionsNoMem: "io.readFileJSON(\"include/fileExtensionsNoMem.json\")",
-      srcInputLineFns       : "!__loadedLibs['include/inputLineFns.js'] && load(\"include/inputLineFns.js\");__loadedLibs['include/inputLineFns.js']=true",
-      srcTransformFns       : "!__loadedLibs['include/transformFns.js'] && load(\"include/transformFns.js\");__loadedLibs['include/transformFns.js']=true",
-      srcOutputFns          : "!__loadedLibs['include/outputFns.js'] && load(\"include/outputFns.js\");__loadedLibs['include/outputFns.js']=true",
-      srcInputFns           : "!__loadedLibs['include/inputFns.js'] && load(\"include/inputFns.js\");__loadedLibs['include/inputFns.js']=true",
-      srcUtilFns            : "!__loadedLibs['include/utilFns.js'] && load(\"include/utilFns.js\");__loadedLibs['include/utilFns.js']=true"
+      srcInputLineFns       : "eval(io.readFileString(\"include/inputLineFns.js\"))",
+      srcTransformFns       : "eval(io.readFileString(\"include/transformFns.js\"))",
+      srcOutputFns          : "eval(io.readFileString(\"include/outputFns.js\"))",
+      srcInputFns           : "eval(io.readFileString(\"include/inputFns.js\"))",
+      srcStreamFns          : "eval(io.readFileString(\"include/streamFns.js\"))",
+      srcUtilFns            : "eval(io.readFileString(\"include/utilFns.js\"))"
     }
 
     args.templateFile = args.path + "/oafp.source.js.hbs"

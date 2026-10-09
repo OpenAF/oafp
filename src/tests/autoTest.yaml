@@ -1,5 +1,7 @@
 todo:
 - Load test
+- oafp::DevScope
+- oafp::StreamingPerformance
 - oafp::SkillRecipes
 - oafp::HSPerfInputs
 - oafp::LLMDecide
@@ -85,6 +87,12 @@ jobs:
     func: "global.test.testSkillRecipes()"
 
 # ---------------------
+- name: oafp::StreamingPerformance
+  to  : oJob Test
+  deps: Load test
+  args:
+    func: "global.test.testStreamingPerformance()"
+
 - name: oafp::JSON2JSON
   to  : oJob Test
   deps: Load test
@@ -282,3 +290,9 @@ jobs:
   deps: Load test
   args:
     func: "global.test.testDSV()"
+
+- name: oafp::DevScope
+  to: oJob Test
+  deps: Load test
+  args:
+    func: "global.test.testDevScope()"

@@ -46,7 +46,8 @@ var _outputFns = new Map([
         _o$o(r, options)
     }],
     ["json", (r, options) => {
-        _o$o(r, options)
+        // _$o has already applied filters and transforms; avoid the generic formatter per record.
+        _print(stringify(r, __, ""))
     }],
     ["yaml", (r, options) => {
         _o$o(r, options)
