@@ -380,7 +380,7 @@ var _inputFns = new Map([
         ow.loadJava()
         var ini = new ow.java.ini(), _r
         if (isDef(params.file)) {
-            _r = ini.loadFile(params.file).get()
+            _r = (_isGzipFile() ? ini.load(r) : ini.loadFile(params.file)).get()
         } else {
             _r = ini.load(r).get()
         }
@@ -629,7 +629,8 @@ var _inputFns = new Map([
         params.inxlsrow          = _$(params.inxlsrow || params.xlsrow, "xlsrow").isString().default(1)
 
         if (isDef(params.file) || isDef(params.cmd)) {
-            var xls = new XLS(isDef(params.cmd) ? _runCmd2Bytes(params.cmd) : params.file)
+            var xls = new XLS(isDef(params.cmd) ? _runCmd2Bytes(params.cmd) :
+                (_isGzipFile() ? _withFileStream(stream => af.fromInputStream2Bytes(stream)) : params.file))
 
             if (_xlsds) {
                 _r = xls.getSheetNames()
@@ -967,7 +968,8 @@ var _inputFns = new Map([
             _showTmpMsg()
             ow.loadJava()
             if (!isBoolean(params.hsperfmetadata)) params.hsperfmetadata = _$(toBoolean(params.hsperfmetadata), "hsperfmetadata").isBoolean().default(false)
-            var result = ow.java.parseHSPerf(isDef(params.cmd) ? _runCmd2Bytes(params.cmd) : params.file, false, { metadata: params.hsperfmetadata })
+            var parse = source => ow.java.parseHSPerf(source, false, { metadata: params.hsperfmetadata })
+            var result = isDef(params.cmd) ? parse(_runCmd2Bytes(params.cmd)) : _withInputFilePath(parse)
             if (!isMap(result)) _exit(-1, "Invalid, inaccessible or unsupported hsperf data.")
             if (params.hsperfmetadata && (!isMap(result.values) || !isMap(result.header) || !isMap(result.entries)))
                 _exit(-1, "hsperfmetadata requires an updated OpenAF runtime with parseHSPerf metadata support.")
@@ -1038,18 +1040,23 @@ var _inputFns = new Map([
             _res = _ft
         }
 
-        if (params.jfrjoin) {
-            _$o(ow.java.parseJFR(_res, __, params.jfrdesc), options)
-        } else {
-            ow.java.parseJFR(_res, event => _$o(event, options), params.jfrdesc)
+        var parse = source => {
+            if (params.jfrjoin) {
+                _$o(ow.java.parseJFR(source, __, params.jfrdesc), options)
+            } else {
+                ow.java.parseJFR(source, event => _$o(event, options), params.jfrdesc)
+            }
         }
+        if (isDef(params.file) && isUnDef(params.cmd)) _withInputFilePath(parse)
+        else parse(_res)
     }],
     ["rawhex", (_res, options) => {
         var _r
         params.inrawhexline = _$(params.inrawhexline, "inrawhexline").isNumber().default(__)
         _showTmpMsg()
         if (isDef(params.file) || isDef(params.cmd)) {
-            _r = isDef(params.cmd) ? _runCmd2Bytes(params.cmd) : io.readFileBytes(params.file)
+            _r = isDef(params.cmd) ? _runCmd2Bytes(params.cmd) :
+                (_isGzipFile() ? _withFileStream(stream => af.fromInputStream2Bytes(stream)) : io.readFileBytes(params.file))
         } else {
             _r = af.fromString2Bytes(_res)
         }

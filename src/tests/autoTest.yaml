@@ -1,7 +1,9 @@
 todo:
 - Load test
+- oafp::FormatHelp
 - oafp::DevScope
 - oafp::StreamingPerformance
+- oafp::GzipInputs
 - oafp::SkillRecipes
 - oafp::HSPerfInputs
 - oafp::LLMDecide
@@ -296,3 +298,15 @@ jobs:
   deps: Load test
   args:
     func: "global.test.testDevScope()"
+
+- name: oafp::GzipInputs
+  to: oJob Test
+  deps: Load test
+  args:
+    func: "global.test.testGzipInputs()"
+
+- name: oafp::FormatHelp
+  to: oJob Test
+  deps: Load test
+  args:
+    func: "global.test.testFormatHelp()"

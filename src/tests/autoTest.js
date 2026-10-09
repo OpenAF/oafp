@@ -1,5 +1,162 @@
 (function() {
 
+   exports.testFormatHelp = function() {
+      ow.loadFormat()
+      var eq = (a,b,msg) => ow.test.assert(a,b,msg)
+      var source = io.readFileString("../oafp.source.js.hbs")
+      var code = source.substring(source.indexOf("const _formatHelp ="), source.indexOf("const showVersion ="))
+      var params, printed, rendered, paused, root = ".."
+      var __initializeCon = () => {}, __ansiColorFlag, __conConsole
+      var _oafhelp_libs = {}, _print = text => { printed = text }
+      var _exit = () => {}, getOPackPath = () => root
+      var help = eval(code + "\n({select:_formatHelp,show:showHelp})")
+      var docs = io.readFileString("../docs/USAGE.md")
+      ;[["in:json","JSON input options"],["out:sql","SQL output options"],
+        ["IN:CsV","CSV input/output options"],["out:csv","CSV input/output options"],
+        ["in:base64","Base64 input/output options"],["out:base64","Base64 input/output options"],
+        ["in:LLM-DECIDE","LLM Decide input options"],["in:mini a","mini-a input options"]].forEach(test => {
+         var selected = help.select(docs,test[0])
+         eq(selected.indexOf(test[1]) >= 0,true,"Select " + test[0])
+         eq(selected.indexOf("|" ) >= 0,true,"Preserve options table")
+         eq(selected.indexOf("## ⬆️  Output options"),-1,"Exclude unrelated sections")
+      })
+      eq(help.select(docs,"out:javathread").indexOf("help=usage") >= 0,true,"Missing direction")
+      eq(help.select(docs,"in:unknown").indexOf("help=in:unknown") >= 0,true,"Identify missing selector")
+      var fixture = "```inline example```\n### CSV input/output options\nTable\n```sh\n### SQL output options\n```\n#### Nested\nExample\n~~~\n### Fake\n~~~\n### Next\nUnrelated"
+      var selected = help.select(fixture,"in:csv")
+      eq(selected.indexOf("#### Nested\nExample") >= 0,true,"Preserve nested examples")
+      eq(selected.indexOf("### SQL output options") >= 0,true,"Ignore fenced headings")
+      eq(selected.indexOf("Unrelated"),-1,"Stop at peer heading")
+      var md = ow.format.withMD, pause = ow.format.string.pauseString, embedded = global._oafphelp
+      try {
+         ow.format.withMD = text => { rendered = text; return "rendered" }
+         ow.format.string.pauseString = text => { paused = text }
+         params = {help:"in:csv"}; help.show()
+         eq(rendered,help.select(docs,params.help),"Renderer receives selected Markdown")
+         eq(printed,"rendered","Print rendered output")
+         params.out = "raw"; rendered = undefined; help.show()
+         eq(rendered,undefined,"Raw bypasses rendering")
+         eq(printed,help.select(docs,params.help),"Raw Markdown")
+         params.pause = true; help.show()
+         eq(paused,printed,"Pause raw output")
+         params.out = undefined; help.show(); eq(paused,"rendered","Pause rendered output")
+         root = "../missing-help-fixture"
+         global._oafphelp = {"docs/USAGE.md":docs}
+         params = {help:"in:csv",out:"raw"}; help.show()
+         eq(printed,help.select(docs,params.help),"Embedded and installed parity")
+      } finally {
+         ow.format.withMD = md; ow.format.string.pauseString = pause; global._oafphelp = embedded
+      }
+   }
+
+   exports.testGzipInputs = function() {
+      var processExpr = () => undefined
+      var __flags = clone(global.__flags); __flags.OAFP = {libs:[]}
+      var output = []
+      var print = value => output.push(String(value))
+      var runOafp = eval(io.readFileString("../oafp.source.js") + "\noafp")
+      var run = params => {
+         output = []
+         runOafp(merge({out:"json",noexit:true,__inception:true,parallel:false},params))
+         return output.map(text => jsonParse(text))
+      }
+      var files = []
+      var fixture = (suffix, text, plain, encoding) => {
+         var file = io.createTempFile("oafp-gzip", suffix)
+         files.push(file)
+         var bytes = af.fromString2Bytes(text, encoding || "UTF-8")
+         io.writeFileBytes(file, plain ? bytes : io.gzip(bytes))
+         return file
+      }
+      var eq = (a,b,msg) => ow.test.assert(a,b,msg)
+      try {
+         var json = fixture(".json.gz", '{"name":"café €","nested":{"n":2}}')
+         eq(run({file:json}), [{name:"café €",nested:{n:2}}], "Gzip JSON extension and UTF-8")
+         var rows = [{x:1},{x:2}]
+         var array = fixture(".json.gz", '[{"x":1},{"x":2}]')
+         eq(run({file:array,stream:true}), rows, "Gzip JSON array streams")
+         var ndjson = fixture(".ndjson.gz", '{"x":1}\n{"x":2}\n')
+         eq(run({file:ndjson}), rows, "Gzip NDJSON extension selects record reader")
+         eq(run({file:ndjson,ndjsonjoin:true}), [rows], "Gzip joined NDJSON")
+         eq(run({file:fixture(".yaml.GZ", "name: gzip\nn: 2\n")}), [{name:"gzip",n:2}], "Gzip YAML and uppercase suffix")
+         eq(run({file:fixture(".csv.gz", "a,b\n1,2\n"),correcttypes:true}), [[{a:1,b:2}]], "Gzip CSV")
+         eq(run({file:fixture(".dat", '{"x":3}'),ingzip:true,in:"json"}), [{x:3}], "Explicit gzip flag")
+         eq(run({file:fixture(".gz", '{"x":4}')}), [{x:4}], "Decompressed content detection")
+         var plain = fixture(".gz", '{"x":5}', true)
+         eq(run({file:plain,ingzip:false,in:"json"}), [{x:5}], "Explicit gzip opt-out")
+         eq(run({file:fixture(".txt.gz", "one\r\ntwo"),in:"lines"}), ["one","two"], "Explicit lines input")
+         eq(run({file:fixture(".ini.gz", "[section]\nname=gzip\n")}), [{section:{name:"gzip"}}], "Gzip INI")
+         var truncated = fixture(".json.gz", '{"x":1}')
+         var bytes = af.fromBytes2Array(io.readFileBytes(truncated))
+         io.writeFileBytes(truncated,af.fromArray2Bytes(bytes.slice(0,bytes.length - 6)))
+         var truncatedFailed = false
+         try { run({file:truncated}) } catch(e) { truncatedFailed = true }
+         eq(truncatedFailed,true,"Truncated gzip must fail")
+         var uncompressed = fixture(".json", io.readFileString(plain), true)
+         eq(run({file:uncompressed}), [{x:5}], "Plain files retain behavior")
+         ;[{jsonprefix:"nested"},{jsondesc:true}].forEach(options => {
+            var original = fixture(".json", '{"name":"café €","nested":{"n":2}}', true)
+            eq(run(merge({file:json},options)),run(merge({file:original},options)),"Gzip path-only JSON reader")
+         })
+         var failed = false
+         try { run({file:plain,in:"json"}) } catch(e) { failed = true }
+         eq(failed,true,"Invalid gzip must fail")
+         eq(run({file:json}), [{name:"café €",nested:{n:2}}], "Gzip state resets after failure")
+         eq(run({file:json,in:"rawhex"}),run({file:fixture(".json", '{"name":"café €","nested":{"n":2}}',true),in:"rawhex"}),"Gzip raw bytes")
+         // Verify stream ownership for successful and failing consumers.
+         var params = {file:json}, held
+         var helpers = eval(io.readFileString("../include/streamFns.js") + "\n({withStream:_withFileStream,readText:_readFileText,withPath:_withInputFilePath})")
+         ;[false,true].forEach(fail => {
+            try { helpers.withStream(stream => { held = stream; if (fail) throw "consumer failed" }) } catch(e) {}
+            var closed = false
+            try { held.read() } catch(e) { closed = true }
+            eq(closed,true,"Gzip stream closes after consumer completion or failure")
+         })
+         var _cs = "UTF-16"
+         params.file = fixture(".json.gz", '{"name":"café €"}',false,"UTF-16")
+         eq(jsonParse(helpers.readText()),{name:"café €"},"Gzip respects configured encoding")
+         params.file = json
+         var temporary
+         try { helpers.withPath(file => { temporary = file; throw "consumer failed" }) } catch(e) {}
+         eq(isString(temporary) && !io.fileExists(temporary),true,"Temporary gzip file removed on failure")
+         // Check binary-reader handoffs without requiring optional XLS/JFR fixtures.
+         var _showTmpMsg = () => {}, _$o = value => { output = value }
+         var _exit = (code, message) => { throw message }
+         var plugin = () => {}, includeOPack = () => {}, xlsClosed = false
+         var XLS = function(bytes) {
+            eq(af.fromBytes2String(bytes),"binary fixture","XLS receives decompressed bytes")
+            this.getSheetNames = () => ["Sheet1"]
+            this.close = () => { xlsClosed = true }
+         }
+         eval(io.readFileString("../include/inputFns.js"))
+         params = {file:fixture(".xlsx.gz","binary fixture"),inxlsdesc:"true"}
+         _inputFns.get("xls")("",{})
+         eq(output,["Sheet1"],"Gzip XLS handoff")
+         eq(xlsClosed,true,"XLS reader closed")
+         ow.loadJava()
+         var parseJFR = ow.java.parseJFR, jfrPath
+         try {
+            ow.java.parseJFR = (file, callback) => {
+               jfrPath = file
+               eq(io.readFileString(file),"binary fixture","JFR receives decompressed file")
+               if (isFunction(callback)) callback({event:"test"})
+               else return [{event:"test"}]
+            }
+            ;[false,true].forEach(join => {
+               params = {file:fixture(".jfr.gz","binary fixture"),jfrjoin:join}
+               _inputFns.get("jfr")("",{})
+               eq(output,join ? [{event:"test"}] : {event:"test"},"Gzip JFR handoff")
+               eq(io.fileExists(jfrPath),false,"JFR temporary file removed")
+            })
+         } finally { ow.java.parseJFR = parseJFR }
+         ;["../oafp.source.js","../oafp.js"].forEach(script => {
+            var result = $sh([getOpenAFPath()+"/oaf","-f",script,"-e",ndjson + " out=json parallel=false"]).get(0)
+            eq(result.exitcode,0,"Gzip CLI exit status: " + script)
+            eq(result.stdout.trim().split(/\r?\n/).map(text => jsonParse(text)),rows,"Positional gzip CLI: " + script)
+         })
+      } finally { files.forEach(file => io.rm(file)) }
+   }
+
    exports.testDevScope = function() {
       var processExpr = () => undefined
       // OpenAF uses an empty string while its console is being initialized.
@@ -455,6 +612,7 @@
       var _runCmd2Bytes = cmd => { cmdCalls++; return io.readFileBytesRO(file) }
       var plugin = () => {}, JMX = function() { this.getLocals = () => ({Locals:[{id:"123",name:"a"},{id:456,name:"b"},{id:String(getPid()),name:"self"}]}) }
       var parse = ow.java.parseHSPerf, pids = ow.java.getLocalJavaPIDs
+      eval(io.readFileString("../include/streamFns.js"))
       eval(io.readFileString("../include/inputFns.js"))
       var eq = (a,b,msg) => ow.test.assert(a,b,msg)
       try {
@@ -481,6 +639,21 @@
             eq(isDate(values.__ts),true,"hsperf enrichment")
             eq(isDef(output.header),flag == "true","opt-in metadata")
          })
+         var gzipFile = io.createTempFile("oafp-hsperf", ".gz"), decompressedPath
+         try {
+            io.writeFileBytes(gzipFile, io.gzip(af.fromString2Bytes("fixture")))
+            var parseFixture = ow.java.parseHSPerf
+            ow.java.parseHSPerf = (input, flat, options) => {
+               decompressedPath = input
+               eq(io.readFileString(input),"fixture","gzip hsperf decompressed contents")
+               return {test:{value:"42"}}
+            }
+            params = {file:gzipFile}
+            _inputFns.get("hsperf")("", {})
+            eq(output.test.value,"42","gzip hsperf output")
+            eq(io.fileExists(decompressedPath),false,"gzip temporary file removed")
+            ow.java.parseHSPerf = parseFixture
+         } finally { io.rm(gzipFile) }
          params = {cmd:"fixture",hsperfmetadata:true}
          _inputFns.get("hsperf")("", {})
          eq(cmdCalls,1,"command input")

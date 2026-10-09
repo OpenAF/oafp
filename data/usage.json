@@ -13,6 +13,10 @@
       "Description": "The file to parse (if not provided stdin is used)"
     },
     {
+      "Option": "ingzip",
+      "Description": "Decompress file input with OpenAF gzip streams. Auto-detected from `.gz` (case-insensitive); `true` forces decompression and `false` disables it. The preceding extension selects the input format."
+    },
+    {
       "Option": "cmd",
       "Description": "Alternative to file and stdin to execute a command (e.g. kubectl, docker) to get the file contents"
     },
@@ -1967,6 +1971,14 @@
     {
       "Help": "help=jsonschema",
       "Description": "JSON Schema validation, options, drafts and sample generation"
+    },
+    {
+      "Help": "`help=in:<format>`",
+      "Description": "Input format options, for example `oafp help=in:csv`"
+    },
+    {
+      "Help": "`help=out:<format>`",
+      "Description": "Output format options, for example `oafp help=out:sql`"
     },
     {
       "Help": "help=readme",

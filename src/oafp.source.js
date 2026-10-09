@@ -419,11 +419,35 @@ const _withCommandStream = (cmd, fn) => {
     return result
 }
 
+// Compression is a file transport option, independent of the input format.
+const _isGzipFile = () => isString(params.file) &&
+    (isDef(params.ingzip) ? toBoolean(params.ingzip) : /\.gz$/i.test(params.file))
+const _inputFileName = () => _isGzipFile() ? params.file.replace(/\.gz$/i, "") : params.file
+const _withFileStream = fn => {
+    var stream = _isGzipFile() ? io.readFileGzipStream(params.file) : io.readFileStream(params.file)
+    try { return fn(stream) } finally { stream.close() }
+}
+const _readFileText = () => {
+    if (!_isGzipFile()) return io.readFileString(params.file, _cs)
+    return _withFileStream(stream => af.fromInputStream2String(stream, _cs || "UTF-8"))
+}
+// Some OpenAF parsers require a path. Only those readers need a temporary file.
+const _withInputFilePath = fn => {
+    if (!_isGzipFile()) return fn(params.file)
+    var file = io.createTempFile("oafp-gzip-", "." + _inputFileName().replace(/^.*[.\/\\]/, ""))
+    try {
+        _withFileStream(input => {
+            var output = io.writeFileStream(file)
+            try { ioStreamCopy(output, input) } finally { output.close() }
+        })
+        return fn(file)
+    } finally { io.rm(file) }
+}
+
 // Keep streams owned by this call separate from the process-wide stdin stream.
 const _withInputStream = (res, fn) => {
     if (isDef(params.file) && isUnDef(params.cmd)) {
-        var stream = io.readFileStream(params.file)
-        try { return fn(stream) } finally { stream.close() }
+        return _withFileStream(fn)
     }
     if (isDef(params.cmd)) return _withCommandStream(params.cmd, fn)
     if (isDef(params.data) || isDef(params.url) || _version) {
@@ -662,12 +686,43 @@ const _exit = (code, msg) => {
     }
 }
 
+// Select complete Markdown option sections, ignoring headings inside code fences.
+const _formatHelp = (markdown, selector) => {
+    var request = selector.match(/^(in|out):(.*)$/i)
+    if (!request) return markdown
+    var normalize = value => value.toLowerCase().replace(/[^a-z0-9]/g, "")
+    var direction = request[1].toLowerCase() == "in" ? "input" : "output"
+    var lines = markdown.split(/\r?\n/), headings = [], fence
+    lines.forEach((line, index) => {
+        var marker = line.match(/^ {0,3}(`{3,}|~{3,})/)
+        if (fence) {
+            if (marker && marker[1].charAt(0) == fence.charAt(0) && marker[1].length >= fence.length && /^\s*$/.test(line.substring(marker[0].length))) fence = undefined
+            return
+        }
+        if (marker && !(marker[1].charAt(0) == "`" && line.substring(marker[0].length).indexOf("`") >= 0)) { fence = marker[1]; return }
+        var heading = line.match(/^ {0,3}(#{1,6})\s+(.+?)\s*#*\s*$/)
+        if (heading) headings.push({index:index,level:heading[1].length,title:heading[2]})
+    })
+    var sections = []
+    headings.forEach((heading, index) => {
+        var option = heading.title.match(/^(.*?)\s+(input(?:\/output|\/transform)?|output)\s+options$/i)
+        if (!option || option[2].toLowerCase().split("/").indexOf(direction) < 0 || normalize(option[1]) != normalize(request[2])) return
+        var end = lines.length
+        for (var next = index + 1; next < headings.length; next++) {
+            if (headings[next].level <= heading.level) { end = headings[next].index; break }
+        }
+        sections.push(lines.slice(heading.index, end).join("\n").trim())
+    })
+    return sections.length > 0 ? sections.join("\n\n") : "No documented format options found for `help=" + selector.replace(/`/g, "") + "`. See `help=usage`."
+}
+
 const showHelp = () => {
     __initializeCon()
 
     var _ff
     params.help = _$(params.help, "help").isString().default("")
 
+    var _formatSelector = /^(in|out):/i.test(params.help)
     var _f
     switch(params.help.toLowerCase()) {
     case "filters" : _ff = "docs/FILTERS.md"; break
@@ -678,7 +733,7 @@ const showHelp = () => {
     case "usage"   : _ff = "docs/USAGE.md"; break
     default        : 
         var _r = params.help.toLowerCase()
-        if (isDef(_oafhelp_libs[_r]))
+        if (!_formatSelector && isDef(_oafhelp_libs[_r]))
             _ff = "docs/" + _r + ".md"
         else
             _ff = "docs/USAGE.md"
@@ -687,7 +742,7 @@ const showHelp = () => {
     _f = (getOPackPath("oafproc") || ".") + "/" + _ff
 
     let _customHelp = ""
-    if (_ff == "docs/USAGE.md" && Object.keys(_oafhelp_libs).length > 0) {
+    if (!_formatSelector && _ff == "docs/USAGE.md" && Object.keys(_oafhelp_libs).length > 0) {
         _customHelp = "\n---\n\n## 📚 Libs help documents\n\n| Lib | Help |\n| --- | --- |\n"
         for (let key in _oafhelp_libs) {
             _customHelp += "| " + key + " | help=" + key + " |\n"
@@ -698,17 +753,17 @@ const showHelp = () => {
         __ansiColorFlag = true
 		__conConsole = true
         if (isDef(ow.format.string.pauseString) && toBoolean(params.pause))
-            ow.format.string.pauseString( ow.format.withMD( io.readFileString(_f) + _customHelp ) )
+            ow.format.string.pauseString( params.out == "raw" ? _formatHelp(io.readFileString(_f), params.help) + _customHelp : ow.format.withMD( _formatHelp(io.readFileString(_f), params.help) + _customHelp ) )
         else
-            _print((isDef(params.out) && params.out == "raw") ? io.readFileString(_f) + _customHelp : ow.format.withMD( io.readFileString(_f) + _customHelp ))
+            _print((isDef(params.out) && params.out == "raw") ? _formatHelp(io.readFileString(_f), params.help) + _customHelp : ow.format.withMD( _formatHelp(io.readFileString(_f), params.help) + _customHelp ))
     } else {
         if (isDef(global._oafphelp) && isDef(global._oafphelp[_ff])) {
             __ansiColorFlag = true
             __conConsole = true
             if (isDef(ow.format.string.pauseString) && toBoolean(params.pause))
-                ow.format.string.pauseString( ow.format.withMD( global._oafphelp[_ff] + _customHelp ) )
+                ow.format.string.pauseString( params.out == "raw" ? _formatHelp(global._oafphelp[_ff], params.help) + _customHelp : ow.format.withMD( _formatHelp(global._oafphelp[_ff], params.help) + _customHelp ) )
             else
-                _print((isDef(params.out) && params.out == "raw") ? global._oafphelp[_ff] + _customHelp : ow.format.withMD( global._oafphelp[_ff] + _customHelp))
+                _print((isDef(params.out) && params.out == "raw") ? _formatHelp(global._oafphelp[_ff], params.help) + _customHelp : ow.format.withMD( _formatHelp(global._oafphelp[_ff], params.help) + _customHelp))
         } else {
             if (isString(_oafhelp_libs[params.help])) {
                 __ansiColorFlag = true
@@ -3049,7 +3104,7 @@ var _inputFns = new Map([
         ow.loadJava()
         var ini = new ow.java.ini(), _r
         if (isDef(params.file)) {
-            _r = ini.loadFile(params.file).get()
+            _r = (_isGzipFile() ? ini.load(r) : ini.loadFile(params.file)).get()
         } else {
             _r = ini.load(r).get()
         }
@@ -3298,7 +3353,8 @@ var _inputFns = new Map([
         params.inxlsrow          = _$(params.inxlsrow || params.xlsrow, "xlsrow").isString().default(1)
 
         if (isDef(params.file) || isDef(params.cmd)) {
-            var xls = new XLS(isDef(params.cmd) ? _runCmd2Bytes(params.cmd) : params.file)
+            var xls = new XLS(isDef(params.cmd) ? _runCmd2Bytes(params.cmd) :
+                (_isGzipFile() ? _withFileStream(stream => af.fromInputStream2Bytes(stream)) : params.file))
 
             if (_xlsds) {
                 _r = xls.getSheetNames()
@@ -3636,7 +3692,8 @@ var _inputFns = new Map([
             _showTmpMsg()
             ow.loadJava()
             if (!isBoolean(params.hsperfmetadata)) params.hsperfmetadata = _$(toBoolean(params.hsperfmetadata), "hsperfmetadata").isBoolean().default(false)
-            var result = ow.java.parseHSPerf(isDef(params.cmd) ? _runCmd2Bytes(params.cmd) : params.file, false, { metadata: params.hsperfmetadata })
+            var parse = source => ow.java.parseHSPerf(source, false, { metadata: params.hsperfmetadata })
+            var result = isDef(params.cmd) ? parse(_runCmd2Bytes(params.cmd)) : _withInputFilePath(parse)
             if (!isMap(result)) _exit(-1, "Invalid, inaccessible or unsupported hsperf data.")
             if (params.hsperfmetadata && (!isMap(result.values) || !isMap(result.header) || !isMap(result.entries)))
                 _exit(-1, "hsperfmetadata requires an updated OpenAF runtime with parseHSPerf metadata support.")
@@ -3707,18 +3764,23 @@ var _inputFns = new Map([
             _res = _ft
         }
 
-        if (params.jfrjoin) {
-            _$o(ow.java.parseJFR(_res, __, params.jfrdesc), options)
-        } else {
-            ow.java.parseJFR(_res, event => _$o(event, options), params.jfrdesc)
+        var parse = source => {
+            if (params.jfrjoin) {
+                _$o(ow.java.parseJFR(source, __, params.jfrdesc), options)
+            } else {
+                ow.java.parseJFR(source, event => _$o(event, options), params.jfrdesc)
+            }
         }
+        if (isDef(params.file) && isUnDef(params.cmd)) _withInputFilePath(parse)
+        else parse(_res)
     }],
     ["rawhex", (_res, options) => {
         var _r
         params.inrawhexline = _$(params.inrawhexline, "inrawhexline").isNumber().default(__)
         _showTmpMsg()
         if (isDef(params.file) || isDef(params.cmd)) {
-            _r = isDef(params.cmd) ? _runCmd2Bytes(params.cmd) : io.readFileBytes(params.file)
+            _r = isDef(params.cmd) ? _runCmd2Bytes(params.cmd) :
+                (_isGzipFile() ? _withFileStream(stream => af.fromInputStream2Bytes(stream)) : io.readFileBytes(params.file))
         } else {
             _r = af.fromString2Bytes(_res)
         }
@@ -4282,7 +4344,7 @@ if (params["-examples"] == "" || (isString(params.examples) && params.examples.l
 
 // Resolve file types before selecting the reader, particularly no-memory inputs.
 if (isUnDef(params.type) && isString(params.file)) {
-    var extension = params.file.substring(params.file.lastIndexOf('.'))
+    var extension = _inputFileName().substring(_inputFileName().lastIndexOf('.'))
     if (_fileExtensions.has(extension)) {
         params.type = _fileExtensions.get(extension)
         procParams()
@@ -4361,7 +4423,7 @@ var _run = () => {
                 if (params.type == "json" || isUnDef(params.type)) {
                     if (params.jsondesc) {
                         var _s = new Set()
-                        io.readStreamJSON(params.file, path => {
+                        _withInputFilePath(file => io.readStreamJSON(file, path => {
                             var _p = path.substring(2)
                             if (isDef(params.jsonprefix)) {
                                 if (_p.startsWith(params.jsonprefix)) {
@@ -4371,19 +4433,19 @@ var _run = () => {
                                 _s.add(_p)
                             }
                             return false
-                        })
+                        }))
                         _res = stringify(Array.from(_s), __, "")
                     } else {
                         if (isDef(params.jsonprefix)) {
-                            var _r = io.readStreamJSON(params.file, path => path.substring(2).startsWith(params.jsonprefix))
+                            var _r = _withInputFilePath(file => io.readStreamJSON(file, path => path.substring(2).startsWith(params.jsonprefix)))
                             _res = params.type == "json" ? _r : stringify(_r, __, "")
                         } else {
-                            _res = io.readFileString(params.file, _cs)
+                            _res = _readFileText()
                             if (toBoolean(params._shebang)) _res = _res.replace(/^#!.*\n/, "")
                         }
                     }
                 } else {
-                    _res = io.readFileString(params.file, _cs)
+                    _res = _readFileText()
                     if (toBoolean(params._shebang)) _res = _res.replace(/^#!.*\n/, "")
                 }
             }
@@ -4447,7 +4509,7 @@ var _run = () => {
         if (isUnDef(params.type)) {
             // File name based
             if (isDef(params.file)) {
-                let _ext = params.file.substring(params.file.lastIndexOf('.'))
+                let _ext = _inputFileName().substring(_inputFileName().lastIndexOf('.'))
                 if (_fileExtensions.has(_ext)) params.type = _fileExtensions.get(_ext)
             }
 

@@ -29,11 +29,35 @@ const _withCommandStream = (cmd, fn) => {
     return result
 }
 
+// Compression is a file transport option, independent of the input format.
+const _isGzipFile = () => isString(params.file) &&
+    (isDef(params.ingzip) ? toBoolean(params.ingzip) : /\.gz$/i.test(params.file))
+const _inputFileName = () => _isGzipFile() ? params.file.replace(/\.gz$/i, "") : params.file
+const _withFileStream = fn => {
+    var stream = _isGzipFile() ? io.readFileGzipStream(params.file) : io.readFileStream(params.file)
+    try { return fn(stream) } finally { stream.close() }
+}
+const _readFileText = () => {
+    if (!_isGzipFile()) return io.readFileString(params.file, _cs)
+    return _withFileStream(stream => af.fromInputStream2String(stream, _cs || "UTF-8"))
+}
+// Some OpenAF parsers require a path. Only those readers need a temporary file.
+const _withInputFilePath = fn => {
+    if (!_isGzipFile()) return fn(params.file)
+    var file = io.createTempFile("oafp-gzip-", "." + _inputFileName().replace(/^.*[.\/\\]/, ""))
+    try {
+        _withFileStream(input => {
+            var output = io.writeFileStream(file)
+            try { ioStreamCopy(output, input) } finally { output.close() }
+        })
+        return fn(file)
+    } finally { io.rm(file) }
+}
+
 // Keep streams owned by this call separate from the process-wide stdin stream.
 const _withInputStream = (res, fn) => {
     if (isDef(params.file) && isUnDef(params.cmd)) {
-        var stream = io.readFileStream(params.file)
-        try { return fn(stream) } finally { stream.close() }
+        return _withFileStream(fn)
     }
     if (isDef(params.cmd)) return _withCommandStream(params.cmd, fn)
     if (isDef(params.data) || isDef(params.url) || _version) {

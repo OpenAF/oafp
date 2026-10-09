@@ -15,6 +15,7 @@ Takes an input, usually a data structure such as json, and transforms it to an e
 | -h     | Show this document |
 | help   | Alternative way to show this document or others (e.g. filters, template) |
 | file   | The file to parse (if not provided stdin is used) |
+| ingzip | Decompress file input with OpenAF gzip streams. Auto-detected from `.gz` (case-insensitive); `true` forces decompression and `false` disables it. The preceding extension selects the input format. |
 | cmd    | Alternative to file and stdin to execute a command (e.g. kubectl, docker) to get the file contents |
 | data   | Alternative to file, stdin and cmd to provide data input |
 | out    | The output format (default: ctree) |
@@ -66,6 +67,17 @@ Takes an input, usually a data structure such as json, and transforms it to an e
 > Use 'OAFP_CODESET=UTF-16' to force reading files in a different codeset (e.g. UTF-16) different from the default UTF-8.
 
 ---
+
+Gzip file input works with both positional filenames and `file=`:
+
+```sh
+oafp file=records.json.gz out=json
+oafp records.ndjson.gz out=json
+oafp file=records.json.gz stream=true out=json
+oafp file=compressed.dat ingzip=true in=csv out=json
+```
+
+Decompression streams directly into text and record readers; whole-document formats still buffer the decompressed text. Path-only readers (`jsonprefix`, `jsondesc`, JFR and hsperf) use a temporary decompressed file that is removed after reading. `ingzip` applies to file input, not stdin, commands or URLs. Use `ingzip=false` for an uncompressed file whose name ends in `.gz`.
 
 ## ⬇️  Input types
 
@@ -1255,7 +1267,11 @@ pipe:
 | help=template | Provides more details regarding the use of "output=template" |
 | help=examples | Provide several examples |
 | help=jsonschema | JSON Schema validation, options, drafts and sample generation |
+| `help=in:<format>` | Input format options, for example `oafp help=in:csv` |
+| `help=out:<format>` | Output format options, for example `oafp help=out:sql` |
 | help=readme | Returns this document |
+
+Format help includes shared input/output options. Format names ignore case, spacing and punctuation (for example `help=in:llmdecide` and `help=in:mini-a`). Use `out=raw` for Markdown or `pause=true` to page the selected help.
 
 > You can use [OpenAI's ChatGPT oAFp GPT](https://chatgpt.com/g/g-uBUaPluLw-oafp) to generate commands
 
