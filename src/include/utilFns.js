@@ -108,7 +108,7 @@ const _$f = (r, options) => {
     return r
 }
 const _$o = (r, options, lineByLine) => {
-    if ((r == null && !options.__keepNull) || ("undefined" == typeof r)) {
+    if ((r == null && !options.__keepNull && options.__format != "idesc" && isUnDef(params.idescrecipe)) || ("undefined" == typeof r)) {
         _clearTmpMsg()
         return
     }
@@ -143,6 +143,12 @@ const _$o = (r, options, lineByLine) => {
 
     if (isDef(params.outputkey)) r = $$({}).set(params.outputkey, r)
     if (isDef(params.outkey))    r = $$({}).set(params.outkey, r)
+
+    if (isDef(params.idescrecipe) && nOptions.__format != "idesc") {
+        var browser = _idesc(r)
+        browser.load(io.readFileJSON(params.idescrecipe))
+        r = browser.current()
+    }
 
     _clearTmpMsg()
     if (isUnDef(nOptions.__format)) nOptions.__format = getEnvsDef("OAFP_OUTPUT", nOptions.__format, "ctree")

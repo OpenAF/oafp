@@ -29,6 +29,14 @@
       "Description": "The output format (default: ctree)"
     },
     {
+      "Option": "idescsource",
+      "Description": "`loaded` (default) or `stream`. `stream` enables file-backed JSON browsing with `out=idesc`."
+    },
+    {
+      "Option": "idescrecipe",
+      "Description": "Replay a saved idesc selection/query recipe with the supplied source; use `out=idesc` to reopen interactively."
+    },
+    {
       "Option": "in",
       "Description": "The input type (if not provided it will try to be auto-detected)"
     },
@@ -662,6 +670,10 @@
       "Description": "An HTML format"
     },
     {
+      "Output format": "idesc",
+      "Description": "Interactive full-screen tree browser for maps, arrays and scalar values; expand/collapse, zoom, filter, queries, previews, bookmarks, comparison and export"
+    },
+    {
       "Output format": "ini",
       "Description": "A INI/Properties format (arrays are not supported)"
     },
@@ -1007,7 +1019,7 @@
     {
       "Option": "jsondesc",
       "Type": "Boolean",
-      "Description": "If true the output will be a list of JSON paths of the original json."
+      "Description": "If true the output will be a list of JSON paths of the original json. Uses metadata-only scanning when OpenAF provides `io.scanJSON`, avoiding scalar-value loading; older runtimes and lenient JSON use the compatible reader."
     },
     {
       "Option": "jsonprefix",
@@ -1504,6 +1516,135 @@
       "Option": "setop",
       "Type": "String",
       "Description": "Allows to choose a different set operation between 'union', 'diffa', 'diffb', 'diffab' (symmetric difference), 'diff' and 'intersect' (default)"
+    }
+  ],
+  [
+    {
+      "Option": "idescsource",
+      "Type": "String",
+      "Description": "`loaded` (default) browses the normal processed result. `stream` scans UTF-8 JSON on demand without loading the whole document."
+    },
+    {
+      "Option": "idescrecipe",
+      "Type": "String",
+      "Description": "File containing a saved version-1 selection/query recipe and named bookmarks. The source is supplied separately."
+    },
+    {
+      "Option": "idescpage",
+      "Type": "Number",
+      "Description": "Entries loaded per expand/\"more\" step in the tree browser (and per page in the numbered fallback and previews). Default `20`."
+    },
+    {
+      "Option": "idescdepth",
+      "Type": "Number",
+      "Description": "Maximum preview depth. Default `3`."
+    },
+    {
+      "Option": "idescstring",
+      "Type": "Number",
+      "Description": "Maximum displayed characters per preview string. Default `200`. Oversized file-backed scalars may be omitted with a byte-size label."
+    },
+    {
+      "Option": "idescbytes",
+      "Type": "Number",
+      "Description": "Maximum selected JSON bytes admitted for file-backed queries/slices. Default `16777216` (16 MiB)."
+    },
+    {
+      "Option": "idescnodes",
+      "Type": "Number",
+      "Description": "Maximum value nodes admitted for file-backed queries/slices and preview traversal. Default `100000`."
+    }
+  ],
+  [
+    {
+      "Key": "`↑`/`k`, `↓`/`j`",
+      "Action": "Move the cursor. `PgUp`/`PgDn` (or `Ctrl-U`/`Ctrl-D`) page, `g`/`G` or `Home`/`End` jump to the first/last row"
+    },
+    {
+      "Key": "`→`/`l`",
+      "Action": "Expand the focused container (already expanded: move to its first child; on a \"more\" row: load more)"
+    },
+    {
+      "Key": "`←`/`h`",
+      "Action": "Collapse; if already collapsed or a scalar, jump to the parent row; on the root row, zoom out"
+    },
+    {
+      "Key": "`Space`",
+      "Action": "Toggle expand. `*` expands all children of the focused container one level"
+    },
+    {
+      "Key": "`t` / `T`",
+      "Action": "Switch the focused array between table and tree / turn tables off or on for every array"
+    },
+    {
+      "Key": "`Enter`",
+      "Action": "Zoom: make the focused container the root (recorded). On a scalar opens it in the preview; on a \"more\" row loads the next `idescpage` entries"
+    },
+    {
+      "Key": "`Backspace`/`u`",
+      "Action": "Zoom out one level. `~` or `0` goes back to the original root. `U` undoes the last zoom or query"
+    },
+    {
+      "Key": "`/`",
+      "Action": "Filter the child names of the current root as you type (`Enter` keeps, `Esc` clears)"
+    },
+    {
+      "Key": "`p`",
+      "Action": "Scrollable bounded preview of the focused node (`f` cycles `ctree`/`ctable`/`cyaml`)"
+    },
+    {
+      "Key": "`y`",
+      "Action": "Show the reusable `path=` expression for the focused node"
+    },
+    {
+      "Key": "`:`",
+      "Action": "Command line (`Tab` completes, `↑`/`↓` recall history)"
+    },
+    {
+      "Key": "`?`",
+      "Action": "Help overlay. `q` or `Ctrl-C` quits"
+    }
+  ],
+  [
+    {
+      "Command": "`path <expr>`, `from <expr>`, `sql <expr>`",
+      "Description": "Query the focused node with the existing engines (also `query path\\"
+    },
+    {
+      "Command": "`slice a:b`",
+      "Description": "Keep array entries `a` to `b` (end exclusive)"
+    },
+    {
+      "Command": "`jump <path>`",
+      "Description": "Zoom to an exact property/index path from the current root (e.g. `items[2].nested`)"
+    },
+    {
+      "Command": "`count` / `fields`",
+      "Description": "Entry count / field summary (samples up to the first 100 records) in an overlay"
+    },
+    {
+      "Command": "`bm [name]`, `bm go <name>`, `bm rm <name>`",
+      "Description": "List, save (the focused node) and replay/remove bookmarks"
+    },
+    {
+      "Command": "`compare <bookmark> [values]`",
+      "Description": "Diff the focused node with a bookmark (structure by default, bounded values with `values`)"
+    },
+    {
+      "Command": "`recipe [print]`, `recipe save <file>`, `recipe load <file>`",
+      "Description": "Show, save or load the recipe"
+    },
+    {
+      "Command": "`export json\\",
+      "Description": "yaml <file>`"
+    },
+    {
+      "Command": "`format ctree\\",
+      "Description": "ctable\\"
+    },
+    {
+      "Command": "`quit`",
+      "Description": "Leave without emitting data"
     }
   ],
   [

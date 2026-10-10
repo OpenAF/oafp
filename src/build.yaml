@@ -207,6 +207,7 @@ jobs:
       srcOutputFns          : io.readFileString(args.path + "/include/outputFns.js"),
       srcInputFns           : io.readFileString(args.path + "/include/inputFns.js"),
       srcStreamFns          : io.readFileString(args.path + "/include/streamFns.js"),
+      srcIdescFns           : io.readFileString(args.path + "/include/idescFns.js"),
       srcUtilFns            : io.readFileString(args.path + "/include/utilFns.js")
     }
 
@@ -227,6 +228,7 @@ jobs:
       srcOutputFns          : "eval(io.readFileString(\"include/outputFns.js\"))",
       srcInputFns           : "eval(io.readFileString(\"include/inputFns.js\"))",
       srcStreamFns          : "eval(io.readFileString(\"include/streamFns.js\"))",
+      srcIdescFns           : "eval(io.readFileString(\"include/idescFns.js\"))",
       srcUtilFns            : "eval(io.readFileString(\"include/utilFns.js\"))"
     }
 

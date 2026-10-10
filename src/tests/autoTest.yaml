@@ -1,5 +1,7 @@
 todo:
 - Load test
+- oafp::IDesc
+- oafp::JSONDescriptions
 - oafp::FormatHelp
 - oafp::DevScope
 - oafp::StreamingPerformance
@@ -81,6 +83,18 @@ jobs:
 - name: Load test
   exec: |
     global.test = require("autoTest.js")
+
+- name: oafp::JSONDescriptions
+  to: oJob Test
+  deps: Load test
+  args:
+    func: "global.test.testJSONDescriptions()"
+
+- name: oafp::IDesc
+  to: oJob Test
+  deps: Load test
+  args:
+    func: "global.test.testIDesc()"
 
 - name: oafp::SkillRecipes
   to: oJob Test

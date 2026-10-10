@@ -1,5 +1,39 @@
 (function() {
 
+   exports.testIDesc = function() { require("idesc_test.js").run() }
+
+   exports.testJSONDescriptions = function() {
+      var params = {}, describe = eval(io.readFileString("../include/streamFns.js") + "\n_describeJSONPaths")
+      var file = io.createTempFile("oafp-jsondesc", ".json"), scan = io.scanJSON, reader = io.readStreamJSON
+      var expected = prefix => {
+         var paths = new Set()
+         reader(file, path => { var p = path.substring(2); if (isUnDef(prefix) || p.startsWith(prefix)) paths.add(p); return false })
+         return Array.from(paths)
+      }
+      try {
+         ;['{}','[]','null','42','"café €"',
+           '{"rows":[{"x":1},{"x":null},[],{}],"nested":{"empty":{}},"end":true}',
+           '[1,{},[],{"a.b":[false,"x"]}]',
+           '{"":{},"a.b":{"a[0]":1},"0":[null],"quote\\\"":2}',
+           '{"duplicate":1,"duplicate":{"x":2}}'].forEach(text => {
+            io.writeFileString(file,text)
+            ;[undefined,"rows","nested", "0", "missing"].forEach(prefix => {
+               var paths = expected(prefix)
+               ow.test.assert(describe(file,prefix),paths,"Metadata paths preserve legacy order/format")
+               io.scanJSON = undefined
+               try { ow.test.assert(describe(file,prefix),paths,"Older-runtime fallback") }
+               finally { io.scanJSON = scan }
+            })
+         })
+         io.writeFileString(file,"{a: /* lenient */ 1, b: 'text'}")
+         ow.test.assert(describe(file),expected(),"Lenient JSON fallback")
+         io.writeFileString(file,'{"a":"café €","rows":[1,2]}')
+         var paths = expected()
+         io.readStreamJSON = () => { throw "Must not decode scalar values" }
+         ow.test.assert(describe(file),paths,"Strict JSON uses metadata reader only")
+      } finally { io.scanJSON = scan; io.readStreamJSON = reader; io.rm(file) }
+   }
+
    exports.testFormatHelp = function() {
       ow.loadFormat()
       var eq = (a,b,msg) => ow.test.assert(a,b,msg)
@@ -166,7 +200,7 @@
       var output = []
       var print = value => output.push(String(value))
       var template = io.readFileString("../oafp.source.js.hbs")
-      ;["Util", "Stream", "InputLine", "Transform", "Output", "Input"].forEach(name => {
+      ;["Util", "Stream", "Idesc", "InputLine", "Transform", "Output", "Input"].forEach(name => {
          var file = name.charAt(0).toLowerCase() + name.substring(1) + "Fns"
          template = template.replace("{{{src" + name + "Fns}}}", 'eval(io.readFileString("../include/' + file + '.js"))')
       })

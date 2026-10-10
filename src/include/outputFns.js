@@ -1,4 +1,5 @@
 var _outputFns = new Map([
+    ["idesc", (r, options) => _idescOutput(r)],
     ["?" , (r, options) => {
         r = Array.from(_outputFns.keys()).filter(r => r != '?').sort()
         _o$o(r, options)

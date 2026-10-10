@@ -54,6 +54,25 @@ const _withInputFilePath = fn => {
     } finally { io.rm(file) }
 }
 
+// Keep jsondesc's legacy paths/order, but never decode scalar values on newer runtimes.
+const _describeJSONPaths = (file, prefix) => {
+    var paths = new Set(), add = path => {
+        var p = path.substring(2)
+        if (isUnDef(prefix) || p.startsWith(prefix)) paths.add(p)
+    }
+    if (isFunction(io.scanJSON)) {
+        try {
+            io.scanJSON(file, e => {
+                var path = "$" + e.path.map(k => typeof k == "number" ? "[" + k + "]" : "." + k).join("")
+                if (e.phase == "value" && e.type != "map" && e.type != "array") add(path)
+            })
+            return Array.from(paths)
+        } catch(e) { paths.clear() } // Preserve readStreamJSON's lenient JSON support.
+    }
+    io.readStreamJSON(file, path => { add(path); return false })
+    return Array.from(paths)
+}
+
 // Keep streams owned by this call separate from the process-wide stdin stream.
 const _withInputStream = (res, fn) => {
     if (isDef(params.file) && isUnDef(params.cmd)) {
