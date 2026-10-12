@@ -161,6 +161,7 @@ const _$o = (r, options, lineByLine) => {
 
     _clearTmpMsg()
     if (isUnDef(nOptions.__format)) nOptions.__format = getEnvsDef("OAFP_OUTPUT", nOptions.__format, "ctree")
+    if (lineByLine && nOptions.__format == "idesc" && isDef(_idescSample)) return _idescSample.add(r)
     if (_outputFns.has(nOptions.__format)) {
         _outputFns.get(nOptions.__format)(r, nOptions)
     } else {
@@ -409,7 +410,9 @@ const _withCommandStream = (cmd, fn) => {
             failure = e
         } finally {
             // Also drain any remaining stdout if a reader terminates early.
-            try { ioStreamReadBytes(out, () => false) } catch(ignore) {}
+            if (typeof _idescSample == "undefined" || failure !== _idescSample.stop) {
+                try { ioStreamReadBytes(out, () => false) } catch(ignore) {}
+            }
             out.close()
             $doWait(drain)
             err.close()
@@ -469,8 +472,15 @@ const _describeJSONPaths = (file, prefix) => {
     return Array.from(paths)
 }
 
+// Set once stdin/cmd output has already been read into memory (e.g. to auto-detect the input type)
+var _inputBuffered = false
 // Keep streams owned by this call separate from the process-wide stdin stream.
 const _withInputStream = (res, fn) => {
+    // stdin/cmd can only be consumed once: stream from what was already buffered instead
+    if (_inputBuffered && isString(res)) {
+        var bstream = af.fromString2InputStream(res)
+        try { return fn(bstream) } finally { bstream.close() }
+    }
     if (isDef(params.file) && isUnDef(params.cmd)) {
         return _withFileStream(fn)
     }
@@ -633,6 +643,24 @@ const _jsonLineFramer = () => {
 }
 
 // Interactive description: OpenAF owns parsing, prompts, queries and rendering.
+// Line-oriented readers share one bounded explorer session per input run.
+var _idescSample
+const _withIDescSample = fn => {
+    if (params.format != "idesc") return fn()
+    var limit = isDef(params.idescrecords) ? Number(params.idescrecords) : 100
+    if (!isFinite(limit) || limit < 1 || Math.floor(limit) != limit) throw "idescrecords must be a positive integer"
+    var sample = { rows: [], stop: {}, used: false }
+    sample.add = value => {
+        sample.used = true
+        sample.rows.push(value)
+        if (sample.rows.length >= limit) throw sample.stop
+    }
+    _idescSample = sample
+    try {
+        try { fn() } catch(e) { if (e !== sample.stop) throw e }
+    } finally { _idescSample = __ }
+    if (sample.used) _idescOutput(sample.rows)
+}
 const _idesc = (value, file, ui) => {
     var cfg = {page:20, depth:3, string:200, bytes:16777216, nodes:100000}
     Object.keys(cfg).forEach(k => {
@@ -1230,6 +1258,10 @@ const _idesc = (value, file, ui) => {
         }
         var frame = () => {
             var d = dims(), w = d.w, body = d.h - 5, out = [], ov = view.overlay
+            if (ov && ov.width != w) {
+                ov.lines = String(ov.make()).split("\n"); ov.width = w
+                ov.top = Math.min(ov.top, Math.max(0, ov.lines.length - body))
+            }
             var lc = cf("tree.lines", "FAINT")
             var src = state.file ? paint(cf("string", "CYAN"), "💾 file") : state.ops.length ? paint(cf("default", "YELLOW"), "⚡ derived") : paint(cf("number", "GREEN"), "📥 loaded")
             var head = paint(cf("askPre", "YELLOW,BOLD"), "oafp") + " " + (ov ? paint(cf("askQuestion", "BOLD"), ov.title) : crumbs(state.path)) + paint(lc, "  │ ") + src + paint(lc, " · " + steps(state).length + " ops")
@@ -1260,13 +1292,19 @@ const _idesc = (value, file, ui) => {
         // ---- actions
         var openOverlay = (title, make, formats) => {
             var lines = String(make()).split("\n")
-            view.overlay = {title:title, make:make, formats:!!formats, lines:lines, top:0}; view.mode = "overlay"
+            view.overlay = {title:title, make:make, formats:!!formats, lines:lines, top:0, width:dims().w}; view.mode = "overlay"
         }
         var scroll = n => { var ov = view.overlay, body = dims().h - 5; ov.top = Math.max(0, Math.min(ov.top + n, Math.max(0, ov.lines.length - body))) }
-        var ctree = v => $o(v, {__format:"ctree"}, __, true)
+        var render = (v, fmt) => {
+            var width = dims().w - 1, ansi = ui.ansi !== false
+            if (fmt == "ctable" && (isArray(v) || isMap(v))) return printTable(isMap(v) ? [v] : v, width, true, ansi, ansi ? "utf" : __, __, true, false, true)
+            if (fmt == "ctree") return printTreeOrS(v, width, {noansi:!ansi, mono:false, color:true})
+            return $o(v, {__format:fmt}, __, true)
+        }
+        var ctree = v => render(v, "ctree")
         var previewOverlay = path => openOverlay("Preview " + pathText(path) + " (bounded)", () => {
             var p = withPath(path, preview)
-            return $o(p.value, {__format:p.format}, __, true)
+            return render(p.value, p.format)
         }, true)
         var zoom = path => {
             if (equal(path, state.path)) return
@@ -5503,7 +5541,6 @@ var _run = () => {
         try { _idescSource() } catch(e) { _exit(-1, String(e)) }
         return
     }
-    if (params.format == "idesc" && toBoolean(params.stream)) _exit(-1, "out=idesc needs a whole result; remove stream=true or use idescsource=stream")
     if (params.type == "llmdecide" && isDef(params.llmdecidesample)) {
         _inputFns.get("llmdecide")("", options)
         return
@@ -5559,6 +5596,7 @@ var _run = () => {
 
             if (typeof params.cmd !== "undefined") {
                 _res = _runCmd2Bytes(params.cmd, true)
+                _inputBuffered = true
             } else {
                 if (isString(params.data)) {
                     _res = params.data
@@ -5600,6 +5638,7 @@ var _run = () => {
                                 return false
                             })
                             _res = String(text.toString())
+                            _inputBuffered = true
                         }
                     }
                 }
@@ -5652,6 +5691,9 @@ var _run = () => {
 }
 
 // Verify debug
+var _runInput = _run
+_run = () => _withIDescSample(_runInput)
+
 if (params.debug) {
     //__initializeCon()
     printErr("DEBUG: " + colorify(params))

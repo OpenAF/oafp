@@ -2,6 +2,44 @@ exports.run = function() {
    var params = {}, create = eval(io.readFileString("../include/idescFns.js") + "\n_idesc")
    var eq = (a,b,msg) => ow.test.assert(a,b,msg)
    var fails = (fn, msg) => { var failed = false; try {fn()} catch(e) {failed = true}; eq(failed,true,msg) }
+   var sessions = [], sampleFactory = new Function("params", "capture",
+      io.readFileString("../include/idescFns.js").replace("const _idescOutput = value => {", "const _idescOutput = value => { capture(value); return;") + "\nreturn { run: _withIDescSample, add: value => _idescSample.add(value) }")
+   var sample = sampleFactory({format:"idesc",idescrecords:2}, rows => sessions.push(rows))
+   var visited = 0
+   sample.run(() => { [null,{n:2},{n:3}].forEach(row => { visited++; sample.add(row) }) })
+   eq(sessions,[[null,{n:2}]],"Stream sample opens exactly once and preserves null records")
+   eq(visited,2,"Stream sample stops reading at the record limit")
+   sample.run(() => sample.add({n:4}))
+   eq(sessions[1],[{n:4}],"Short stream opens once at EOF with fresh state")
+   fails(() => sample.run(() => { sample.add(1); throw "parse failed" }),"Stream errors propagate")
+   eq(sessions.length,2,"Failed streams do not open partial samples")
+   ;[0,-1,1.5,"bad"].forEach(limit => fails(() => sampleFactory({format:"idesc",idescrecords:limit}, () => {}).run(() => {}),"Reject invalid record limit"))
+   // Keep real reader/transform/output dispatch; replace only terminal rendering.
+   var script = io.createTempFile("idesc-sample-", ".js")
+   try {
+      io.writeFileString(script, io.readFileString("../oafp.source.js").replace(
+         "const _idescOutput = value => {", 'const _idescOutput = value => { print(stringify(value, __, "")); return;'))
+      var checkSample = (input, options, expected, command) => {
+         var inputFile = io.createTempFile("idesc-records-", ".txt")
+         try {
+            io.writeFileString(inputFile, input)
+            var result = $sh(["java", "-jar", getOpenAFPath() + "/openaf.jar", "-f", script,
+               "-e", (command ? 'cmd="cat ' + inputFile + '"' : "file=" + inputFile) + " out=idesc parallel=false " + options]).get(0)
+            eq(result.exitcode, 0, "Sample input succeeds: " + options + " " + result.stderr)
+            eq(jsonParse(result.stdout), expected, "One sampled result: " + options)
+         } finally { io.rm(inputFile) }
+      }
+      checkSample('{"n":1}\n{"n":2}\ninvalid unread record', "in=ndjson idescrecords=2", [{n:1},{n:2}])
+      checkSample('{"n":1}\n{"n":2}', "in=ndjson", [{n:1},{n:2}])
+      checkSample('{"n":1}\n{"n":2}', "in=ndjson idescrecords=1", [{n:1}], true)
+      checkSample('(n:1)\n(n:2)\n(n:3)', "in=ndslon idescrecords=2", [{n:1},{n:2}])
+      checkSample('a\nb\nc', "in=lines idescrecords=2", ["a","b"])
+      checkSample('n\n1\n2\n3', "in=csv idescrecords=2", [{n:"1"},{n:"2"},{n:"3"}])
+      checkSample('n\n1\n2\n3', "in=dsv idescrecords=2", [{n:"1"},{n:"2"}])
+      checkSample('[null,{"n":2},{"n":3}]', "in=json stream=true idescrecords=2", [null,{n:2}])
+      checkSample('{"n":1}\n{"n":2}', "in=ndjson ndjsonjoin=true idescrecords=1", [{n:1},{n:2}])
+      checkSample('{"n":1}', "in=json idescrecords=1", {n:1})
+   } finally { io.rm(script) }
    var fixture = {items:[{n:1,nested:{s:"long text"}},{n:2},{n:3}], "a.b":[null,{},[],"café €"], "":{}, "quote\"":true, "0":"numeric key"}
    var file = io.createTempFile("idesc-test", ".json")
    try {
@@ -195,6 +233,18 @@ exports.run = function() {
       var has = (t, text, msg) => eq(t.indexOf(text) >= 0, true, msg + " (missing: " + text + ")")
       var lacks = (t, text, msg) => eq(t.indexOf(text) >= 0, false, msg + " (unexpected: " + text + ")")
       var cursorRow = t => t.last.split("\n").filter(l => l.charAt(0) == "▌")[0] || ""
+      var originalTable = printTable, originalTree = printTreeOrS, widths = [], treeWidths = []
+      var tableSpy = function(v, width) { widths.push(width); return originalTable.apply(this, arguments) }
+      var treeSpy = function(v, width) { treeWidths.push(width); return originalTree.apply(this, arguments) }
+      var widthCreate = new Function("printTable", "printTreeOrS", "params", io.readFileString("../include/idescFns.js") + "\nreturn _idesc")(tableSpy, treeSpy, {})
+      var screen = {width:60, height:20}, keys = ["p", "f", "resize", "f", "q", "q"]
+      widthCreate([{name:"a long value that needs wrapping ".repeat(4), n:1}], undefined, {
+         write:() => {}, size:() => screen,
+         readKey:() => { var key = keys.shift(); if (key == "resize") { screen.width = 40; return "down" }; return key || "eof" }
+      }).run()
+      eq(widths.indexOf(59) >= 0,true,"Table preview uses terminal width minus overlay indentation")
+      eq(widths.indexOf(39) >= 0,true,"Table preview reflows after terminal resize")
+      eq(treeWidths.indexOf(39) >= 0,true,"Tree preview receives current overlay width")
       ;[undefined,file].forEach(source => {
          var label = source ? "stream: " : "loaded: "
          var t = tui(tdata, source, ["q"])

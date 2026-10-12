@@ -152,6 +152,7 @@ const _$o = (r, options, lineByLine) => {
 
     _clearTmpMsg()
     if (isUnDef(nOptions.__format)) nOptions.__format = getEnvsDef("OAFP_OUTPUT", nOptions.__format, "ctree")
+    if (lineByLine && nOptions.__format == "idesc" && isDef(_idescSample)) return _idescSample.add(r)
     if (_outputFns.has(nOptions.__format)) {
         _outputFns.get(nOptions.__format)(r, nOptions)
     } else {

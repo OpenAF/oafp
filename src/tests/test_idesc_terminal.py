@@ -31,7 +31,8 @@ with tempfile.TemporaryDirectory(prefix='idesc-terminal-') as directory:
     def session(mode, cancel=False, width=120, numbered=False, scan_cancel=False):
         output, before, after = [root / (mode + str(cancel) + str(width) + str(numbered) + str(scan_cancel) + suffix) for suffix in ('.json', '.before', '.after')]
         command = ['java', '--enable-native-access=ALL-UNNAMED', '-jar', str(args.jar.resolve()),
-                   '-f', str(script), '-e', 'in=json out=idesc idescsource=' + mode + (' idescpage=20000' if scan_cancel else '')]
+                   '-f', str(script), '-e', ('in=ndjson out=idesc idescrecords=2' if mode == 'ndjson' else
+                   'in=json out=idesc idescsource=' + mode + (' idescpage=20000' if scan_cancel else ''))]
         shell = ('stty -g > ' + shlex.quote(str(before)) + '; cat ' + shlex.quote(str(source)) +
                  ' | ' + shlex.join(command) + ' > ' + shlex.quote(str(output)) +
                  '; result=$?; stty -g > ' + shlex.quote(str(after)) + '; exit "$result"')
@@ -60,7 +61,7 @@ with tempfile.TemporaryDirectory(prefix='idesc-terminal-') as directory:
                 os.write(fd, b'\x03')
                 cursor = expect(b'Scan cancelled.')
             if not (scan_cancel and tree):
-                cursor = expect(b'Explore' if numbered else b'rows')
+                cursor = expect(b'[2]' if mode == 'ndjson' else (b'Explore' if numbered else b'rows'))
             if scan_cancel and tree:
                 os.write(fd, b'q')
             elif cancel:
@@ -143,6 +144,9 @@ with tempfile.TemporaryDirectory(prefix='idesc-terminal-') as directory:
         session(mode, cancel=True)
         session(mode, width=40)
         session(mode, numbered=True)
+
+    source.write_text('{\"rows\":1}\n{\"rows\":2}\ninvalid unread record')
+    session('ndjson', cancel=True)
 
     source.write_text(json.dumps(list(range(50000))))
     session('stream', cancel=True, scan_cancel=True)

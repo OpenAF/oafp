@@ -526,7 +526,6 @@ var _run = () => {
         try { _idescSource() } catch(e) { _exit(-1, String(e)) }
         return
     }
-    if (params.format == "idesc" && toBoolean(params.stream)) _exit(-1, "out=idesc needs a whole result; remove stream=true or use idescsource=stream")
     if (params.type == "llmdecide" && isDef(params.llmdecidesample)) {
         _inputFns.get("llmdecide")("", options)
         return
@@ -582,6 +581,7 @@ var _run = () => {
 
             if (typeof params.cmd !== "undefined") {
                 _res = _runCmd2Bytes(params.cmd, true)
+                _inputBuffered = true
             } else {
                 if (isString(params.data)) {
                     _res = params.data
@@ -623,6 +623,7 @@ var _run = () => {
                                 return false
                             })
                             _res = String(text.toString())
+                            _inputBuffered = true
                         }
                     }
                 }
@@ -675,6 +676,9 @@ var _run = () => {
 }
 
 // Verify debug
+var _runInput = _run
+_run = () => _withIDescSample(_runInput)
+
 if (params.debug) {
     //__initializeCon()
     printErr("DEBUG: " + colorify(params))

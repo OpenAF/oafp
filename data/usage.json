@@ -1535,6 +1535,11 @@
       "Description": "Entries loaded per expand/\"more\" step in the tree browser (and per page in the numbered fallback and previews). Default `20`."
     },
     {
+      "Option": "idescrecords",
+      "Type": "Number",
+      "Description": "First processed records collected into one explorer session for line-oriented input (NDJSON, NDSLON, lines, DSV) or `in=json stream=true`. Reading stops at this positive integer limit. Default `100`. CSV and explicit join options still browse the whole result."
+    },
+    {
       "Option": "idescdepth",
       "Type": "Number",
       "Description": "Maximum preview depth. Default `3`."

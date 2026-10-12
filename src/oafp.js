@@ -1,715 +1,260 @@
-#!/usr/bin/env /Users/nunoaguiar/Documents/git/openaf/o/oaf-sb
-
-var params = processExpr(" ");
-// sprint(params)
-
-var _params = processExpr(" ")
-// Author : Nuno Aguiar
-const oafp = params => {
-if (isUnDef(params) || isDef(params.____ojob)) return 
-
-// Process secBuckets
-if (isDef(params.secKey)) params = $sec().procMap(params)
-
-// --- Util functions
-eval(io.readFileString("include/utilFns.js"))
-eval(io.readFileString("include/streamFns.js"))
-eval(io.readFileString("include/idescFns.js"))
+// (author: Nuno Aguiar, version: 20261012, license: Apache 2.0, url: https://github.com/openaf/oafp)
 // ---
-
-// Process params
-ow.loadFormat()
-
-var procParams = () => {
-    params.format = params.output || params.format || params.out, params.type = params.input || params.type || params.in
-    params.out = params.format
-    params.output = params.format
-    params.in = params.type
-    params.input = params.type
-    if (isUnDef(params._id)) {
-        params._id = nowNano()
-    }
-}
-procParams()
-
-// Check if file is provided
-var bkprms
-if (isDef(params.loop)) {
-    if (isDef(bkprms)) params = clone(bkprms); else bkprms = clone(params)
-}
-if (Object.keys(params).indexOf("-f") >= 0) {
-    let _l = Object.keys(params).length
-    var _i = Object.keys(params).indexOf("-f")
-    if (_l > _i + 1) {
-        if (Object.keys(params)[_i + 1].length > 0) {
-            params.paramsfile = Object.keys(params)[_i + 1]
-            delete params[params.paramsfile]
-        }
-    }
-    delete params["-f"]
-}
-if (isDef(params.paramsfile)) {
-    var _args
-    if (params.paramsfile == "-") {
-        var _r = []
-        io.pipeLn(r => { _r.push(r); return false })
-        _args = _r.join("\n")
-    } else if (io.fileExists(params.paramsfile)) {
-        _args = io.readFileString(params.paramsfile)
-    }
-    if (isString(_args)) {
-        // Check if it is a JSON/SLON/YAML
-        _margs = _fromJSSLON(_args, true)
-        if (isMap(_margs)) {
-            // Set the params if not already set
-            Object.keys(_margs).forEach(k => {
-                if (isUnDef(params[k])) params[k] = _margs[k]
-            })
-        }
-    }
-}
-
-procParams()
-
-// Ensure params are interpreted as lower case
-Object.keys(params).forEach(pk => {
-    if (typeof params[pk] == "string" && params[pk].length > 0) {
-        var npk = pk.toLowerCase()
-        if (pk != npk && isUnDef(params[npk])) {
-            params[npk] = params[pk]
-            delete params[pk]
-        }
-    }
-})
-
-// Exit function
-const _exit = (code, msg) => {
-    _clearTmpMsg()
-    if (isUnDef(msg)) msg = "exit: " + code
-    if (isUnDef(ow.oJob) && !toBoolean(params.noexit)) {
-        if (code != 0) printErr(msg)
-        exit(code)
-    } else {
-        throw msg
-    }
-}
-
-// Select complete Markdown option sections, ignoring headings inside code fences.
-const _formatHelp = (markdown, selector) => {
-    var request = selector.match(/^(in|out):(.*)$/i)
-    if (!request) return markdown
-    var normalize = value => value.toLowerCase().replace(/[^a-z0-9]/g, "")
-    var direction = request[1].toLowerCase() == "in" ? "input" : "output"
-    var lines = markdown.split(/\r?\n/), headings = [], fence
-    lines.forEach((line, index) => {
-        var marker = line.match(/^ {0,3}(`{3,}|~{3,})/)
-        if (fence) {
-            if (marker && marker[1].charAt(0) == fence.charAt(0) && marker[1].length >= fence.length && /^\s*$/.test(line.substring(marker[0].length))) fence = undefined
-            return
-        }
-        if (marker && !(marker[1].charAt(0) == "`" && line.substring(marker[0].length).indexOf("`") >= 0)) { fence = marker[1]; return }
-        var heading = line.match(/^ {0,3}(#{1,6})\s+(.+?)\s*#*\s*$/)
-        if (heading) headings.push({index:index,level:heading[1].length,title:heading[2]})
-    })
-    var sections = []
-    headings.forEach((heading, index) => {
-        var option = heading.title.match(/^(.*?)\s+(input(?:\/output|\/transform)?|output)\s+options$/i)
-        if (!option || option[2].toLowerCase().split("/").indexOf(direction) < 0 || normalize(option[1]) != normalize(request[2])) return
-        var end = lines.length
-        for (var next = index + 1; next < headings.length; next++) {
-            if (headings[next].level <= heading.level) { end = headings[next].index; break }
-        }
-        sections.push(lines.slice(heading.index, end).join("\n").trim())
-    })
-    return sections.length > 0 ? sections.join("\n\n") : "No documented format options found for `help=" + selector.replace(/`/g, "") + "`. See `help=usage`."
-}
-
-const showHelp = () => {
-    __initializeCon()
-
-    var _ff
-    params.help = _$(params.help, "help").isString().default("")
-
-    var _formatSelector = /^(in|out):/i.test(params.help)
-    var _f
-    switch(params.help.toLowerCase()) {
-    case "filters" : _ff = "docs/FILTERS.md"; break
-    case "template": _ff = "docs/TEMPLATE.md"; break
-    case "examples": _ff = "docs/EXAMPLES.md"; break
-    case "jsonschema": _ff = "docs/JSON-SCHEMA.md"; break
-    case "readme"  :
-    case "usage"   : _ff = "docs/USAGE.md"; break
-    default        : 
-        var _r = params.help.toLowerCase()
-        if (!_formatSelector && isDef(_oafhelp_libs[_r]))
-            _ff = "docs/" + _r + ".md"
-        else
-            _ff = "docs/USAGE.md"
-    }
-
-    _f = (getOPackPath("oafproc") || ".") + "/" + _ff
-
-    let _customHelp = ""
-    if (!_formatSelector && _ff == "docs/USAGE.md" && Object.keys(_oafhelp_libs).length > 0) {
-        _customHelp = "\n---\n\n## 📚 Libs help documents\n\n| Lib | Help |\n| --- | --- |\n"
-        for (let key in _oafhelp_libs) {
-            _customHelp += "| " + key + " | help=" + key + " |\n"
-        }
-    }
-
-    if (isDef(_f) && io.fileExists(_f)) {
-        __ansiColorFlag = true
-		__conConsole = true
-        if (isDef(ow.format.string.pauseString) && toBoolean(params.pause))
-            ow.format.string.pauseString( params.out == "raw" ? _formatHelp(io.readFileString(_f), params.help) + _customHelp : ow.format.withMD( _formatHelp(io.readFileString(_f), params.help) + _customHelp ) )
-        else
-            _print((isDef(params.out) && params.out == "raw") ? _formatHelp(io.readFileString(_f), params.help) + _customHelp : ow.format.withMD( _formatHelp(io.readFileString(_f), params.help) + _customHelp ))
-    } else {
-        if (isDef(global._oafphelp) && isDef(global._oafphelp[_ff])) {
-            __ansiColorFlag = true
-            __conConsole = true
-            if (isDef(ow.format.string.pauseString) && toBoolean(params.pause))
-                ow.format.string.pauseString( params.out == "raw" ? _formatHelp(global._oafphelp[_ff], params.help) + _customHelp : ow.format.withMD( _formatHelp(global._oafphelp[_ff], params.help) + _customHelp ) )
-            else
-                _print((isDef(params.out) && params.out == "raw") ? _formatHelp(global._oafphelp[_ff], params.help) + _customHelp : ow.format.withMD( _formatHelp(global._oafphelp[_ff], params.help) + _customHelp))
-        } else {
-            if (isString(_oafhelp_libs[params.help])) {
-                __ansiColorFlag = true
-                __conConsole = true
-                if (isDef(ow.format.string.pauseString) && toBoolean(params.pause))
-                    ow.format.string.pauseString( ow.format.withMD( _oafhelp_libs[params.help] ) )
-                else
-                    _print((isDef(params.out) && params.out == "raw") ? _oafhelp_libs[params.help] : ow.format.withMD( _oafhelp_libs[params.help] ))
-            } else {
-                _print("Check https://github.com/OpenAF/oafp/blob/master/src/" + _ff)
-            }
-        }
-    }
-
-    _exit(0)
-}
-
-const showVersion = () => {
-    var _ff = (getOPackPath("oafproc") || ".") + "/.package.yaml"
-    var oafpv = (io.fileExists(_ff) ? io.readFileYAML(_ff).version : "(not available/embedded)")
-    var _v = {
-        oafp: {
-            version: oafpv,
-            inputs: Array.from(_inputFns.keys()).filter(r => r != '?').sort(),
-            transforms: Object.keys(_transformFns).filter(r => r != 'transforms').sort(),
-            outputs: Array.from(_outputFns.keys()).filter(r => r != '?').sort(),
-            flags: __flags.OAFP
-        },
-        openaf: {
-            version: getVersion(),
-            distribution: getDistribution(),
-            home: getOpenAFPath(),
-            opacks: $from($m4a(getOPackLocalDB())).notEquals("name", "OpenAF").sort("name").select({ name: "", version: ""})
-        },
-        java: {
-            version: ow.format.getJavaVersion(),
-            home: ow.format.getJavaHome(),
-            vendor: String(java.lang.System.getProperty("java.vendor")),
-            params: af.fromJavaArray(java.lang.management.ManagementFactory.getRuntimeMXBean().getInputArguments())
-        },
-        os: {
-            name: String(java.lang.System.getProperty("os.name")),
-            version: String(java.lang.System.getProperty("os.version")),
-            arch: ow.format.getOSArch(),
-            cpuCores: getNumberOfCores(true),
-            mem: {
-                max: Number(java.lang.Runtime.getRuntime().maxMemory()),
-                total: Number(java.lang.Runtime.getRuntime().totalMemory())
-            },
-            store: {
-                tmpDirPath: String(java.lang.System.getProperty("java.io.tmpdir")),
-                freeTmpDirBytes: Number(java.nio.file.Files.getFileStore(java.nio.file.Paths.get(java.lang.System.getProperty("java.io.tmpdir"))).getUsableSpace()),
-            }
-        }
-    }
-    return stringify(_v, __, "")
-}
-
-// Check if file is provided
-if ("undefined" == typeof params.file && "undefined" == typeof params.cmd && "undefined" == typeof params.data && "undefined" == typeof params.url) {
-    let _found = __
-    for (let key in params) {
-        if ("undefined" == typeof _found && params[key] === "" && key != "-debug" && key != "-v" && key != "-examples" && key != "-p") {
-            _found = key
-            break;
-        }
-    }
-    params.file = _found
-    if (isDef(bkprms)) bkprms.file = _found
-}
-
-if (typeof params.debug !== "undefined") params.debug = toBoolean(params.debug)
-if (isDef(params["-debug"])) params.debug = true
-if (isDef(params["-p"])) params.pause = true
-
-// Verify the data param
-if ("[object Object]" == Object.prototype.toString.call(params.data) || Array.isArray(params.data)) {
-    params.data = stringify(params.data, __, "")
-}
-
-// --- File extensions list
-const _fileExtensions = new Map(io.readFileJSON("include/fileExtensions.json"))
-// --- add extra _fileExtensions here ---
-const _addSrcFileExtensions = (ext, type) => {
-    if (!_fileExtensions.has(ext)) {
-        _fileExtensions.set(ext, type)
-    } else {
-        if (params.debug) printErr("WARN: Extension '" + ext + "' already exists.")
-    }
-}
-
-// --- List of input types that should not be stored in memory
-var _inputNoMem = new Set(io.readFileJSON("include/fileExtensionsNoMem.json"))
-// --- add extra _inputNoMem here ---
-const _addSrcFileExtensionsNoMem = ext => {
-    if (!_inputNoMem.has(ext)) {
-        _inputNoMem.add(ext)
-    } else {
-        if (params.debug) printErr("WARN: Extension '" + ext + "' already exists.")
-    }
-}
-
-// --- Input functions processing per line
-eval(io.readFileString("include/inputLineFns.js"))
-// --- add extra _inputLineFns here ---
-const _addSrcInputLineFns = (type, fn) => {
-    if (isUnDef(_inputLineFns[type])) {
-        _inputLineFns[type] = fn
-    } else {
-        if (params.debug) printErr("WARN: Input type '" + type + "' already exists.")
-    }
-}
-
-// --- Transform functions
-eval(io.readFileString("include/transformFns.js"))
-// --- add extra _transformFns here ---
-const _addSrcTransformFns = (type, fn) => {
-    if (isUnDef(_transformFns[type])) {
-        _transformFns[type] = fn
-    } else {
-        if (params.debug) printErr("WARN: Transform '" + type + "' already exists.")
-    }
-}
-
-// --- Output functions
-eval(io.readFileString("include/outputFns.js"))
-// --- add extra _outputFns here ---
-const _addSrcOutputFns = (type, fn) => {
-    if (!_outputFns.has(type)) {
-        _outputFns.set(type, fn)
-    } else {
-        if (params.debug) printErr("WARN: Output type '" + type + "' already exists.")
-    }
-}
-
-// --- Input functions (input parsers)
-eval(io.readFileString("include/inputFns.js"))
-// --- add extra _inputFns here ---
-const _addSrcInputFns = (type, fn) => {
-    if (!_inputFns.has(type)) {
-        _inputFns.set(type, fn)
-    } else {
-        if (params.debug) printErr("WARN: Input type '" + type + "' already exists.")
-    }
-}
-
-// Check libs and add them (oafp_name.js on oPacks and __flags.OAFP.libs)
-let _oafhelp_libs = {}
-if (isString(params.libs)) params.libs = params.libs.split(",").map(r => r.trim()).filter(r => r.length > 0)
-if (isDef(__flags.OAFP) && isArray(__flags.OAFP.libs) && isArray(params.libs)) 
-    params.libs = __flags.OAFP.libs.concat(params.libs)
-else
-    params.libs = (isDef(__flags.OAFP) ? __flags.OAFP.libs : [])
-if (isArray(params.libs)) {
-    params.libs.forEach(lib => {
-        try {
-            if (lib.startsWith("@")) {
-                if (/^\@([^\/]+)\/(.+)\.js$/.test(lib)) {
-                    var _ar = lib.match(/^\@([^\/]+)\/(.+)\.js$/)
-                    var _path = getOPackPath(_ar[1])
-                    var _file = _path + "/" + _ar[2] + ".js"
-                    if (io.fileExists(_file)) {
-                        loadLib(_file)
-                    } else {
-                        _exit(-1, "ERROR: Library '" + lib + "' not found.")
-                    }
-                } else {
-                    _exit(-1, "ERROR: Library '" + lib + "' does not have the correct format (@oPack/library.js).")
-                }
-            } else {
-                var _req = require("oafp_" + lib + ".js")
-                if (isDef(_req.oafplib)) {
-                    var res = _req.oafplib(clone(params), _$o, _o$o, {
-                        _runCmd2Bytes: _runCmd2Bytes,
-                        _fromJSSLON: _fromJSSLON,
-                        _msg: _msg,
-                        _showTmpMsg: _showTmpMsg,
-                        _clearTmpMsg: _clearTmpMsg,
-                        _chartPathParse: _chartPathParse,
-                        _exit: _exit,
-                        _print: _print,
-                        _o$o: _o$o
-                    })
-                    if (isMap(res)) {
-                        if (isArray(res.fileExtensions))      res.fileExtensions.forEach(r => _addSrcFileExtensions(r.ext, r.type))
-                        if (isArray(res.fileExtensionsNoMem)) res.fileExtensionsNoMem.forEach(r => _addSrcFileExtensionsNoMem(r.ext))
-                        if (isArray(res.input))               res.input.forEach(r => _addSrcInputFns(r.type, r.fn))
-                        if (isArray(res.inputLine))           res.inputLine.forEach(r => _addSrcInputLineFns(r.type, r.fn))
-                        if (isArray(res.transform))           res.transform.forEach(r => _addSrcTransformFns(r.type, r.fn))
-                        if (isArray(res.output))              res.output.forEach(r => _addSrcOutputFns(r.type, r.fn))
-                        if (isString(res.help))               _oafhelp_libs[lib.toLowerCase()] = res.help
-                    }
-                } else {
-                    printErr("WARN: Library '" + lib + "' does not have oafplib.")
-                }
-            }
-        } catch(e) {
-            printErr("WARN: Library '" + lib + "' error: " + e)
-        }
-    })
-}
-
-// Check if help is requested
-if (params["-h"] == "" || (isString(params.help) && params.help.length > 0)) showHelp()
-
-// Default format
-params.format = _$(params.format, "format").isString().default(__)
-
-// Interactive consumers initialize the console only when needed.
-if (toBoolean(params.pause) || toBoolean(params.color)) __initializeCon()
-var _dr = !String(java.lang.System.getProperty("os.name")).match(/Windows/)
-var _drev = getEnv("OAFP_RESET")
-var _cs = getEnv("OAFP_CODESET")
-if (isDef(_drev)) {
-    if (toBoolean(_drev)) {
-        _dr = false
-    } else {
-        _dr = true
-    }
-}
-if (_dr && isDef(__con) && isFunction(__con.getTerminal)) __con.getTerminal().settings.set("sane")
-
-// Check for OpenAF's sec buckets
-
-if (isDef(params.secKey)) {
-    if (toBoolean(params.secEnv)) {
-        params.secRepo = "system"
-        params.secBucket = "envs"
-    }
-    params.secRepo = _$(params.secRepo, "secRepo").isString().default(getEnv("OAFP_SECREPO"))
-    params.secBucket = _$(params.secBucket, "secBucket").isString().default(getEnv("OAFP_SECBUCKET"))
-    params.secPass = _$(params.secPass, "secPass").isString().default(getEnv("OAFP_SECPASS"))
-    params.secMainPass = _$(params.secMainPass, "secMainPass").isString().default(getEnv("OAFP_SECMAINPASS"))
-    params.secFile = _$(params.secFile, "secFile").isString().default(getEnv("OAFP_SECFILE"))
-
-    let res = $sec(params.secRepo, params.secBucket, params.secPass, params.secMainPass, params.secFile).get(secKey)
-    if (isDef(res)) {
-        Object.keys(res).forEach(r => params[r] = res[r])
-    }
-}
-
-// Set options
-var options = { 
-    __format: params.format, 
-    __from: params.from, 
-    __ifrom: params.ifrom, 
-    __isql: params.isql, 
-    __sql: params.sql, 
-    __path: params.path, 
-    __opath: params.opath,
-    __csv: params.csv, 
-    __pause: params.pause, 
-    __key: params.__key,
-    mdformat: params.mdformat
-}
-// csv options
-if (isDef(params.inputcsv)) {
-    params.inputcsv = _fromJSSLON(params.inputcsv)
-}
-if (isDef(params.incsv)) {
-    params.incsv = _fromJSSLON(params.incsv)
-}
-if (isDef(params.csv)) {
-    params.csv = _fromJSSLON(params.csv)
-}
-
-// Check version
-var _version = false
-if (params["-v"] == "" || toBoolean(params.version)) {
-    _version = true
-}
-
-// Check list of examples
-if (params["-examples"] == "" || (isString(params.examples) && params.examples.length > 0)) {
-    params.url = "https://ojob.io/oafp-examples.yaml"
-    params.in  = "yaml"
-
-    if (isString(params.examples) && params.examples.length > 0) {
-        if (params.examples.trim() != "?") options.__format = "template"
-        options.__path   = "data"
-        params.templatepath = "tmpl"
-        if (params.examples.indexOf("::") > 0) {
-            var parts = params.examples.split("::").filter(r => r.length > 0)
-            if (parts.length == 1) {
-                options.__sql    = "select * where c like '" + parts[0] + "'"
-            } else {
-                options.__sql    = "select * where c like '" + parts[0] + "' and s like '" + parts[1] + "'"
-            }
-        } else {
-            if (params.examples.trim() == "?") {
-                options.__path = "data.sort(map(&concat(c,concat('::',s)),[]))"
-                params.removedups = true
-            } else {
-                options.__sql = "select * where d like '%" + params.examples + "%' or s like '%" + params.examples + "%' or c like '%" + params.examples + "%'"
-            }
-        } 
-    } else {
-        options.__path   = "data[].{category:c,subCategory:s,description:d}"
-        options.__from   = "sort(category,subCategory,description)"
-        options.__format = "ctable"
-    }
-
-    delete params["-examples"]
-}
-
-// Resolve file types before selecting the reader, particularly no-memory inputs.
-if (isUnDef(params.type) && isString(params.file)) {
-    var extension = _inputFileName().substring(_inputFileName().lastIndexOf('.'))
-    if (_fileExtensions.has(extension)) {
-        params.type = _fileExtensions.get(extension)
-        procParams()
-    }
-}
-_activeTransforms = Object.keys(_transformFns).filter(key => isDef(params[key]))
-_parallelMode()
-
-// Read input from stdin or file
-var _res = "", noFurtherOutput = false, _ownedStreams = []
-
-// Check for output streams
-if (typeof params.outfile !== "undefined") {
-    if ("undefined" === typeof global.__oafp_streams) global.__oafp_streams = {}
-    if ("undefined" === typeof global.__oafp_streams[params.outfile] && toBoolean(params.outfileappend)) {
-        global.__oafp_streams[params.outfile] = { s: io.writeFileStream(params.outfile, toBoolean(params.outfileappend)) }
-        _ownedStreams.push(params.outfile)
-    }
-}
-
-// Decision samples do not consume input or require provider configuration.
-if (params.type == "llmdecide" && isDef(params.llmdecidesample)) params.data = ""
-
-// Check chs
-if (isString(params.chs) || isMap(params.chs)) {
-    var _chs = af.fromJSSLON(params.chs)
-    if (!isArray(_chs)) _chs = [_chs]
-    _chs.forEach(ch => {
-        if (isMap(ch)) {
-            if (isString(ch.name) && isString(ch.type)) {
-                $ch(ch.name).create(ch.type, ch.options)
-            } else {
-                _exit(-1, "ERROR: chs must have a name and a type.")
-            }
-        } else {
-            _exit(-1, "ERROR: chs must be an object or array of objects with name and a type")
-        }
-    })
-}
-
-const _takeInput = () => { var value = _res; _res = ""; return value }
-var _run = () => {
-    _showTmpMsg()
-    if (isDef(params.idescsource) && params.idescsource != "stream" && params.idescsource != "loaded") _exit(-1, "idescsource must be loaded or stream")
-    var _recipeSource = isDef(params.idescrecipe) ? io.readFileJSON(params.idescrecipe).source : __
-    if (isDef(params.idescsource) && isDef(_recipeSource) && params.idescsource != _recipeSource) _exit(-1, "idescsource conflicts with the recipe source mode")
-    if (!_version && (params.idescsource == "stream" || _recipeSource == "stream")) {
-        _clearTmpMsg()
-        try { _idescSource() } catch(e) { _exit(-1, String(e)) }
-        return
-    }
-    if (params.format == "idesc" && toBoolean(params.stream)) _exit(-1, "out=idesc needs a whole result; remove stream=true or use idescsource=stream")
-    if (params.type == "llmdecide" && isDef(params.llmdecidesample)) {
-        _inputFns.get("llmdecide")("", options)
-        return
-    }
-    if (!_version && isDef(params.file) && params.file.indexOf("::") < 0 && !io.fileExists(params.file)) {
-        _exit(-1, "ERROR: File not found: '" + params.file + "'")
-    }
-    // Stream-capable handlers own their input; do not first buffer it in _res.
-    if (!_version && isUnDef(params.url) &&
-        (["lines", "ndjson", "ndslon", "dsv", "csv"].indexOf(params.type) >= 0 ||
-         (params.type == "json" && toBoolean(params.stream)))) {
-        _inputFns.get(params.type)(isString(params.data) ? params.data : "", options)
-        delete params.__origr
-        return
-    }
-    if (_version) {
-        _res = showVersion()
-    } else {
-        // JSON base options
-        params.jsonprefix = _$(params.jsonprefix, "jsonprefix").isString().default(__)
-        params.jsondesc   = _$(toBoolean(params.jsondesc), "jsondesc").isBoolean().default(false)
-
-        if (typeof params.insecure !== "undefined" && toBoolean(params.insecure)) {
-            ow.loadJava().setIgnoreSSLDomains()
-        }
-
-        if (isDef(params.file)) {
-            if (params.file.indexOf("::") < 0 && !(io.fileExists(params.file))) {
-                _exit(-1, "ERROR: File not found: '" + params.file + "'")
-            }
-
-            if (!_inputNoMem.has(params.type)) {
-                if (params.type == "json" || isUnDef(params.type)) {
-                    if (params.jsondesc) {
-                        _res = stringify(_withInputFilePath(file => _describeJSONPaths(file, params.jsonprefix)), __, "")
-                    } else {
-                        if (isDef(params.jsonprefix)) {
-                            var _r = _withInputFilePath(file => io.readStreamJSON(file, path => path.substring(2).startsWith(params.jsonprefix)))
-                            _res = params.type == "json" ? _r : stringify(_r, __, "")
-                        } else {
-                            _res = _readFileText()
-                            if (toBoolean(params._shebang)) _res = _res.replace(/^#!.*\n/, "")
-                        }
-                    }
-                } else {
-                    _res = _readFileText()
-                    if (toBoolean(params._shebang)) _res = _res.replace(/^#!.*\n/, "")
-                }
-            }
-        } else {
-            if (params.jsondesc) _exit(-1, "ERROR: jsondesc only available for file input.")
-            if (params.jsonprefix) _exit(-1, "ERROR: jsonprefix only available for file input.")
-
-            if (typeof params.cmd !== "undefined") {
-                _res = _runCmd2Bytes(params.cmd, true)
-            } else {
-                if (isString(params.data)) {
-                    _res = params.data
-                } else {
-                    if (isDef(params.url)) {
-                        params.urlmethod = _$(params.urlmethod, "urlmethod").isString().default("GET")
-                        let _hp = _fromJSSLON(_$(params.urlparams).or().isString().isMap().default("{}"))
-
-                        let _hd
-                        if (isDef(params.urldata)) _hd = _fromJSSLON(params.urldata)
-
-                        switch(params.urlmethod.toLowerCase()) {
-                        case "post":
-                            _res = $rest(_hp).post(params.url, _hd)
-                            break
-                        case "put":
-                            _res = $rest(_hp).put(params.url, _hd)
-                            break
-                        case "delete":
-                            _res = $rest(_hp).delete(params.url, _hd)
-                            break
-                        case "head":
-                            _res = $rest(_hp).head(params.url, _hd)
-                            break
-                        default:
-                            _res = $rest(_hp).get(params.url)
-                        }
-                        if (isObject(_res)) _res = stringify(_res, __, "")
-                    } else {
-                        if (params.input != "pm") {
-                            var text = new java.lang.StringBuilder(), firstLine = true
-                            io.pipeLn(r => {
-                                if (isDef(_inputLineFns[params.type])) {
-                                    if (!_inputLineFns[params.type](_transform(r), clone(options))) return false
-                                }
-                                if (!firstLine) text.append("\n")
-                                text.append(r)
-                                firstLine = false
-                                return false
-                            })
-                            _res = String(text.toString())
-                        }
-                    }
-                }
-
-            }
-        }
-    }
-
-    if (!noFurtherOutput) {
-        // Detect type if not provided
-        if (isUnDef(params.type)) {
-            // File name based
-            if (isDef(params.file)) {
-                let _ext = _inputFileName().substring(_inputFileName().lastIndexOf('.'))
-                if (_fileExtensions.has(_ext)) params.type = _fileExtensions.get(_ext)
-            }
-
-            // Content-based
-            if (isUnDef(params.type)) {
-                let _tres = _res.trim()
-                if (_tres.startsWith("{") || _tres.startsWith("[")) {
-                    params.type = "json"
-                } else if (_tres.startsWith("(")) {
-                    params.type = "slon"
-                } else if (_tres.startsWith("<")) {
-                    params.type = "xml"
-                } else {
-                    if (isString(_tres) && _tres.length > 0) {
-                        if (_tres.substring(0, _tres.indexOf('\n')).split(",").length > 1) {
-                            params.type = "csv"
-                        } else if (_tres.substring(0, _tres.indexOf(': ') > 0)) {
-                            params.type = "yaml"
-                        }
-                    } else {
-                        _exit(-1, "Please provide the input type.")
-                    }
-                }
-            }
-        }
-
-        // Determine input type and execute
-        if (isDef(params.type) && _inputFns.has(params.type)) {
-            _inputFns.get(params.type)(_takeInput(), options)
-        } else {
-            if (isString(params.type)) printErr("WARN: " + params.type + " input type not supported. Using json.")
-            _inputFns.get("json")(_takeInput(), options)
-        }
-        delete params.__origr
-    }
-}
-
-// Verify debug
-if (params.debug) {
-    //__initializeCon()
-    printErr("DEBUG: " + colorify(params))
-}
-
-try {
-if (isNumber(params.loop)) {
-    while(1) {
-        if (toBoolean(params.loopcls)) {
-            if (isDef(params.outfile) && isDef(global.__oafp_streams[params.outfile])) {
-                global.__oafp_streams[params.outfile].s.close()
-                global.__oafp_streams[params.outfile] = { s: io.writeFileStream(params.outfile, toBoolean(params.outfileappend)) }
-            }
-        }
-        _withProgress(_run)
-        sleep(params.loop * 1000, true)
-        // Ensure params have a fresh copy
-        if (isDef(bkprms)) params = clone(bkprms)
-    }
-} else {
-    _withProgress(_run)
-}
-
-} finally {
-    _clearTmpMsg()
-    delete params.__origr
-    if (typeof global.__oafp_streams !== "undefined") _ownedStreams.forEach(s => {
-        global.__oafp_streams[s].s.close()
-        delete global.__oafp_streams[s]
-    })
-}
-}
-oafp(_params)
+var _params=processExpr(" ");
+const oafp=a=>{if(!isUnDef(a)&&!isDef(a.____ojob)){isDef(a.secKey)&&(a=$sec().procMap(a));var vb=b=>{for(var d=Fc||Object.keys(za).filter(e=>isDef(a[e])),c=0;c<d.length;c++)if(d[c]=="sortmapkeys"&&toBoolean(a.sortmapkeys)&&isArray(b)&&b.length>128){var f=[],g=Jb(Ja,e=>f.push(e),!0);try{b.forEach(g.add),g.done()}catch(e){try{g.abort()}catch(h){}throw e;}b=f}else b=za[d[c]](b);return b},wb=(b,d)=>{a.__origr=b;d.__ifrom&&(b=$from(isArray(b)?b:[b]).query(af.fromNLinq(d.__ifrom.trim())),delete d.__ifrom);
+if(d.__isql){var c=__;if(isString(a.sqlfilter))switch(a.sqlfilter.toLowerCase()){case "simple":c="nlinq";break;case "advanced":c="h2";break;default:c=__}if(isArray(b)&&b.length>0)if(isString(a.isqlfiltertables)){var f=$sql();c=P(a.isqlfiltertables);isArray(c)&&(c.forEach(g=>{isUnDef(g.table)&&t(-1,"One 'table' not defined in isqlfiltertables");g.path=_$(g.path,"isqlfiltertables table "+g.table+" path").isString().default("@");var e=$path(b,g.path);isArray(e)&&(f=f.table(g.table,e))}),b=f.closeQuery(d.__isql.trim()))}else b=
+$sql(b,d.__isql.trim(),c);delete d.__isql}d.__path&&(b=$path(b,d.__path.trim()),delete d.__path);if(isString(b))return vb(b);b=vb(b);d.__from&&(b=$from(isArray(b)?b:[b]).query(af.fromNLinq(d.__from.trim())),delete d.__from);if(d.__sql){c=__;if(isString(a.sqlfilter))switch(a.sqlfilter.toLowerCase()){case "simple":c="nlinq";break;case "advanced":c="h2";break;default:c=__}isArray(b)&&b.length>0&&(isString(a.sqlfiltertables)?(f=$sql(),c=P(a.sqlfiltertables),isArray(c)&&(c.forEach(g=>{isUnDef(g.table)&&
+t(-1,"One 'table' not defined in sqlfiltertables");g.path=_$(g.path,"sqlfiltertables table "+g.table+" path").isString().default("@");var e=$path(b,g.path);isArray(e)&&(f=f.table(g.table,e))}),b=f.closeQuery(d.__sql.trim()))):b=$sql(b,d.__sql.trim(),c));delete d.__sql}d.__opath&&(b=$path(b,d.__opath.trim()),delete d.__opath);return b},H=(b,d,c)=>{if(b==null&&!d.__keepNull&&d.__format!="idesc"&&isUnDef(a.idescrecipe)||"undefined"==typeof b)xa();else{d=clone(d);toBoolean(a.color)?__conConsole=!0:isDef(a.color)&&
+(__conAnsi=!1);if(isString(b))if(isDef(a.in)&&a.in!="raw"||isUnDef(a.in)){let f=b.trim();b=f.startsWith("{")&&f.endsWith("}")||f.startsWith("[")&&f.endsWith("]")&&/^\[\s*\{/.test(f)?wb(jsonParse(b,__,__,!0),d):wb(b,d)}else b=vb(b);else b=c?wb([b],d)[0]:wb(b,d);isDef(a.outputkey)&&(b=$$({}).set(a.outputkey,b));isDef(a.outkey)&&(b=$$({}).set(a.outkey,b));isDef(a.idescrecipe)&&d.__format!="idesc"&&(b=Kb(b),b.load(io.readFileJSON(a.idescrecipe)),b=b.current());xa();isUnDef(d.__format)&&(d.__format=getEnvsDef("OAFP_OUTPUT",
+d.__format,"ctree"));if(c&&d.__format=="idesc"&&isDef(Qa))return Qa.add(b);Ra.has(d.__format)?Ra.get(d.__format)(b,d):V(b,d,__)}},Sa=(b,d)=>Wb(b,c=>{if(d){var f=new java.lang.StringBuilder;ioStreamRead(c,e=>{f.append(e);return!1},__,!0,va);return String(f.toString())}var g=af.newOutputStream();try{return Packages.org.apache.commons.io.IOUtils.copyLarge(c,g),g.toByteArray()}finally{g.close()}}),P=(b,d)=>{if("[object Object]"==Object.prototype.toString.call(b)||Array.isArray(b))return b;if(!isString(b)||
+b==""||isNull(b))return"";b=b.trim();var c;isDef(af.fromJSSLON)&&(c=af.fromJSSLON(b));isUnDef(c)?c=b.startsWith("{")?jsonParse(b,__,__,!0):af.fromSLON(b):isString(c)&&d&&(c=af.fromYAML(c));return c},Xb=(b,d)=>{["llmconversation","llmcontext","llmprompt"].forEach(e=>{isDef(a[e])&&t(-1,d+" does not support "+e)});b=isDef(b)?clone(b):__;isDef(a.llmimage)&&(isString(a.llmimage)&&io.fileExists(a.llmimage)&&io.fileInfo(a.llmimage).isFile||t(-1,d+" llmimage requires a local image file"),isDef(b)&&Object.prototype.hasOwnProperty.call(b,
+"images")&&t(-1,d+" cannot combine llmimage with options.images"),isUnDef(b)&&(b={}),b.images=[af.fromBytes2String(af.toBase64Bytes(io.readFileBytes(a.llmimage)))]);var c=_$(a.llmenv,"llmenv").isString().default("OAFP_MODEL");c=="OAFP_MODEL"&&isUnDef(getEnv(c))&&isDef(getEnv("OAF_DECIDE_MODEL"))&&(c="OAF_DECIDE_MODEL");c=Ka(c);var f=_$(a.llmoptions,"llmoptions").or().isString().isMap().default(__);isUnDef(f)&&!isString(getEnv(c))&&t(-1,"llmoptions not defined and "+c+" not found.");f=xb(isDef(f)?
+P(f):$sec("system","envs").get(c));var g=toBoolean(a.llmdecidestats)?"decideWithStats":"decide";return{options:b,client:()=>{var e=$llm(clone(f));typeof e[g]!=="function"&&t(-1,d+" requires an updated OpenAF runtime with $llm()."+g+"() support");return e},method:g}},yb=(b,d,c,f)=>{c=_$(c).isString().default("_oafp_fn_");d=splitBySepWithEnc(d," ",[['"','"'],["'","'"]]);var g=[];$ch("__oaf::chart").create();if(d.length>1){for(let e=0;e<d.length;e++)if(e==0)g.push(d[e]);else{let h=splitBySepWithEnc(d[e],
+":",[['"','"'],["'","'"]]).map((n,r)=>{if(r==0){if(n.startsWith("-"))return n;global[c+e]=()=>{if(isString(f)){var w=$ch("__oaf::chart").get({name:f});w=isUnDef(w)?[]:w.data;var y=$path(b,n);if(isArray(y))return y.forEach((v,u)=>{isArray(w[u])?w[u].push(v):w[u]=[v]}),y=w.pop(),$ch("__oaf::chart").set({name:f},{name:f,data:w}),y[0]}else return $path(b,n)};return c+e}return n}).join(":");g.push(h)}return g.join(" ")}return""},Q=b=>Ta(()=>{zb();if("undefined"!==typeof b)if("undefined"===typeof a.outfile)if(toBoolean(a.loopcls)&&
+cls(),isDef(a.pipe)){var d=isMap(a.pipe)?a.pipe:P(a.pipe,!0);isMap(d)&&(d.data=b,oafp(d))}else toBoolean(a.pause)&&isDef(ow.format.string.pauseString)&&isString(b)?ow.format.string.pauseString(b):print(b);else"undefined"===typeof global.__oafp_streams&&(global.__oafp_streams={}),"undefined"!==typeof global.__oafp_streams[a.outfile]?(d=toBoolean(a.outfileappend))?ioStreamWrite(global.__oafp_streams[a.outfile].s,b+(d?"\n":"")):io.writeFileBytes(a.outfile,isString(b)?af.fromString2Bytes(b):b):io.writeFileBytes(a.outfile,
+isString(b)||b instanceof java.lang.String?af.fromString2Bytes(b):b)}),V=(b,d,c)=>{"undefined"!==typeof b&&(b=$o(b,d,c,!0),isDef(b)&&Q(b))},xb=(b,d)=>{b=_$(b).isMap().default({});return isDef(b.secKey)?(aMap=clone(b),aMap.secRepo=_$(aMap.secRepo).default(getEnv("OAFP_SECREPO")),aMap.secBucket=_$(aMap.secBucket).default(getEnv("OAFP_SECBUCKET")),aMap.secPass=_$(aMap.secPass).default(getEnv("OAFP_SECPASS")),aMap.secMainPass=_$(aMap.secMainPass).default(getEnv("OAFP_SECMAINPASS")),aMap.secFile=_$(aMap.secFile).default(getEnv("OAFP_SECFILE")),
+b=$sec(aMap.secRepo,aMap.secBucket,aMap.secPass,aMap.secMainPass,aMap.secFile).get(aMap.secKey),delete aMap.secRepo,delete aMap.secBucket,delete aMap.secPass,delete aMap.secMainPass,delete aMap.secFile,delete aMap.secKey,isDef(d)?$$(aMap).set(d,merge($$(aMap).get(d),b)):merge(aMap,b)):b},Ab=!1,Lb=!1,Yb="(processing data)",Zb=0,Gc=0,fb,gb,$b=()=>{if(getEnv("TERM")=="dumb"||a.progress=="off"||a.out=="grid"||a.__inception||toBoolean(a.loopcls)||toBoolean(a.chartcls))return!1;if(isUnDef(fb)){fb=!1;try{(Number(java.nio.file.Files.getAttribute(java.nio.file.Paths.get("/dev/fd/2"),
+"unix:mode"))&61440)==8192&&(fb=Number(Packages.org.jline.nativ.CLibrary.isatty(2))==1)}catch(b){fb=java.lang.System.console()!=null}}return fb},Ta=b=>{isDef(gb)&&gb.lock();try{return b()}finally{isDef(gb)&&gb.unlock()}},zb=()=>{Lb&&printErrnl("\r\u001b[2K");Lb=!1},R=b=>{$b()&&Ta(()=>{Yb=_$(b).default("(processing data)");Ab||(Zb=now());Ab=!0})},xa=()=>Ta(()=>{Ab=!1;zb()}),ac=b=>{if(!$b()||!isFunction(ow.format.progressReport))return b();gb=new java.util.concurrent.locks.ReentrantLock;var d=/utf-?8/i.test(String(va||
+java.lang.System.getProperty("file.encoding")))?["\u2022","\u25e6","\u00b7","\u25e6"]:["-","\\","|","/"];try{return ow.format.progressReport(b,()=>Ta(()=>{!Ab||now()-Zb<250||(printErrnl("\r\u001b[2K"+d[Gc++%d.length]+" "+Yb),Lb=!0)}),150)}finally{xa()}},Wb=(b,d)=>{var c,f,g=!1,e=sh(b,__,__,!1,__,!0,(h,n,r)=>{g=!0;var w=$do(()=>{ioStreamReadLines(n,y=>{Ta(()=>{zb();printErr(y)});return!1},__,!0,va)}).catch(y=>{f=f||y});try{r.close(),c=d(h)}catch(y){f=y}finally{if(typeof Qa=="undefined"||f!==Qa.stop)try{ioStreamReadBytes(h,
+()=>!1)}catch(y){}h.close();$doWait(w);n.close()}},va,!1,__,()=>isDef(f)?"force":__);if(isDef(f))throw f;if(!g){e.stderr&&Ta(()=>{zb();printErr(e.stderr)});b=af.fromString2InputStream(e.stdout||"");try{return d(b)}finally{b.close()}}return c},La=()=>isString(a.file)&&(isDef(a.ingzip)?toBoolean(a.ingzip):/\.gz$/i.test(a.file)),hb=()=>La()?a.file.replace(/\.gz$/i,""):a.file,ib=b=>{var d=La()?io.readFileGzipStream(a.file):io.readFileStream(a.file);try{return b(d)}finally{d.close()}},bc=()=>La()?ib(b=>
+af.fromInputStream2String(b,va||"UTF-8")):io.readFileString(a.file,va),jb=b=>{if(!La())return b(a.file);var d=io.createTempFile("oafp-gzip-","."+hb().replace(/^.*[.\/\\]/,""));try{return ib(c=>{var f=io.writeFileStream(d);try{ioStreamCopy(f,c)}finally{f.close()}}),b(d)}finally{io.rm(d)}},Hc=(b,d)=>{var c=new Set,f=g=>{g=g.substring(2);(isUnDef(d)||g.startsWith(d))&&c.add(g)};if(isFunction(io.scanJSON))try{return io.scanJSON(b,g=>{var e="$"+g.path.map(h=>typeof h=="number"?"["+h+"]":"."+h).join("");
+g.phase=="value"&&g.type!="map"&&g.type!="array"&&f(e)}),Array.from(c)}catch(g){c.clear()}io.readStreamJSON(b,g=>{f(g);return!1});return Array.from(c)},Mb=!1,kb=(b,d)=>{if(Mb&&isString(b)){var c=af.fromString2InputStream(b);try{return d(c)}finally{c.close()}}if(isDef(a.file)&&isUnDef(a.cmd))return ib(d);if(isDef(a.cmd))return Wb(a.cmd,d);if(isDef(a.data)||isDef(a.url)||Ua){b=af.fromString2InputStream(b);try{return d(b)}finally{b.close()}}return d(java.lang.System.in)},Bb=b=>kb(b,d=>{var c=new java.lang.StringBuilder;
+ioStreamRead(d,f=>{c.append(f);return!1},__,!0,va);return String(c.toString())}),Ic=(b,d)=>kb(b,c=>ioStreamReadLines(c,f=>d(String(f).replace(/\r$/,"")),__,!0,va)),Jc=(b,d,c,f)=>{var g=Object.prototype.toString.call(b)=="[object String]";b=g?io.readFileStream(b):b;var e=0;try{var h=new java.io.InputStreamReader(b,c||"UTF-8"),n=new Packages.com.google.gson.stream.JsonReader(h);n.setLenient(!1);for(n.beginArray();n.hasNext();){var r=String(Packages.com.google.gson.internal.Streams.parse(n).toString());
+if(d(f===!0?r:jsonParse(r),e++)===!0)return e}n.endArray();if(String(n.peek())!="END_DOCUMENT")throw"Unexpected content after JSON array";return e}finally{g&&b.close()}},Nb=()=>{var b=isDef(a.parallel)?a.parallel:getEnv("OAFP_PARALLEL");if(isUnDef(b))return"auto";b=String(b).toLowerCase();if(["auto","true","false"].indexOf(b)<0)throw"parallel must be auto, true or false";return b},Jb=(b,d,c)=>{var f=Nb(),g=Math.max(1,Math.min(4,getNumberOfCores())),e=f=="true"&&c&&g>1,h=0,n=0,r=[],w=[],y=0,v=!1,u=
+new java.util.concurrent.Semaphore(g),p=(aa,W)=>{$doWait(aa.promise);if(isDef(aa.error))throw aa.error;W&&aa.result.forEach(d);aa.result=__},G=aa=>{for(var W;r.length>0;)try{p(r.shift(),aa&&isUnDef(W))}catch(na){W=W||na}if(isDef(W))throw W;},oa=()=>{if(w.length!=0){var aa=w;w=[];y=0;if(e){var W={};W.promise=$do(()=>{u.acquire();try{W.result=aa.map(b)}finally{u.release()}}).catch(na=>{W.error=na});r.push(W);r.length>=g*2&&p(r.shift(),!0)}else aa.map(b).forEach(d)}};return{add:aa=>{if(!v)if(e){var W=
+String(aa).length*2;W>=1048576?(oa(),G(!0),w.push(aa),oa(),G(!0)):(y+W>1048576&&oa(),w.push(aa),y+=W,(w.length>=128||y>=1048576)&&oa())}else f!="auto"||!c||g<=1||h>=256?d(b(aa)):(h++,W=h>128?nowNano():0,aa=b(aa),W>0&&(n+=nowNano()-W),d(aa),h==256&&(e=n>=32E6))},done:()=>{try{oa(),G(!0)}catch(aa){v=!0;try{G(!1)}catch(W){}throw aa;}},abort:()=>{v=!0;w=[];G(!1)}}},Cb=(b,d,c,f,g)=>{var e=Jb(d,c,f);try{Ic(b,h=>{isDef(g)?g(h,e.add):e.add(h);return!1}),isDef(g)&&isFunction(g.end)&&g.end(),e.done()}catch(h){try{e.abort()}catch(n){}throw h;
+}},cc=()=>{var b="",d=0,c=!1,f=!1,g=(e,h)=>{if(b.length!=0||e.trim().length!=0){b.length>0&&(b+="\n");b+=e;for(var n=0;n<e.length;n++){var r=e[n];c?f?f=!1:r=="\\"?f=!0:r=='"'&&(c=!1):r=='"'?c=!0:r=="{"||r=="["?d++:(r=="}"||r=="]")&&d--}d<=0&&!c&&(h(b),b="",d=0,f=!1)}};g.end=()=>{if(b.trim().length>0)throw"Incomplete NDJSON record";};return g},Qa,Kc=b=>{if(a.format!="idesc")return b();var d=isDef(a.idescrecords)?Number(a.idescrecords):100;if(!isFinite(d)||d<1||Math.floor(d)!=d)throw"idescrecords must be a positive integer";
+var c={rows:[],stop:{},used:!1,add:f=>{c.used=!0;c.rows.push(f);if(c.rows.length>=d)throw c.stop;}};Qa=c;try{try{b()}catch(f){if(f!==c.stop)throw f;}}finally{Qa=__}c.used&&dc(c.rows)},Kb=(b,d,c)=>{var f={page:20,depth:3,string:200,bytes:16777216,nodes:1E5};Object.keys(f).forEach(m=>{var q=Number(a["idesc"+m]);if(isDef(a["idesc"+m])){if(!isFinite(q)||q<1||Math.floor(q)!=q)throw"idesc"+m+" must be a positive integer";f[m]=q}});var g={base:b,file:d,path:[],ops:[]},e=g,h=[],n=Object.create(null),r=new Map,
+w,y,v=0,u="",p=!1,G=!1,oa=0,aa=(m,q)=>stringify(m,__,"")==stringify(q,__,""),W=(m,q)=>m.length<=q.length&&m.every((A,J)=>A===q[J]),na=m=>"@"+m.map(q=>typeof q=="number"?"["+q+"]":"."+stringify(q,__,"")).join(""),K=(m,q)=>c&&c.console?ansiColor(m,q,!0):q,X=(m,q)=>{m=m.split(".").reduce((A,J)=>A==null?__:A[J],typeof __colorFormat!="undefined"?__colorFormat:__);return isString(m)&&m.length?m:q},Db=m=>({string:X("string","GREEN"),number:X("number","YELLOW"),boolean:X("boolean","BLUE"),date:X("date","MAGENTA")})[m]||
+X("default","WHITE"),ec={map:"\ud83d\udcc1",array:"\ud83d\udcda",string:"\ud83d\udd24",number:"\ud83d\udd22",boolean:"\ud83d\udd18","null":"\u2205",date:"\ud83d\udcc5",binary:"\ud83d\udcbe",function:"\u03bb",regexp:"\ud83d\udcd0",undefined:"\u2014"},qa=m=>K(X("tree.lines","FAINT"),"\u2500".repeat(m||58)),fc=(m,q)=>m.length>q?m.substring(0,q-1)+"\u2026":m,hc=m=>{var q=m.map((J,E)=>{E=E==m.length-1;var D=typeof J=="number";J=fc(D?"["+J+"]":stringify(J,__,"").replace(/^"|"$/g,""),32);D=D?X("number",
+"YELLOW"):X("key","CYAN");return K(E?"BOLD,"+D:D,J)}),A=K(X("tree.lines","FAINT")," \u203a ");q.length>5&&(q=[q[0],K(X("tree.lines","FAINT"),"\u2026")].concat(q.slice(-3)));return K(X("askPre","BOLD,GREEN"),"\u2302")+(q.length?A+q.join(A):"")},Va=m=>({type:isNull(m)?"null":descType(m),size:isArray(m)?m.length:isMap(m)?Object.keys(m).length:__}),Eb=(m,q)=>q.reduce((A,J)=>{if(A==null||!isArray(A)&&!isMap(A)||!Object.prototype.hasOwnProperty.call(A,J))throw"Path not found: "+na(q);if(isArray(A)!=(typeof J==
+"number"))throw"Use numeric indices for arrays and string keys for maps";return A[J]},m),lb=m=>m.ops.concat(m.path.length?[{op:"select",path:m.path}]:[]),Ob=m=>{h.push(e);e=m;v=0;u=""},Ba=()=>{if(d){var m=io.fileInfo(d);m=String(m.size)+":"+String(m.lastModified);if(isDef(w)&&w!=m)throw r.clear(),oa++,h=[],n=Object.create(null),e=g,v=0,u="",w=m,"Source changed; cached locations and bookmarks cleared. Browsing restarted at root.";w=m}},mb=(m,q)=>{Ba();var A=()=>io.scanJSON(d,m,merge({cancel:()=>G=
+!!(c&&c.cancel&&c.cancel()),progress:J=>{c&&c.progress&&c.progress(J)}},q||{}));return c&&c.scan?c.scan(A):A()},ic=(m,q)=>{var A,J=0;mb(E=>{if(!W(E.path,m)&&!W(m,E.path))return"skip";if(W(m,E.path)&&E.phase=="value"&&q&&++J>f.nodes)throw"Selection exceeds idescnodes; narrow it first";if(E.phase=="value"&&aa(E.path,m)&&!q)return"skip";if(E.phase=="end"&&aa(E.path,m))return A=E,"stop"});if(!A)throw"Path not found: "+na(m);if(q&&A.end-A.start>f.bytes)throw"Selection exceeds idescbytes; narrow it first";
+return A},nb=()=>{Ba();if(e.file){var m=ic(e.path,!0);var q=new java.io.ByteArrayOutputStream;io.copyJSONRange(d,m.start,m.end,q);Ba();m=jsonParse(String(q.toString("UTF-8")))}else m=Eb(e.base,e.path);return m},Wa=(m,q,A,J)=>{Ba();if(!m.file){for(var E=Eb(m.base,m.path),D=Va(E),F=isArray(E)?null:isMap(E)?Object.keys(E):[],I=[],O=0,Z=F?F.length:E.length,ja=0;ja<Z;ja++){var ia=F?F[ja]:ja;if(!(A&&String(ia).toLowerCase().indexOf(A)<0)&&(O++>=q&&I.length<=f.page&&I.push(merge({key:ia},Va(E[ia]))),!J&&
+I.length>f.page))break}return{meta:D,rows:I.slice(0,f.page),more:I.length>f.page}}E=stringify([m.path,q,A,J],__,"");if(r.has(E))return r.get(E);I=[];O=0;var U=!1;mb(N=>{if(!W(N.path,m.path)&&!W(m.path,N.path))return"skip";if(aa(N.path,m.path))N.phase=="value"?D={type:N.type}:D.size=N.size;else if(N.path.length==m.path.length+1&&N.phase=="value"){var T=N.path[N.path.length-1];if((!A||String(T).toLowerCase().indexOf(A)>=0)&&O++>=q)if(I.length==f.page){if(U=!0,!J)return"stop"}else I.push({key:T,type:N.type});
+return"skip"}if(N.phase=="end"&&aa(N.path,m.path))return"stop"});if(!D)throw"Path not found: "+na(m.path);F={meta:D,rows:I,more:U};r.size>=64&&r.delete(r.keys().next().value);r.set(E,F);return F},ya=m=>m!="map"&&m!="array",ob=(m,q)=>{Object.keys(q).forEach(A=>{m[A]=q[A]});return m},Ma=(m,q)=>{var A=e;e={base:A.base,file:A.file,path:m,ops:A.ops};try{return q()}finally{e=A}},jc=m=>{var q=m.end-m.start;if(q>Math.min(f.bytes,f.string*8+2))return{omitted:q};q=new java.io.ByteArrayOutputStream;io.copyJSONRange(d,
+m.start,m.end,q);return{value:jsonParse(String(q.toString("UTF-8")))}},kc=(m,q,A,J)=>{Ba();J=J?String(J).toLowerCase():"";if(!e.file){var E=Eb(e.base,m),D=Va(E),F=[],I=0,O=!1;if(isArray(E)||isMap(E))for(var Z=isArray(E)?null:Object.keys(E),ja=Z?Z.length:E.length,ia=0;ia<ja;ia++){var U=Z?Z[ia]:ia;if((!J||String(U).toLowerCase().indexOf(J)>=0)&&!(I++<q))if(F.length>=A){if(O=!0,!J)break}else{var N=Va(E[U]),T={key:U,type:N.type,size:N.size};ya(N.type)&&(T.value=E[U]);F.push(T)}}else D.value=E;return{meta:D,
+rows:F,more:O,matched:O&&!J?__:I}}E=stringify(["children",m,q,A,J],__,"");if(r.has(E))return r.get(E);F=[];I=0;O=!1;var ha=new Map;mb(da=>{if(!W(da.path,m)&&!W(m,da.path))return"skip";if(aa(da.path,m))if(da.phase=="value")D={type:da.type};else return ya(da.type)?ob(D,jc(da)):D.size=da.size,"stop";else if(da.path.length==m.length+1&&W(m,da.path)){var ma=da.path[da.path.length-1];if(da.phase=="value"){if((!J||String(ma).toLowerCase().indexOf(J)>=0)&&I++>=q){if(F.length>=A)return O=!0,"stop";da={key:ma,
+type:da.type};F.push(da);ha.set(ma,da)}return"skip"}if(ma=ha.get(ma))ya(da.type)?ob(ma,jc(da)):ma.bytes=da.end-da.start}});if(!D)throw"Path not found: "+na(m);Z={meta:D,rows:F,more:O,matched:O?__:I};r.size>=64&&r.delete(r.keys().next().value);r.set(E,Z);return Z},lc=m=>{loadCompiledLib("jmespath_js");var q=A=>{switch(A.type){case "Identity":case "Current":return[];case "Field":return[A.name];case "Index":if(A.value>=0)return[A.value];break;case "Subexpression":case "IndexExpression":return A.children.reduce((J,
+E)=>J.concat(q(E)),[])}throw"Jump accepts an exact property/index path; use Query for expressions";};return q(jmespath.compile(m))},Xa=m=>{m={base:e.base,file:e.file,path:m,ops:e.ops};Wa(m,0,"",!1);Ob(m)},mc=(m,q,A)=>{var J=[],E=2,D=1;mb(I=>{if(!W(I.path,m)&&!W(m,I.path))return"skip";if(I.phase=="value"&&aa(I.path,m)&&I.type!="array")throw"Slice requires an array";if(I.path.length>m.length&&W(m,I.path)){var O=I.path[m.length];if(I.phase=="value"){if(O>=A)return"stop";if(O<q)return"skip";if(++D>f.nodes)throw"Slice exceeds idescnodes; choose fewer records";
+}if(I.phase=="end"&&I.path.length==m.length+1&&O>=q){E+=I.end-I.start+1;if(E>f.bytes)throw"Slice exceeds idescbytes; choose fewer records";J.push({start:I.start,end:I.end})}}if(I.phase=="end"&&aa(I.path,m))return"stop"});var F=new java.io.ByteArrayOutputStream;F.write(91);J.forEach((I,O)=>{O&&F.write(44);io.copyJSONRange(d,I.start,I.end,F)});F.write(93);return jsonParse(String(F.toString("UTF-8")))},Ca=m=>{if(m.op=="select")Xa(m.path);else{if(m.op=="slice"&&e.file)var q=mc(e.path,m.start,m.end);else switch(q=
+nb(),m.op){case "slice":if(!isArray(q))throw"Slice requires an array";q=q.slice(m.start,m.end);break;case "path":q=$path(q,m.expression);break;case "from":q=$from(isArray(q)?q:[q]).query(af.fromNLinq(m.expression));break;case "sql":q=$sql(q,m.expression,a.sqlfilter=="advanced"?"h2":a.sqlfilter=="simple"?"nlinq":__);break;default:throw"Unsupported recipe operation";}if(isUnDef(q))throw"Query returned undefined";if(m.op=="slice"&&!e.file){var A=0,J=E=>{if(++A>f.nodes)throw"Slice exceeds idescnodes; choose fewer records";
+(isArray(E)||isMap(E))&&Object.keys(E).forEach(D=>J(E[D]))};J(q)}m={base:q,path:[],ops:lb(e).concat([m])};Ob(m)}},pb=()=>({version:1,source:g.file?"stream":"loaded",operations:lb(e),bookmarks:n}),Pb=m=>{if(!isArray(m)||m.length>1E3)throw"Invalid recipe operations";m.forEach(q=>{if(!isMap(q))throw"Invalid recipe operation";if(q.op=="select"){if(!isArray(q.path)||!q.path.every(A=>isString(A)||typeof A=="number"&&A>=0&&Math.floor(A)==A))throw"Invalid selection path";}else if(q.op=="slice"){if(![q.start,
+q.end].every(A=>typeof A=="number"&&isFinite(A)&&A>=0&&Math.floor(A)==A)||q.end<q.start)throw"Invalid slice";}else if(["path","from","sql"].indexOf(q.op)<0||!isString(q.expression))throw"Invalid recipe operation";})},qb=m=>{Pb(m);var q=e,A=h,J=v,E=u,D=w;e=g;h=[];try{m.forEach(F=>Ca(F)),h=A.concat([q])}catch(F){throw w===D&&(e=q,h=A,v=J,u=E),F;}v=0;u=""},Qb=m=>{if(!isMap(m)||m.version!=1||m.source!=(g.file?"stream":"loaded"))throw"Incompatible idesc recipe";Pb(m.operations);if(!isMap(m.bookmarks))throw"Invalid bookmarks";
+Object.keys(m.bookmarks).forEach(q=>Pb(m.bookmarks[q]));qb(m.operations);n=m.bookmarks},rb=()=>{var m=f.nodes,q=(D,F)=>{if(--m<0)return"[node limit]";if(isString(D))return D.length>f.string?D.substring(0,f.string)+"\u2026 [truncated]":D;if(!isMap(D)&&!isArray(D))return D;var I=isArray(D)?D.length:Object.keys(D).length;if(F==0)return"["+Va(D).type+": "+I+"]";for(var O=isArray(D)?[]:Object.create(null),Z=isArray(D)?null:Object.keys(D),ja=0;ja<Math.min(I,f.page);ja++){var ia=Z?Z[ja]:ja;O[ia]=q(D[ia],
+F-1)}I>f.page&&(O[isArray(O)?O.length:"\u2026 [truncated]"]="["+(I-f.page)+" more entries]");return O};if(e.file){var A=new Map,J=0;mb(D=>{if(!W(D.path,e.path)&&!W(e.path,D.path))return"skip";if(W(e.path,D.path)){var F=D.path.slice(e.path.length),I=stringify(F,__,""),O=A.get(stringify(F.slice(0,-1),__,"")),Z=F[F.length-1],ja=U=>{F.length?O&&(O.value[Z]=U):E=U};if(D.phase=="value"){if(O&&++O.count>f.page||--m<0)return O&&(O.value[isArray(O.value)?O.value.length:"\u2026 [truncated]"]="[more entries]"),
+F.length==1?"stop":"skip";if(D.type=="map"||D.type=="array"){if(F.length>=f.depth)return ja("["+D.type+": depth limit]"),"skip";var ia=D.type=="array"?[]:Object.create(null);A.set(I,{value:ia,count:0});ja(ia)}}else D.type!="map"&&D.type!="array"&&(!O||O.count<=f.page)&&(I=D.end-D.start,I>Math.min(f.bytes-J,f.string*8+2)?ja("["+D.type+": "+I+" bytes; omitted]"):(ia=new java.io.ByteArrayOutputStream,io.copyJSONRange(d,D.start,D.end,ia),J+=I,ja(q(jsonParse(String(ia.toString("UTF-8"))),0))));if(D.phase==
+"end"&&!F.length)return"stop"}});Ba()}else var E=q(nb(),f.depth);isDef(E)&&(E=JSON.parse(JSON.stringify(E)));return{value:E,format:y||(isArray(E)&&E.every(isMap)?"ctable":"ctree")}},Rb=()=>{var m=e,q=h,A=v,J=u,E=w;try{Ca({op:"slice",start:0,end:100});var D=nb(),F=Object.create(null);D.forEach(I=>{isMap(I)&&Object.keys(I).forEach(O=>{F[O]||(F[O]={field:O,present:0,types:[]});F[O].present++;var Z=Va(I[O]).type;F[O].types.indexOf(Z)<0&&F[O].types.push(Z)})});return{sampled:D.length,fields:Object.keys(F).map(I=>
+merge(F[I],{missing:D.length-F[I].present}))}}finally{w===E&&(e=m,h=q,v=A,u=J)}},Sb=(m,q)=>{var A=e,J=h,E=v,D=u,F=w;try{var I=q?rb().value:Wa(e,0,"",!0);qb(m);var O=q?rb().value:Wa(e,0,"",!0);loadDiff();return JsDiff.diffLines(stringify(I),stringify(O)).map(Z=>{var ja=Z.added?"+ ":Z.removed?"- ":"  ",ia=Z.added?"GREEN":Z.removed?"RED":"FAINT";Z=Z.value.split("\n");Z[Z.length-1]===""&&Z.pop();return Z.map(U=>K(ia,ja+U)).join("\n")+"\n"}).join("")}finally{w===F&&(e=A,h=J,v=E,u=D)}},Ya=(m,q)=>{if(e.file&&
+q=="json"){var A=ic(e.path,!1);Ba();q=()=>io.copyJSONRange(d,A.start,A.end,m,c?{cancel:()=>G=!(!c.cancel||!c.cancel()),progress:c.progress}:__);c&&c.scan?c.scan(q):q();Ba()}else q=$o(nb(),{__format:q},__,!0),ioStreamWrite(m,q,__,!0)},Fb=(m,q)=>{m=java.nio.file.Paths.get(m).toAbsolutePath();var A=m.getParent();A=java.nio.file.Files.createTempFile(A,".idesc-",".tmp");var J=io.writeFileStream(String(A));try{try{q(J)}finally{J.close()}java.nio.file.Files.move(A,m,java.nio.file.StandardCopyOption.REPLACE_EXISTING)}finally{java.nio.file.Files.deleteIfExists(A)}},
+fd=()=>{ow.loadFormat();var m=ow.format.string,q=f.page,A=new Map,J=new Set,E="",D=__,F=0,I=0,O=__,Z=__,ja=-1,ia=__,U="tree",N="",T="",ha=!1,da=__,ma=__,B=[],ca=0,pa="",ra=!0,Da=new Set,ba=[],Gb,Lc=c.progress,Mc=(l,k)=>l+":"+stringify(k,__,""),ta=(l,k)=>K(l,k),Nc=(l,k)=>k,nc=l=>l<1024?l+" B":l<1048576?(l/1024).toFixed(1)+" KB":(l/1048576).toFixed(1)+" MB",oc=l=>l.length?l.map((k,C)=>typeof k=="number"?"["+k+"]":/^[A-Za-z_$][\w$]*$/.test(k)?(C?".":"")+k:(C?".":"")+stringify(k,__,"")).join(""):"@",
+Oc=l=>isString(l)?/^[A-Za-z_$][\w$-]*$/.test(l)?l:stringify(l,__,""):"["+l+"]",ua=()=>{var l=c.size();return{w:Math.max(24,l.width),h:Math.max(9,l.height)}},pc=l=>stringify(l,__,"")+(aa(l,e.path)?"?"+E:""),Za=l=>{var k=pc(l),C=A.get(k);C||(C=kc(l,0,q,aa(l,e.path)?E:""),A.set(k,C));return C},qc=l=>{var k=Za(l),C=kc(l,k.rows.length,q,aa(l,e.path)?E:"");A.set(pc(l),{meta:k.meta,rows:k.rows.concat(C.rows),more:C.more,matched:C.matched})},Pc=(l,k)=>{if(!k.rows.length||!k.rows.every(M=>M.type=="map"||M.type==
+"null")||!k.rows.some(M=>M.type=="map"))return null;try{var C=e.file?mc(l,0,k.rows.length):Eb(e.base,l).slice(0,k.rows.length);if(!C.every(M=>M===null||isMap(M)&&Object.keys(M).every(S=>!(isMap(M[S])||isArray(M[S])))))return null;var x=[];C.forEach(M=>{M&&Object.keys(M).forEach(S=>{x.indexOf(S)<0&&x.push(S)})});if(!x.length)return null;var z=C.map(M=>x.map(S=>{M&&isDef(M[S])?(S=M[S],S=String(isString(S)?S:stringify(S,__,"")).replace(/[\r\n\t]+/g," ")):S="";return S})),L=C.map(M=>x.map(S=>M&&isDef(M[S])?
+M[S]===null?"null":typeof M[S]:"null")),Y=x.map((M,S)=>Math.min(48,z.reduce((la,ea)=>Math.max(la,visibleLength(ea[S])),visibleLength(M))));return{cols:x,cells:z,types:L,widths:Y}}catch(M){return null}},Qc=(l,k)=>{l=l.widths.slice();for(k=Math.max(8,k);l.reduce((C,x)=>C+x+1,-1)>k&&Math.max.apply(null,l)>6;)l[l.indexOf(Math.max.apply(null,l))]--;return l},rc=(l,k,C,x)=>k.map((z,L)=>C(isFunction(x)?x(L):x||"RESET",m.ansiPad(m.ansiClip(z,l[L],"\u2026"),l[L]))).join(C(X("table.lines","FAINT"),"\u2502")),
+Rc=(l,k)=>ra&&!Da.has(l)&&k.table,sc={single:"\u2500 ",first:"\u256d ",mid:"\u251c ",last:"\u2570 "},tc=(l,k)=>k==1?"single":l==0?"first":l==k-1?"last":"mid",Wc=()=>{var l=[],k=(x,z,L,Y,M)=>{var S=stringify(x,__,""),la=!ya(z.type)&&(M||J.has(S));if(la){var ea=Za(x);!isUnDef(z.size)||ea.more||M&&E||(z=ob(ob({},z),{size:ea.rows.length}));z.type=="array"&&isUnDef(ea.table)&&(ea.table=Pc(x,ea))}var $a=la&&z.type=="array"&&Rc(S,ea);l.push({kind:"node",path:x,info:z,lead:M?"":L+sc[Y],open:la,id:S,rid:"n:"+
+stringify(x,__,""),root:M,table:$a,tableable:la&&!(!ea||!ea.table)});if(la){var ab=M?"":L+(Y=="last"||Y=="single"?"  ":"\u2502 "),uc=ea.rows.length+(ea.more?1:0);if($a){var bb=ea.table;l.push({kind:"decor",rid:"d:"+S+":h",lead:ab,table:bb,cells:bb.cols,head:!0});l.push({kind:"decor",rid:"d:"+S+":s",lead:ab,table:bb,sep:!0});ea.rows.forEach((cb,sb)=>{var Sc=l.push,Tc=x.concat([cb.key]),Uc=bb.cells[sb],Vc=bb.types[sb];var Tb=x.concat([cb.key]);Tb="t:"+stringify(Tb,__,"");return Sc.call(l,{kind:"trow",
+path:Tc,info:cb,lead:ab,table:bb,cells:Uc,types:Vc,band:sb%2==1,rid:Tb,arrayId:S})});ea.more&&l.push({kind:"more",path:x,lead:ab,rid:"m:"+stringify(x,__,""),remaining:isDef(ea.meta.size)&&!E?ea.meta.size-ea.rows.length:__})}else ea.rows.forEach((cb,sb)=>k(x.concat([cb.key]),cb,ab,tc(sb,uc),!1)),ea.more&&l.push({kind:"more",path:x,lead:ab+sc[tc(ea.rows.length,uc)],rid:"m:"+stringify(x,__,""),remaining:isDef(ea.meta.size)&&!E?ea.meta.size-ea.rows.length:__})}},C=Za(e.path);k(e.path,ob({key:e.path.length?
+e.path[e.path.length-1]:"@"},C.meta),"","single",!0);ba=l},Xc=()=>{var l=ua().h-5,k=D?ba.findIndex(C=>C.rid==D):-1;for(k<0&&(k=Math.max(0,Math.min(F,ba.length-1)));k<ba.length-1&&ba[k]&&ba[k].kind=="decor";)k++;F=k;D=ba.length?ba[k].rid:__;k<I&&(I=k);k>=I+l&&(I=k-l+1);I=Math.max(0,Math.min(I,Math.max(0,ba.length-l)))},Ea=(l,k)=>{if(ba.length){k=k||(l<F?-1:1);for(l=Math.max(0,Math.min(l,ba.length-1));l>=0&&l<ba.length&&ba[l].kind=="decor";)l+=k;if(l<0||l>=ba.length)for(l=Math.max(0,Math.min(l,ba.length-
+1));ba[l].kind=="decor";)l-=k;F=l;D=ba[l].rid}},vc=(l,k)=>{T=l;ha=!!k},Yc=(l,k,C)=>{var x=k?Nc:ta,z=C-1,L=X("tree.lines","FAINT");if(l.kind=="decor"||l.kind=="trow"){var Y=Qc(l.table,z-l.lead.length);var M=x(L,l.lead);if(l.head)M+=rc(Y,l.cells,x,X("table.title","BOLD"));else if(l.sep)M+=x(X("table.lines","FAINT"),Y.map($a=>"\u2500".repeat($a)).join("\u253c"));else{var S=!l.band||typeof __flags!="undefined"&&__flags.TABLE&&__flags.TABLE.bandRows===!1?"":X("table.bandRow","BOLD")+",";M+=rc(Y,l.cells,
+x,$a=>S+Db(l.types[$a]))}if(l.kind=="decor")return" "+m.ansiClip(M,z)}else if(l.kind=="more")M=x(L,l.lead)+x(X("default","CYAN"),"\u2026 "+(isDef(l.remaining)?l.remaining+" more":"more entries")+" \u2014 Enter loads "+q);else{Y=l.info;var la=ya(Y.type);M=la?"  ":l.open?"\u25be ":"\u25b8 ";var ea=x(isString(Y.key)?X("key","CYAN"):X("number","YELLOW"),l.root&&l.path.length==0?"@":Oc(Y.key));la?(la=isDef(Y.omitted)?"\u2039"+Y.type+", "+nc(Y.omitted)+"\u203a":isDef(Y.value)?stringify(Y.value,__,""):"",
+la.length>f.string&&(la=la.substring(0,f.string)+"\u2026"),la=x(L,": ")+x(Db(Y.type),la)):(la=isDef(Y.size)?String(Y.size):"?",la=" "+x(Db(Y.type),Y.type=="map"?"{"+la+"}":"["+la+"]")+(isDef(Y.bytes)?x(L," "+nc(Y.bytes)):""));M=x(L,l.lead)+x(L,M)+ea+la;C>=56&&(M=m.ansiPad(m.ansiClip(M,z-9),z-9)+x(L," "+(l.table?"table":Y.type)))}M=m.ansiClip(M,z);if(!k)return" "+M;k=m.ansiPad("\u258c"+M,C);return K(X("askChoose","BOLD,CYAN"),k)},Zc=()=>{var l=C=>{var x=X("md.heads.h3","BOLD");return K(x,C)},k=(C,
+x)=>{var z=X("default","YELLOW");C=m.ansiPad(C,22);return"  "+K(z,C)+x};return[l("Move"),k("\u2191 k   \u2193 j","move the cursor"),k("PgUp PgDn","page up / down (Ctrl-U Ctrl-D: half a page)"),k("g G   Home End","first / last row"),"",l("Expand and collapse (view only, never recorded)"),k("\u2192 l","expand; if open, enter its children; on a \u201cmore\u201d row, load more"),k("\u2190 h","collapse; else go to the parent row; on the root, zoom out"),k("Space","toggle expand"),k("*","expand all children one level"),
+k("t   T","table / tree for the focused array  \u00b7  for every array"),"",l("Zoom (recorded in the recipe)"),k("Enter","make the focused container the root; scalars open a preview"),k("Backspace u","zoom out one level"),k("~ 0","back to the original root"),k("U","undo the last zoom or query"),"",l("Inspect"),k("/","filter child names of the root as you type (Esc clears)"),k("p","bounded preview of the focused node (f cycles ctree/ctable/cyaml)"),k("y","show the reusable path= of the focused node"),
+k("?","this help"),k("q Ctrl-C","quit; nothing is emitted unless you export"),"",l("Commands  (press : then type; Tab completes, \u2191\u2193 recall)"),k("path|from|sql <expr>","query the focused node (also: query path|from|sql <expr>)"),k("slice a:b","array entries a to b (end exclusive)"),k("jump <path>","zoom to an exact path, e.g. items[2].nested"),k("count | fields","entry count | field summary of the focused node"),k("bm [name]","list / save a bookmark;  bm go <name>  \u00b7  bm rm <name>"),
+k("compare <bm> [values]","diff the focused node with a bookmark"),k("recipe [print]","show;  recipe save <file>  \u00b7  recipe load <file>"),k("export json|yaml <file>","write the focused node; use - to write to stdout and quit"),k("format <fmt>","preview format: ctree, ctable, cyaml or auto"),k("quit","leave without emitting data"),"",ta(X("tree.lines","FAINT"),"  q or Esc closes this help")]},$c=()=>{var l=ua(),k=l.w,C=l.h-5;l=[];var x=da;x&&x.width!=k&&(x.lines=String(x.make()).split("\n"),x.width=
+k,x.top=Math.min(x.top,Math.max(0,x.lines.length-C)));var z=X("tree.lines","FAINT"),L=e.file?ta(X("string","CYAN"),"\ud83d\udcbe file"):e.ops.length?ta(X("default","YELLOW"),"\u26a1 derived"):ta(X("number","GREEN"),"\ud83d\udce5 loaded");L=ta(X("askPre","YELLOW,BOLD"),"oafp")+" "+(x?ta(X("askQuestion","BOLD"),x.title):hc(e.path))+K(z,"  \u2502 ")+L+ta(z," \u00b7 "+lb(e).length+" ops");l.push(L);l.push(qa(k));if(x)for(L=0;L<C;L++)l.push(x.lines[x.top+L]!=null?" "+x.lines[x.top+L]:"");else for(L=0;L<
+C;L++){var Y=ba[I+L];l.push(Y?Yc(Y,I+L==F&&U!="overlay",k):"")}l.push(qa(k));C=M=>{var S=X("askPre","YELLOW,BOLD");return K(S,M)};L=M=>{var S=X("askQuestion","BOLD");return K(S,M)};U=="filter"?C=C("/")+L(N)+K(z,"\u258f")+K(z,"  "+(ba.length?"":"no match")):U=="cmd"?C=C(":")+L(N)+K(z,"\u258f"):U=="confirm"?C=C("? ")+L(ma.text):T?C=ha?K("RED",T):ta(X("askPos","GREEN"),T):x?C=K(z,"line "+(x.top+1)+"/"+Math.max(1,x.lines.length)):(C=(Y=ba[F])&&Y.kind!="decor"?ta(X("askQuestion","BOLD"),oc(Y.path))+K(z,
+"  "+(F+1)+"/"+ba.length):"",E&&(C+=ta(X("askChooseFilter","UNDERLINE"),"  \ud83d\udd0d "+stringify(E,__,""))));l.push(C);l.push(ta(z,{tree:"\u2190\u2191\u2193\u2192 hjkl move \u00b7 \u23ce zoom \u00b7 \u232b up \u00b7 ~ top \u00b7 / filter \u00b7 t table/tree \u00b7 : cmd \u00b7 p preview \u00b7 ? help \u00b7 q quit",overlay:"\u2191\u2193 PgUp/PgDn scroll \u00b7 g/G ends \u00b7 f format (preview) \u00b7 q/Esc close",filter:"type to filter child names \u00b7 \u23ce keep \u00b7 Esc clear",cmd:"\u23ce run \u00b7 Tab complete \u00b7 \u2191\u2193 history \u00b7 Esc cancel \u00b7 try: path [?x>`1`] | slice 0:10 | export json -",
+confirm:"y confirms \u00b7 any other key cancels"}[x?"overlay":U]));c.write("\u001b[H"+l.map(M=>m.ansiClip(M,k,"\u2026")+"\u001b[K").join("\r\n"),!1)},Na=(l,k,C)=>{var x=String(k()).split("\n");da={title:l,make:k,formats:!!C,lines:x,top:0,width:ua().w};U="overlay"},tb=l=>{var k=da,C=ua().h-5;k.top=Math.max(0,Math.min(k.top+l,Math.max(0,k.lines.length-C)))},wc=(l,k)=>{var C=ua().w-1,x=c.ansi!==!1;return k=="ctable"&&(isArray(l)||isMap(l))?printTable(isMap(l)?[l]:l,C,!0,x,x?"utf":__,__,!0,!1,!0):k==
+"ctree"?printTreeOrS(l,C,{noansi:!x,mono:!1,color:!0}):$o(l,{__format:k},__,!0)},Hb=l=>wc(l,"ctree"),xc=l=>Na("Preview "+na(l)+" (bounded)",()=>{var k=Ma(l,rb);return wc(k.value,k.format)},!0),ub=l=>{aa(l,e.path)||(Xa(l),D="n:"+stringify(l,__,""),I=0)},yc=()=>{if(e.path.length){var l=e.path;wa.parent();D="n:"+stringify(l,__,"")}else T="Already at the top",ha=!1},Ub=l=>{J.add(l.id);try{Za(l.path)}catch(k){throw J.delete(l.id),k;}},ad=l=>{var k=ba[l];k.kind=="more"?k=stringify(k.path,__,""):(k=k.path.slice(0,
+-1),k=stringify(k,__,""));for(--l;l>=0;l--)if(ba[l].kind=="node"&&stringify(ba[l].path,__,"")==k)return l;return-1},bd=(l,k)=>{U="confirm";ma={text:l,run:k}},zc=(l,k,C)=>{C=()=>{Fb(l,k);T="\u2714 Saved: "+l;ha=!1};io.fileExists(l)?bd("Replace "+l+"? (y/N)",C):C()},cd="path from sql query slice jump count fields bm compare recipe export format help quit".split(" "),Ac=l=>{if(l=String(l).trim().match(/^(\S+)\s*(.*)$/)){var k=l[1],C=l[2],x=ba[F]?ba[F].path:e.path;switch(k){case "path":case "from":case "sql":if(!C)throw"Use: "+
+k+" <expression>";ub(x);Ca({op:k,expression:C});break;case "query":var z=C.match(/^(path|from|sql)\s+(.+)$/);if(!z)throw"Use: query path|from|sql <expression>";ub(x);Ca({op:z[1],expression:z[2]});break;case "slice":z=C.match(/^(\d+):(\d+)$/);if(!z||Number(z[2])<Number(z[1]))throw"Use non-negative start:end";ub(x);Ca({op:"slice",start:Number(z[1]),end:Number(z[2])});break;case "jump":ub(lc(C));break;case "count":Na("Count entries "+na(x),()=>Hb(Ma(x,()=>Wa(e,0,"",!0).meta)));break;case "fields":Na("Field summary "+
+na(x),()=>Hb(Ma(x,Rb)));break;case "bm":if(!C){Na("Bookmarks",()=>Object.keys(n).length?Hb(Object.keys(n).map(L=>({name:L,operations:n[L].length}))):"No bookmarks yet. Use: bm <name>");break}if(z=C.match(/^(go|rm)\s+(.+)$/)){if(!n[z[2]])throw"No bookmark named "+z[2];z[1]=="rm"?(delete n[z[2]],T="Removed bookmark "+z[2]):(qb(n[z[2]]),T="Jumped to bookmark "+z[2])}else Ma(x,()=>wa.bookmark(C)),T="\ud83d\udd16 Bookmark saved: "+C;ha=!1;break;case "compare":z=C.match(/^(.+?)(\s+values)?$/);if(!z||!n[z[1]])throw"Use: compare <bookmark> [values]";
+Na("Compare "+na(x)+" with "+z[1],()=>Ma(x,()=>Sb(n[z[1]],!!z[2])));break;case "recipe":z=C.match(/^(print|save|load)?\s*(.*)$/);if(z[1]&&z[1]!="print")if(z[2])z[1]=="save"?zc(z[2],L=>ioStreamWrite(L,stringify(pb()),__,!0)):Qb(io.readFileJSON(z[2]));else throw"Use: recipe "+z[1]+" <file>";else Na("Recipe",()=>Hb(pb())+"\n"+(e.ops.length?"":"path="+stringify(na(e.path))+"\n")+"\u25b6 Replay: oafp <source arguments> idescrecipe=<saved-file> out=json");break;case "export":z=C.match(/^(json|yaml)\s+(.+)$/);
+if(!z)throw"Use: export json|yaml <file|->";z[2]=="-"?(Gb={type:z[1],path:x},p=!0):zc(z[2],L=>Ma(x,()=>Ya(L,z[1])));break;case "format":if(["ctree","ctable","cyaml","auto"].indexOf(C)<0)throw"Use: format ctree|ctable|cyaml|auto";y=C=="auto"?__:C;T="Preview format: "+C;ha=!1;break;case "help":Na("Help",()=>Zc().join("\n"));break;case "quit":case "q":p=!0;break;default:throw"Unknown command: "+k+" (try ? for help)";}}},dd=()=>{var l=N.match(/^(\S*)$/);if(l){var k=cd.filter(C=>C.indexOf(l[1])==0);k.length==
+1?N=k[0]+" ":k.length>1&&vc(k.join("  "))}},ed=l=>{var k=ba[F],C=ua().h-5,x=k&&k.kind=="trow";switch(l){case "up":case "k":Ea(F-1,-1);break;case "down":case "j":Ea(F+1,1);break;case "pgup":case "ctrl-u":Ea(F-Math.max(1,l=="pgup"?C-1:Math.floor(C/2)),-1);break;case "pgdn":case "ctrl-d":Ea(F+Math.max(1,l=="pgdn"?C-1:Math.floor(C/2)),1);break;case "home":case "g":Ea(0,1);break;case "end":case "G":Ea(ba.length-1,-1);break;case "right":case "l":if(!k||x)break;if(k.kind=="more"){qc(k.path);break}if(ya(k.info.type))break;
+k.open?ba[F+1]&&ba[F+1].lead.length>k.lead.length&&Ea(F+1):Ub(k);break;case "left":case "h":if(!k)break;if(k.kind=="node"&&k.open&&!k.root){J.delete(k.id);break}if(k.root){yc();break}x=ad(F);x>=0&&Ea(x);break;case " ":!k||k.kind!="node"||k.root||ya(k.info.type)||(k.open?J.delete(k.id):Ub(k));break;case "enter":if(!k)break;k.kind=="more"?qc(k.path):ya(k.info.type)?xc(k.path):k.root?(T="Already the root; use \u2192 to open children, \u232b to zoom out",ha=!1):ub(k.path);break;case "backspace":case "u":yc();
+break;case "~":case "0":e.path.length||e.ops.length?(wa.root(),D=Mc("n",[])):(T="Already at the original root",ha=!1);break;case "U":h.length?(wa.back(),D=__):(T="Nothing to undo",ha=!1);break;case "*":k&&k.kind=="node"&&!ya(k.info.type)&&(Ub(k),Za(k.path).rows.forEach(z=>{if(!ya(z.type)){var L=J.add;z=k.path.concat([z.key]);z=stringify(z,__,"");L.call(J,z)}}));break;case "/":U="filter";N=E;break;case ":":U="cmd";N="";ca=B.length;break;case "?":Ac("help");break;case "p":k&&k.kind!="more"&&xc(k.path);
+break;case "y":k&&k.kind!="more"&&vc("path="+(k.path.length?oc(k.path):"@"));break;case "t":l=k?x?k.arrayId:k.kind=="more"?stringify(k.path,__,""):k.kind=="node"&&k.info.type=="array"&&k.open?k.id:__:__;if(isUnDef(l)){T="Select an expanded array to switch between table and tree";ha=!1;break}if(!Za(jsonParse(l)).table){T="Not shown as a table: every entry must be a flat map";ha=!1;break}Da.has(l)?(Da.delete(l),T="Table view"):(Da.add(l),x&&(D="n:"+stringify(k.path,__,"")),T="Tree view");ha=!1;break;
+case "T":ra=!ra;!ra&&x&&(D="n:"+stringify(k.path,__,""));T=ra?"Arrays of flat maps shown as tables":"Tables off: arrays shown as trees";ha=!1;break;case "esc":E&&(E="",D="n:"+stringify(e.path,__,""));break;case "q":case "ctrl-c":case "eof":p=!0}};c.progress=l=>{var k=X("askPre","YELLOW,BOLD");l=K(k,"\u23f3 ")+"Scanning: "+l+" bytes (Ctrl-C cancels)";c.write("\u001b["+(ua().h-1)+";1H"+m.ansiClip(l,ua().w,"\u2026")+"\u001b[K",!1)};var Bc=()=>{c.altScreen&&c.altScreen(!0);try{for(;!p;){G=!1;try{var l=
+stringify(e.ops,__,""),k=stringify(e.path,__,"");if(O!==e.base||Z!==l||ja!==oa)A.clear(),J.clear(),E="",D=__,I=0,O=e.base,Z=l,ja=oa;ia!==k&&(E="",ia=k);Wc();Xc()}catch(S){ba=ba||[],T=G?"Scan cancelled.":"Error: "+S,ha=!0}try{$c()}catch(S){T="Error: "+S,ha=!0}for(var C;isUnDef(C=c.readKey(250));){var x=ua();if(x.w+"x"+x.h!=pa){pa=x.w+"x"+x.h;break}}pa=ua().w+"x"+ua().h;if(!isUnDef(C))try{var z=C;T="";ha=!1;if(U=="confirm"){var L=ma;U="tree";ma=__;z=="y"||z=="Y"?L.run():(T="Cancelled",ha=!1)}else if(U==
+"overlay"){L=z;z=da;var Y=ua().h-5;switch(L){case "up":case "k":tb(-1);break;case "down":case "j":tb(1);break;case "pgup":case "b":tb(-(Y-1));break;case "pgdn":case " ":tb(Y-1);break;case "home":case "g":z.top=0;break;case "end":case "G":tb(z.lines.length);break;case "f":if(z.formats){L=["ctable","ctree","cyaml"];var M=L[(L.indexOf(y)+1)%L.length];y=M;z.lines=String(z.make()).split("\n");z.top=0;T="Preview format: "+M;ha=!1}break;case "q":case "esc":case "enter":da=__;U="tree";break;case "ctrl-c":case "eof":p=
+!0}}else if(U=="tree")ed(z);else switch(L=U=="filter",z){case "esc":case "ctrl-c":L&&(E="",D="n:"+stringify(e.path,__,""));U="tree";break;case "eof":p=!0;break;case "enter":L?U="tree":(z=N,U="tree",z.trim()&&(B.push(z),Ac(z)));break;case "backspace":N.length?N=N.substring(0,N.length-1):L||(U="tree");L&&(E=N.toLowerCase(),D="n:"+stringify(e.path,__,""));break;case "tab":L||dd();break;case "up":!L&&ca>0&&(N=B[--ca]);break;case "down":!L&&ca<B.length&&(N=ca+1<B.length?B[++ca]:(ca++,""));break;default:isString(z)&&
+"left right home end pgup pgdn delete insert shift-tab".split(" ").indexOf(z)<0&&!/^(ctrl|alt)-/.test(z)&&(N+=z,L&&(E=N.toLowerCase(),D="n:"+stringify(e.path,__,"")))}}catch(S){U=U=="confirm"?"tree":U,T=G?"Scan cancelled.":"Error: "+S,ha=!0}}}finally{c.progress=Lc,c.altScreen&&c.altScreen(!1)}};c.raw?c.raw(Bc):Bc();Gb&&Ma(Gb.path,()=>Ya(java.lang.System.out,Gb.type))},wa={path:()=>na(e.path),recipe:pb,load:Qb,replay:qb,list:()=>Wa(e,v*f.page,u,!1),current:nb,saveData:(m,q)=>Fb(m,A=>Ya(A,q)),select:Xa,
+apply:Ca,preview:rb,fields:Rb,compare:Sb,exportData:Ya,back:()=>{h.length&&(e=h.pop(),v=0,u="")},root:()=>Ob(g),parent:()=>{e.path.length&&Xa(e.path.slice(0,-1))},bookmark:m=>{if(!m.length)throw"Bookmark name is empty";n[m]=lb(e)},close:()=>{p=!0},runMenu:()=>{var m=(B,ca)=>c.choose?c.choose(B,ca):askChoose(B,ca,12,__,c),q=B=>{B=c.ask?c.ask(B):ask(B,__,c.console,!0,c.write);if(B==null)throw J;return String(B)},A=B=>!io.fileExists(B)||m("Replace "+B+"?",["Cancel","Replace","Back"])===1,J={},E=(B,ca,
+pa,ra)=>({id:B,label:ca,handler:pa,available:ra||(()=>!0)}),D=(B,ca)=>{ca=ca.filter(pa=>pa.available());B=m(B,ca.map(pa=>pa.label).concat(["Back"]));isNumber(B)&&B>=0&&B<ca.length&&ca[B].handler()};for(c.write("\n"+K("BOLD,CYAN","oafp")+K("BOLD"," | Interactive data explorer")+"\n"+qa(58));!p;)try{G=!1;var F=wa.list();c.write("\n\ud83d\udccd "+hc(e.path)+K("FAINT","  "+na(e.path)));var I=e.file?K("CYAN","\ud83d\udcbe file-backed"):e.ops.length?K("YELLOW","\u26a1 derived"):K("GREEN","\ud83d\udce5 loaded"),
+O=isDef(F.meta.size)?K("WHITE",String(F.meta.size))+K("FAINT"," entries"):K("FAINT","count unknown"),Z=K("FAINT",lb(e).length+" operations");c.write((ec[F.meta.type]||"\u25ab")+" "+K("BOLD,"+Db(F.meta.type),F.meta.type)+K("FAINT"," \u00b7 ")+O+K("FAINT"," \u00b7 ")+I+K("FAINT"," \u00b7 ")+Z);var ja=K("FAINT","\ud83d\udcc4 page ")+K("BOLD,WHITE",String(v+1))+K("FAINT"," \u00b7 ")+K("WHITE",F.rows.length+" shown")+K("FAINT"," \u00b7 ")+(F.more?K("BOLD,CYAN","more \u25b8"):K("FAINT","last page")),ia=
+u?K("BOLD,YELLOW"," \u00b7 \ud83d\udd0d names containing "+stringify(u,__,"")):"";c.write(ja+ia);F.rows.length||c.write(u?K("YELLOW","\u26a0\ufe0f  No matching names. Navigate > Filter names: blank clears the listing filter."):K("FAINT","\u2139\ufe0f  No child entries. Preview to inspect this value."));c.write(qa(58));c.write(K("FAINT","\ud83d\udca1 Use arrows and Enter to select, or enter a number when numbered choices are shown. Pick \u2b06 .. to go up."));var U=B=>{switch(B){case "parent":wa.parent();
+break;case "root":wa.root();break;case "undo":wa.back();break;case "next":F.more&&v++;break;case "previous":v=Math.max(0,v-1);break;case "filter":u=q("Listing name contains (blank clears; data is unchanged): ").toLowerCase();v=0;break;case "jump":Xa(lc(q("Exact path from current view root (e.g. @.items[2]): ")));break;case "slice":B=q("Array slice start:end (end exclusive): ").match(/^(\d+):(\d+)$/);if(!B||Number(B[2])<Number(B[1]))throw"Use non-negative start:end";Ca({op:"slice",start:Number(B[1]),
+end:Number(B[2])});break;case "count":c.write(K("BOLD,CYAN","\u2500\u2500 Count Entries ")+qa(40));c.write($o(Wa(e,0,"",!0).meta,{__format:"ctree"},__,!0));c.write(qa(58));break;case "query":B=m("Query engine",["path","from","sql","Back"]);isNumber(B)&&B>=0&&B<3&&Ca({op:["path","from","sql"][B],expression:q("Expression (relative to selection): ")});break;case "preview":B=m("Preview format",["Automatic / remembered","ctable","ctree","cyaml","Back"]);isNumber(B)&&B>=0&&B<4&&(B&&(y=["","ctable","ctree",
+"cyaml"][B]),B=rb(),c.write(K("BOLD,CYAN","\u2500\u2500 Bounded preview ")+K("FAINT","(entries/depth/strings may be truncated) \u2500\u2500\u2500\n")+$o(B.value,{__format:B.format},__,!0)+"\n"+qa(58)));break;case "fields":c.write(K("BOLD,CYAN","\u2500\u2500 Field Summary ")+qa(40));c.write($o(Rb(),{__format:"ctree"},__,!0));c.write(qa(58));break;case "bookmarks":B=Object.keys(n);var ca=m("Bookmarks",["Save current..."].concat(B,["Back"]));ca===0?(B=q("Bookmark name: "),wa.bookmark(B),c.write(K("BOLD,GREEN",
+"\ud83d\udd16 Bookmark saved: ")+K("WHITE",B))):isNumber(ca)&&ca>0&&ca<=B.length&&qb(n[B[ca-1]]);break;case "compare":B=Object.keys(n);if(!B.length){c.write("Save a bookmark first, then compare it with the current selection.");break}ca=m("Compare current with",B.concat(["Back"]));if(isNumber(ca)&&ca>=0&&ca<B.length){var pa=m("Comparison",["Structure (first page; counts if available)","Bounded values (preview limits)","Back"]);isNumber(pa)&&pa>=0&&pa<2&&(c.write(K("BOLD,CYAN","\u2500\u2500 Diff Comparison ")+
+qa(38)),c.write(Sb(n[B[ca]],pa===1)),c.write(qa(58)))}break;case "recipe":B=m("Recipe",["Print","Save\u2026","Load\u2026","Back"]);B===0?(c.write(K("BOLD,CYAN","\u2500\u2500 Recipe ")+qa(47)),c.write($o(pb(),{__format:"ctree"},__,!0)),e.ops.length||c.write(K("CYAN","path=")+stringify(na(e.path))),c.write(K("BOLD,GREEN","\u25b6 Replay: ")+K("WHITE","oafp <source arguments> idescrecipe=<saved-file> out=json")),c.write(qa(58))):B===1?(B=q("Recipe file: "),A(B)&&(Fb(B,Da=>ioStreamWrite(Da,stringify(pb()),
+__,!0)),c.write(K("BOLD,GREEN","\u2714 Saved: ")+K("WHITE",B)))):B===2&&Qb(io.readFileJSON(q("Recipe file: ")));break;case "export":var ra=m("Data format",["json","yaml","Back"]);if(!isNumber(ra)||ra<0||ra>=2)break;B=m("Destination",["File\u2026","Stdout and exit","Back"]);B===0?(B=q("Output file: "),A(B)&&(Fb(B,Da=>Ya(Da,["json","yaml"][ra])),c.write(K("BOLD,GREEN","\u2714 Saved: ")+K("WHITE",B)))):B===1&&(Ya(java.lang.System.out,["json","yaml"][ra]),p=!0);break;case "quit":p=!0}},N=(B,ca,pa)=>E(B,
+ca,()=>U(B),pa),T=[N("preview","\ud83d\udd0d Preview..."),N("query","\ud83e\uddee Query..."),N("export","\ud83d\udcbe Export..."),E("navigate","\ud83e\udded Navigate...",()=>D("Navigate",[N("parent","Parent",()=>e.path.length>0),N("root","Original root",()=>e.path.length>0||e.ops.length>0),N("undo","Undo last change",()=>h.length>0),N("next","Next page",()=>F.more),N("previous","Previous page",()=>v>0),N("filter","Filter names..."),N("jump","Jump to path...")])),E("tools","\ud83e\uddf0 Tools...",
+()=>D("Tools",[N("slice","Slice array...",()=>F.meta.type=="array"),N("count","Count entries"),N("fields","Field summary",()=>F.meta.type=="array"),N("bookmarks","Bookmarks..."),N("compare","Compare with bookmark...",()=>Object.keys(n).length>0),N("recipe","Recipe...")])),N("quit","\ud83d\udeaa Quit")],ha=e.path.length?[N("parent","\u2b06 .. parent"+(e.path.length>1?" ("+fc(na(e.path.slice(0,-1)),40)+")":" (root)"))]:[];e.path.length>1&&ha.push(N("root","\u2302 original root"));T=ha.concat(T);var da=
+F.rows.map(B=>(ec[B.type]||"\u25ab")+" "+(isString(B.key)?stringify(B.key,__,""):"["+B.key+"]")+" | "+B.type+(isDef(B.size)?" | "+B.size+" entries":"")),ma=m("Explore",T.map(B=>B.label).concat(da));if(!isNumber(ma)||ma<0)break;ma<T.length?T[ma].handler():ma<T.length+F.rows.length&&Xa(e.path.concat([F.rows[ma-T.length].key]))}catch(B){B!==J&&c.write(G?K("YELLOW","Scan cancelled."):K("RED","Error: "+B))}},run:()=>c&&c.readKey&&c.size&&c.ansi!==!1?fd():wa.runMenu()};return wa},Cc=()=>{if(typeof askConsole!=
+"function")throw"idesc requires OpenAF askConsole/askChoose UI support; rebuild/update OpenAF";var b=askConsole(),d=b.console.getConsoleReader().getTerminal().unwrap(),c=0;if(b.ansi){if(typeof askKey!="function"||!["read","size","raw","altScreen"].every(f=>isFunction(b[f])))throw"out=idesc needs OpenAF askKey and askConsole read/size/raw/altScreen support; rebuild/update OpenAF";b.readKey=f=>askKey(b,f)}b.scan=f=>{var g=d.enterRawMode();try{return f()}finally{d.setAttributes(g)}};b.cancel=()=>d.reader().read(1)==
+3;b.progress=f=>{now()-c>1E3&&(b.write((b&&b.console?ansiColor("CYAN","\u23f3 "):"")+"Scanning: "+f+" bytes (Ctrl-C cancels)"),c=now())};return b},dc=b=>{try{var d=Cc();var c=Kb(b,__,d);a.idescrecipe&&c.load(io.readFileJSON(a.idescrecipe));c.run()}catch(f){t(-1,String(f))}finally{d&&d.close()}},gd=()=>{if(!isFunction(io.scanJSON)||!isFunction(io.copyJSONRange))throw"idescsource=stream requires OpenAF io.scanJSON/copyJSONRange; rebuild/update OpenAF";if(isDef(a.type)&&a.type!="json")throw"idescsource=stream supports JSON input only";
+"path opath from ifrom sql isql jsonprefix jsondesc stream outputkey outkey loop pipe outfileappend".split(" ").concat(Object.keys(za)).forEach(r=>{if(isDef(a[r]))throw"idescsource=stream cannot use "+r+"; narrow/query inside idesc or use loaded mode";});if(isDef(a.chs)||isDef(a.paramsfile)&&a.paramsfile=="-")throw"idescsource=stream requires an independent JSON source";if(isDef(va)&&!/^utf-?8$/i.test(va))throw"idescsource=stream requires UTF-8 JSON";var b=a.format=="idesc",d=b?Cc():__,c=r=>{r=Kb(__,
+r,d);a.idescrecipe&&r.load(io.readFileJSON(a.idescrecipe));b?r.run():a.outfile?r.saveData(a.outfile,a.format||"json"):r.exportData(java.lang.System.out,a.format||"json")};try{if(isString(a.file)&&a.file.indexOf("::")<0)return jb(c);var f=io.createTempFile("oafp-idesc-",".json");(new java.io.File(f)).deleteOnExit();var g=r=>{var w=io.writeFileStream(f);try{ioStreamCopy(w,r)}finally{w.close()}};if(isDef(a.url)){var e=$rest(P(a.urlparams||"{}")),h=String(a.urlmethod||"get").toLowerCase();if(["get","post",
+"put","delete"].indexOf(h)<0)throw"Unsupported JSON URL method";var n=h=="get"||h=="delete"?e[h+"2Stream"](a.url):e[h+"2Stream"](a.url,P(a.urldata||"{}"));try{g(n)}finally{n.close()}}else if(isString(a.file)){n=io.readFileStream(a.file);try{g(n)}finally{n.close()}}else kb(isString(a.data)?a.data:"",g);return c(f)}finally{try{f&&io.rm(f)}finally{d&&d.close()}}};ow.loadFormat();var db=()=>{a.format=a.output||a.format||a.out;a.type=a.input||a.type||a.in;a.out=a.format;a.output=a.format;a.in=a.type;a.input=
+a.type;isUnDef(a._id)&&(a._id=nowNano())};db();var Oa;isDef(a.loop)&&(isDef(Oa)?a=clone(Oa):Oa=clone(a));if(Object.keys(a).indexOf("-f")>=0){let b=Object.keys(a).length;var Fa=Object.keys(a).indexOf("-f");b>Fa+1&&Object.keys(a)[Fa+1].length>0&&(a.paramsfile=Object.keys(a)[Fa+1],delete a[a.paramsfile]);delete a["-f"]}if(isDef(a.paramsfile)){if(a.paramsfile=="-"){var Dc=[];io.pipeLn(b=>{Dc.push(b);return!1});var Ga=Dc.join("\n")}else io.fileExists(a.paramsfile)&&(Ga=io.readFileString(a.paramsfile));
+isString(Ga)&&(_margs=P(Ga,!0),isMap(_margs)&&Object.keys(_margs).forEach(b=>{isUnDef(a[b])&&(a[b]=_margs[b])}))}db();Object.keys(a).forEach(b=>{if(typeof a[b]=="string"&&a[b].length>0){var d=b.toLowerCase();b!=d&&isUnDef(a[d])&&(a[d]=a[b],delete a[b])}});var t=(b,d)=>{xa();isUnDef(d)&&(d="exit: "+b);if(isUnDef(ow.oJob)&&!toBoolean(a.noexit))b!=0&&printErr(d),exit(b);else throw d;},Ha=(b,d)=>{var c=d.match(/^(in|out):(.*)$/i);if(!c)return b;var f=c[1].toLowerCase()=="in"?"input":"output",g=b.split(/\r?\n/),
+e=[],h;g.forEach((r,w)=>{var y=r.match(/^ {0,3}(`{3,}|~{3,})/);h?y&&y[1].charAt(0)==h.charAt(0)&&y[1].length>=h.length&&/^\s*$/.test(r.substring(y[0].length))&&(h=void 0):!y||y[1].charAt(0)=="`"&&r.substring(y[0].length).indexOf("`")>=0?(r=r.match(/^ {0,3}(#{1,6})\s+(.+?)\s*#*\s*$/))&&e.push({index:w,level:r[1].length,title:r[2]}):h=y[1]});var n=[];e.forEach((r,w)=>{var y=r.title.match(/^(.*?)\s+(input(?:\/output|\/transform)?|output)\s+options$/i);if(y&&!(y[2].toLowerCase().split("/").indexOf(f)<
+0)&&y[1].toLowerCase().replace(/[^a-z0-9]/g,"")==c[2].toLowerCase().replace(/[^a-z0-9]/g,"")){y=g.length;for(w+=1;w<e.length;w++)if(e[w].level<=r.level){y=e[w].index;break}n.push(g.slice(r.index,y).join("\n").trim())}});return n.length>0?n.join("\n\n"):"No documented format options found for `help="+d.replace(/`/g,"")+"`. See `help=usage`."};Fa=()=>{__initializeCon();a.help=_$(a.help,"help").isString().default("");var b=/^(in|out):/i.test(a.help);switch(a.help.toLowerCase()){case "filters":var d=
+"docs/FILTERS.md";break;case "template":d="docs/TEMPLATE.md";break;case "examples":d="docs/EXAMPLES.md";break;case "jsonschema":d="docs/JSON-SCHEMA.md";break;case "readme":case "usage":d="docs/USAGE.md";break;default:d=a.help.toLowerCase(),d=!b&&isDef(Ia[d])?"docs/"+d+".md":"docs/USAGE.md"}var c=(getOPackPath("oafproc")||".")+"/"+d;var f="";if(!b&&d=="docs/USAGE.md"&&Object.keys(Ia).length>0){f="\n---\n\n## \ud83d\udcda Libs help documents\n\n| Lib | Help |\n| --- | --- |\n";for(let g in Ia)f+="| "+
+g+" | help="+g+" |\n"}isDef(c)&&io.fileExists(c)?(__conConsole=__ansiColorFlag=!0,isDef(ow.format.string.pauseString)&&toBoolean(a.pause)?ow.format.string.pauseString(a.out=="raw"?Ha(io.readFileString(c),a.help)+f:ow.format.withMD(Ha(io.readFileString(c),a.help)+f)):Q(isDef(a.out)&&a.out=="raw"?Ha(io.readFileString(c),a.help)+f:ow.format.withMD(Ha(io.readFileString(c),a.help)+f))):isDef(global._oafphelp)&&isDef(global._oafphelp[d])?(__conConsole=__ansiColorFlag=!0,isDef(ow.format.string.pauseString)&&
+toBoolean(a.pause)?ow.format.string.pauseString(a.out=="raw"?Ha(global._oafphelp[d],a.help)+f:ow.format.withMD(Ha(global._oafphelp[d],a.help)+f)):Q(isDef(a.out)&&a.out=="raw"?Ha(global._oafphelp[d],a.help)+f:ow.format.withMD(Ha(global._oafphelp[d],a.help)+f))):isString(Ia[a.help])?(__conConsole=__ansiColorFlag=!0,isDef(ow.format.string.pauseString)&&toBoolean(a.pause)?ow.format.string.pauseString(ow.format.withMD(Ia[a.help])):Q(isDef(a.out)&&a.out=="raw"?Ia[a.help]:ow.format.withMD(Ia[a.help]))):
+Q("Check https://github.com/OpenAF/oafp/blob/master/src/"+d);t(0)};var hd=()=>{var b=(getOPackPath("oafproc")||".")+"/.package.yaml";b={oafp:{version:io.fileExists(b)?io.readFileYAML(b).version:"(not available/embedded)",inputs:Array.from(Aa.keys()).filter(d=>d!="?").sort(),transforms:Object.keys(za).filter(d=>d!="transforms").sort(),outputs:Array.from(Ra.keys()).filter(d=>d!="?").sort(),flags:__flags.OAFP},openaf:{version:getVersion(),distribution:getDistribution(),home:getOpenAFPath(),opacks:$from($m4a(getOPackLocalDB())).notEquals("name",
+"OpenAF").sort("name").select({name:"",version:""})},java:{version:ow.format.getJavaVersion(),home:ow.format.getJavaHome(),vendor:String(java.lang.System.getProperty("java.vendor")),params:af.fromJavaArray(java.lang.management.ManagementFactory.getRuntimeMXBean().getInputArguments())},os:{name:String(java.lang.System.getProperty("os.name")),version:String(java.lang.System.getProperty("os.version")),arch:ow.format.getOSArch(),cpuCores:getNumberOfCores(!0),mem:{max:Number(java.lang.Runtime.getRuntime().maxMemory()),
+total:Number(java.lang.Runtime.getRuntime().totalMemory())},store:{tmpDirPath:String(java.lang.System.getProperty("java.io.tmpdir")),freeTmpDirBytes:Number(java.nio.file.Files.getFileStore(java.nio.file.Paths.get(java.lang.System.getProperty("java.io.tmpdir"))).getUsableSpace())}}};return stringify(b,__,"")};if("undefined"==typeof a.file&&"undefined"==typeof a.cmd&&"undefined"==typeof a.data&&"undefined"==typeof a.url){Ga=__;for(var fa in a)if("undefined"==typeof Ga&&a[fa]===""&&fa!="-debug"&&fa!=
+"-v"&&fa!="-examples"&&fa!="-p"){Ga=fa;break}a.file=Ga;isDef(Oa)&&(Oa.file=Ga)}typeof a.debug!=="undefined"&&(a.debug=toBoolean(a.debug));isDef(a["-debug"])&&(a.debug=!0);isDef(a["-p"])&&(a.pause=!0);if("[object Object]"==Object.prototype.toString.call(a.data)||Array.isArray(a.data))a.data=stringify(a.data,__,"");var eb=new Map([[".json","json"],[".ndjson","ndjson"],[".ndslon","ndslon"],[".slon","slon"],[".yaml","yaml"],[".xml","xml"],[".csv","csv"],[".ini","ini"],[".md","md"],[".xls","xls"],[".xlsx",
+"xls"],[".sql","sql"],[".toml","toml"],[".jwt","jwt"],[".jfr","jfr"]]),Vb=new Set(["csv","ndjson","ndslon","lines","dsv"]),Ib={lines:(b,d)=>{a.linesjoin=_$(toBoolean(a.linesjoin),"linesjoin").isBoolean().default(!1);if(!a.linesjoin&&isString(b))b.trim().length!=0&&(b.trim().length>0&&(b=b.trim().split(/\r?\n/)),H(b,d,!0)),Pa=!0;else return!0},javagc:(b,d)=>{a.javagcjoin=_$(toBoolean(a.javagcjoin),"javagcjoin").isBoolean().default(!1);if(a.javagcjoin)return!0;if(isUnDef(global.__javagc_buffer)||global.__javagc_buffer.length>
+1048576)global.__javagc_buffer="";global.__javagc_buffer+=b;b=(c=>{try{let f=[/([^ ]+) (\d+\.\d+): \[GC \((.*?)\)(.+?)\[PSYoungGen: (\d+K)->(\d+K)\(.*?\)\] (\d+K)->(\d+K)\(.*?\), (\d+\.\d+) secs\] \[Times: user=(\d+\.\d+) sys=(\d+\.\d+), real=(\d+\.\d+) secs\]/s,/([^ ]+) (\d+\.\d+): \[GC \((.*?)\) \[PSYoungGen: (\d+K)->(\d+K)\(.*?\)\] (\d+K)->(\d+K)\(.*?\), (\d+\.\d+) secs\]/,/([^ ]+) (\d+\.\d+): \[Full GC \((.*?)\) \[PSYoungGen: (\d+K)->(\d+K)\(.*?\)\] \[ParOldGen: (\d+K)->(\d+K)\(.*?\)\] (\d+K)->(\d+K)\(.*?\), \[Metaspace: (\d+K)->(\d+K)\(.*?\)\], (\d+\.\d+) secs\]/,
+/([^ ]+) (\d+\.\d+): \[GC \((.*?)\) \[PSYoungGen: (\d+K)->(\d+K)\(.*?\)\] (\d+K)->(\d+K)\(.*?\), (\d+\.\d+) secs\] \[Times: user=(\d+\.\d+) sys=(\d+\.\d+), real=(\d+\.\d+) secs\]/,/([^ ]+) (\d+\.\d+): \[Full GC \((.*?)\) \[PSYoungGen: (\d+K)->(\d+K)\(.*?\)\] \[ParOldGen: (\d+K)->(\d+K)\(.*?\)\] (\d+K)->(\d+K)\(.*?\), \[Metaspace: (\d+K)->(\d+K)\(.*?\)\], (\d+\.\d+) secs\] \[Times: user=(\d+\.\d+) sys=(\d+\.\d+), real=(\d+\.\d+) secs\]/,/^\[(.+)\]\s+GC\((\d+)\)\s*(.*?)\s*(\d+[GMK])->(\d+[GMK])\((\d+[GMK])\)\s*(\d+\.\d+)ms/,
+/^\[(.+)\]\s+GC\((\d+)\)\s*(.*?)\s*Metaspace:\s*(\d+[GMK])\((\d+[GMK])\)->(\d+[GMK])\((\d+[GMK])\)\s*NonClass:\s*(\d+[GMK])\((\d+[GMK])\)->(\d+[GMK])\((\d+[GMK])\)\s*Class:\s*(\d+[GMK])\((\d+[GMK])\)->(\d+[GMK])\((\d+[GMK])\)/,/^\[(.+)\]\s+GC\((\d+)\)\s*(Allocation Failure)\s*(.*?)\s+(\d+[KMGT])->(\d+[KMGT])\((\d+[KMGT])\)\s+(\d+\.\d+)ms/];for(let g=0;g<f.length;g++){let e=c.match(f[g]);if(e){let h={};c.startsWith("[")?(e[1].split("][").forEach(n=>{n.match(/^\d+\.\d+s$/)?h.sinceStart=parseFloat(n.replace(/s$/,
+"")):n.match(/\d{4}-\d{2}-\d{2}T/)&&(h.timestamp=ow.format.toDate(n,"yyyy-MM-dd'T'HH:mm:ss.SSSZ"))}),h.gcId=parseInt(e[2]),h.gcType=e[3].trim(),h.gcType==""&&(h.gcType="none"),h.durationSecs=parseFloat(e[e.length-1])/1E3,g===5?(h.heapBeforeGC=ow.format.fromBytesAbbreviation(e[4]+"B"),h.heapAfterGC=ow.format.fromBytesAbbreviation(e[5]+"B"),h.heapTotal=ow.format.fromBytesAbbreviation(e[6]+"B")):g>5&&(g==6?(h.metaUsedBeforeGC=ow.format.fromBytesAbbreviation(e[4]+"B"),h.metaTotalBeforeGC=ow.format.fromBytesAbbreviation(e[5]+
+"B"),h.metaUsedAfterGC=ow.format.fromBytesAbbreviation(e[6]+"B"),h.metaTotalAfterGC=ow.format.fromBytesAbbreviation(e[7]+"B"),h.nonClassUsedBeforeGC=ow.format.fromBytesAbbreviation(e[8]+"B"),h.nonClassTotalBeforeGC=ow.format.fromBytesAbbreviation(e[9]+"B"),h.nonClassUsedAfterGC=ow.format.fromBytesAbbreviation(e[10]+"B"),h.nonClassTotalAfterGC=ow.format.fromBytesAbbreviation(e[11]+"B"),h.classUsedBeforeGC=ow.format.fromBytesAbbreviation(e[12]+"B"),h.classTotalBeforeGC=ow.format.fromBytesAbbreviation(e[13]+
+"B"),h.classUsedAfterGC=ow.format.fromBytesAbbreviation(e[14]+"B"),h.classTotalAfterGC=ow.format.fromBytesAbbreviation(e[15]+"B")):(h.heapBeforeGC=ow.format.fromBytesAbbreviation(e[4]+"B"),h.heapAfterGC=ow.format.fromBytesAbbreviation(e[5]+"B"),h.heapTotal=ow.format.fromBytesAbbreviation(e[6]+"B")))):(h.timestamp=ow.format.toDate(e[1],"yyyy-MMdd'T'HH:mm:ss.SSSZ"),h.sinceStart=parseFloat(e[2]),h.gcType=e[3],h.durationSecs=parseFloat(e[e.length-1]),g===0||g===6?(h.PSYoungGenBeforeGC=ow.format.fromBytesAbbreviation(e[4]+
+"B"),h.PSYoungGenAfterGC=ow.format.fromBytesAbbreviation(e[5]+"B"),h.beforeGC=ow.format.fromBytesAbbreviation(e[6]+"B"),h.afterGC=ow.format.fromBytesAbbreviation(e[7]+"B"),g===6&&c.includes("Allocation Failure")&&(h.gcCause="Allocation Failure")):g===1||g===3?(h.PSYoungGenBeforeGC=ow.format.fromBytesAbbreviation(e[4]+"B"),h.PSYoungGenAfterGC=ow.format.fromBytesAbbreviation(e[5]+"B"),h.ParOldGenBeforeGC=ow.format.fromBytesAbbreviation(e[6]+"B"),h.ParOldGenAfterGC=ow.format.fromBytesAbbreviation(e[7]+
+"B"),h.beforeGC=ow.format.fromBytesAbbreviation(e[8]+"B"),h.afterGC=ow.format.fromBytesAbbreviation(e[9]+"B"),h.metaspaceBeforeGC=ow.format.fromBytesAbbreviation(e[10]+"B"),h.metaspaceAfterGC=ow.format.fromBytesAbbreviation(e[11]+"B")):g===2?(h.PSYoungGenBeforeGC=ow.format.fromBytesAbbreviation(e[4]+"B"),h.PSYoungGenAfterGC=ow.format.fromBytesAbbreviation(e[5]+"B"),h.beforeGC=ow.format.fromBytesAbbreviation(e[6]+"B"),h.afterGC=ow.format.fromBytesAbbreviation(e[7]+"B"),h.userTime=parseFloat(e[8]),
+h.sysTime=parseFloat(e[9]),h.realTime=parseFloat(e[10])):g===6&&(h.PSYoungGenBeforeGC=ow.format.fromBytesAbbreviation(e[5]+"B"),h.PSYoungGenAfterGC=ow.format.fromBytesAbbreviation(e[6]+"B"),h.beforeGC=ow.format.fromBytesAbbreviation(e[7]+"B"),h.afterGC=ow.format.fromBytesAbbreviation(e[8]+"B"),h.durationSecs=parseFloat(e[9]),e[10]&&(h.userTime=parseFloat(e[10]),h.sysTime=parseFloat(e[11]),h.realTime=parseFloat(e[12])),h.gcCause="Allocation Failure"));return h}}}catch(f){printErr(f),t(-2,"Error parsing Java GC log: "+
+f)}})(b);isMap(b)&&(H(b,d,!0),global.__javagc_buffer="")},ndjson:(b,d)=>{a.ndjsonjoin=_$(toBoolean(a.ndjsonjoin),"ndjsonjoin").isBoolean().default(!1);if(a.ndjsonjoin)return!0;isUnDef(global.__ndjsonbuf)&&b.length!=0&&b.trim().startsWith("{")&&(global.__ndjsonbuf="");if(isDef(global.__ndjsonbuf)){if(b.length!=0&&!b.trim().endsWith("}")){global.__ndjsonbuf+=b.trim();return}global.__ndjsonbuf.length>0&&(b=global.__ndjsonbuf+b,global.__ndjsonbuf=__)}b.length==0||b.length>0&&b.trim().substring(0,1)!=
+"{"?(H(jsonParse(global.__ndjsonbuf,__,__,!0),d,!0),Pa=!0,global.__ndjsonbuf=__):(H(jsonParse(b,__,__,!0),d,!0),Pa=!0)},ndslon:(b,d)=>{a.ndslonjoin=_$(toBoolean(a.ndslonjoin),"ndslonjoin").isBoolean().default(!1);if(a.ndslonjoin)return!0;isUnDef(global.__ndslonbuf)&&b.length!=0&&b.trim().startsWith("(")&&(global.__ndslonbuf="");if(isDef(global.__ndslonbuf)){if(b.length!=0&&!b.trim().endsWith(")")){global.__ndslonbuf+=b.trim();return}global.__ndslonbuf.length>0&&(b=global.__ndslonbuf+b,global.__ndslonbuf=
+__)}b.length==0||b.length>0&&b.trim().substring(0,1)!="("?(H(af.fromSLON(global.__ndslonbuf),d,!0),Pa=!0,global.__ndslonbuf=__):(H(af.fromSLON(String(b)),d,!0),Pa=!0)},dsv:(b,d)=>{isUnDef(a.indsvsep)&&(a.indsvsep=",");isUnDef(a.indsvsepre)&&(a.indsvsepre=__);isUnDef(a.indsvquote)&&(a.indsvquote='"');isUnDef(a.indsvescape)&&(a.indsvescape="\\");isUnDef(a.indsvcomment)&&(a.indsvcomment="#");isUnDef(a.indsvheader)&&(a.indsvheader=!0);isUnDef(a.indsvtrim)&&(a.indsvtrim=!0);isUnDef(a.indsvjoin)&&(a.indsvjoin=
+!1);isUnDef(a.indsvfields)&&(a.indsvfields=__);a.indsvheader=toBoolean(a.indsvheader);a.indsvtrim=toBoolean(a.indsvtrim);a.indsvjoin=toBoolean(a.indsvjoin);isString(a.indsvfields)&&(a.indsvfields=a.indsvfields.trim().split(",").map(g=>g.trim()));isDef(a.indsvfields)&&!isArray(a.indsvfields)&&(a.indsvfields=__);var c=g=>{var e={};a.indsvfields.forEach((h,n)=>{e[h]=g[n]});return e},f=g=>{if(isUnDef(g)||g.length==0)return __;if(toBoolean(a.indsvheader)&&isUnDef(a.indsvfields))return isUnDef(a.indsvsepre)?
+a.indsvfields=g.split(a.indsvsep):a.indsvfields=g.split(new RegExp(a.indsvsepre)),a.indsvfields=a.indsvfields.map(h=>{a.indsvtrim&&(h=h.trim());a.indsvquote&&h.startsWith(a.indsvquote)&&h.endsWith(a.indsvquote)&&(h=h.substring(1,h.length-1));a.indsvescape&&(h=h.replace(new RegExp(a.indsvescape+a.indsvquote,"g"),a.indsvquote));return h}),__;var e={};if(isString(g))return e=isUnDef(a.indsvsepre)?pForEach(g.split(a.indsvsep),h=>{a.indsvtrim&&(h=h.trim());a.indsvquote&&h.startsWith(a.indsvquote)&&h.endsWith(a.indsvquote)&&
+(h=h.substring(1,h.length-1));a.indsvescape&&(h=h.replace(new RegExp(a.indsvescape+a.indsvquote,"g"),a.indsvquote));return h}):pForEach(g.split(new RegExp(a.indsvsepre)),h=>{a.indsvtrim&&(h=h.trim());a.indsvquote&&h.startsWith(a.indsvquote)&&h.endsWith(a.indsvquote)&&(h=h.substring(1,h.length-1));a.indsvescape&&(h=h.replace(new RegExp(a.indsvescape+a.indsvquote,"g"),a.indsvquote));return h}),c(e)};if(a.indsvjoin)return!0;Pa=!0;b=String(b);b.length>0&&!b.trim().startsWith(a.indsvcomment)&&(b=f(b),
+isDef(b)&&H(b,d,!0))}};if(typeof Ka==="undefined")var Ka=function(b){b=="OAFP_MODEL"&&isUnDef(getEnv("OAFP_MODEL"))&&isDef(getEnv("OAF_MODEL"))&&(b="OAF_MODEL");return b};var Ja=b=>{if(isArray(b))return b.map(Ja);if(!isMap(b)||isDate(b))return b;var d={};Object.keys(b).sort().forEach(c=>{Object.defineProperty(d,c,{value:Ja(b[c]),enumerable:!0,writable:!0,configurable:!0})});return d},za={transforms:b=>{if(toBoolean(a.transforms))return Object.keys(za).filter(d=>d!="transforms").sort()},cmlt:b=>{if(toBoolean(a.cmlt)){b=
+isArray(b)?b:[b];a.cmltch=_$(a.cmltch,"cmltch").or().isString().isMap().default("(type: simple)");var d=P(a.cmltch);if(isMap(d))return isUnDef(d.type)&&t(-1,"cmltch.type is not defined."),isDef(d.lib)&&loadLib(d.lib),$ch().list().indexOf("oafp::cmltdata")<0&&(d.type=="remote"?$ch("oafp::cmltdata").createRemote(d.url):$ch("oafp::cmltdata").create(d.type,d.options),d=Number(_$(a.cmltsize,"cmltsize").isNumber().default(100))-1,d>0&&$ch("oafp::cmltdata").subscribe(ow.ch.utils.getHousekeepSubscriber("oafp::cmltdata",
+d))),b.forEach(c=>$ch("oafp::cmltdata").set({t:nowNano()},c)),$ch("oafp::cmltdata").getAll();t(-1,"Invalid cmltch parameter")}},diff:b=>{var d=P(a.diff);if(isMap(d)){isDef(d.a)&&isDef(d.b)||t(-1,"diff.a path and diff.b path are required.");loadDiff();let c=$path(b,d.a);b=$path(b,d.b);let f=__;toBoolean(a.color)&&(isUnDef(a.difftheme)&&isDef(getEnv("OAFP_DIFFTHEME"))&&(a.difftheme=getEnv("OAFP_DIFFTHEME")),f=P(_$(a.difftheme,"difftheme").or().isString().isMap().default("")),f=merge({added:"GREEN",
+removed:"RED",common:"FAINT",linenum:"ITALIC",linediv:"FAINT",linesep:"|"},f));let g=(e,h)=>{if(toBoolean(a.color)){isUnDef(h)&&(h="");var n=new Set;if(isArray(e)){let r=1,w=toBoolean(a.diffnlines),y=0;w&&(e.forEach(u=>{y+=u.value.split("\n").length}),y=String(y).length+1);let v=u=>{var p=w&&h!=""?ansiColor(f.linenum,u>0?$ft("% "+y+"d",r):" ".repeat(y))+ansiColor(f.linediv,`${f.linesep}`):"";r+=u;return p};e.forEach((u,p)=>{p=u.value;isString(p)&&(h!=""?(p=p.split(h),p[p.length-1]==""&&p.pop()):p=
+[p]);n.add(u.added?p.map(G=>v(1)+ansiColor(f.added,(h!=""?"+":"")+G)).join(ansiColor("RESET",h)):u.removed?p.map(G=>v(0)+ansiColor(f.removed,(h!=""?"-":"")+G)).join(ansiColor("RESET",h)):p.map(G=>v(1)+ansiColor(f.common,(h!=""?" ":"")+G)).join(ansiColor("RESET",h)))})}return Array.from(n).join(ansiColor("RESET",h))}return $from(e).select({count:__,added:!1,removed:!1,value:[]})};return isString(c)&&isString(b)?toBoolean(a.diffwords)?g(JsDiff.diffWords(c,b,d.options)):toBoolean(a.diffwordswithspace)?
+g(JsDiff.diffWordsWithSpace(c,b,d.options)):toBoolean(a.difflines)?g(JsDiff.diffLines(c,b,d.options),"\n"):toBoolean(a.diffsentences)?g(JsDiff.diffSentences(c,b,d.options),"\n"):g(JsDiff.diffChars(c,b,d.options)):isArray(c)&&isArray(b)&&!toBoolean(a.color)?g(JsDiff.diffArrays(c,b,d.options)):g(JsDiff.diffJson(c,b,d.options),"\n")}},jsonschemagen:b=>{if(toBoolean(a.jsonschemagen))return ow.loadObj(),ow.obj.schemaGenerator(b)},jsonschemacmd:b=>za.jsonschema(b),jsonschema:b=>{isMap(b)||t(-1,"jsonschema is only supported with a map.");
+isUnDef(a.jsonschema)&&isUnDef(a.jsonschemacmd)&&t(-1,"You need to provide a jsonschema=someFile.json or jsonschemacmd=someCommand");ow.loadObj();var d;if(isDef(a.jsonschemacmd)){var c=$sh(a.jsonschemacmd).getJson(0);c.exitcode==0?d=c.stdout:t(-1,"Error executing the command '"+a.jsonschemacmd+"': "+c.stderr)}else d=io.readFileJSON(a.jsonschema);isMap(d)||t(-1,"The schema provided is not a valid JSON schema.");c={allErrors:!0};if(isDef(a.jsonschemaoptions)){var f=P(a.jsonschemaoptions);isMap(f)||
+t(-1,"jsonschemaoptions must be a JSON/SLON map.");c=merge(c,f)}ow.obj.schemaInit(c);d=ow.obj.schemaCompile(d);return{valid:d(b),errors:d.errors}},sortmapkeys:b=>toBoolean(a.sortmapkeys)?Ja(b):b,searchkeys:b=>isObject(b)?searchKeys(b,a.searchkeys):b,searchvalues:b=>isObject(b)?searchValues(b,a.searchvalues):b,maptoarray:b=>toBoolean(a.maptoarray)&&isMap(b)?$m4a(b,a.maptoarraykey):b,arraytomap:b=>toBoolean(a.arraytomap)&&isArray(b)?$a4m(b,a.arraytomapkey,toBoolean(a.arraytomapkeepkey)):b,flatmap:b=>
+toBoolean(a.flatmap)&&isObject(b)?ow.loadObj().flatMap(b,a.flatmapsep):b,merge:b=>{if(toBoolean(a.merge)&&isArray(b)&&b.length>1){for(var d,c=0;c<b.length;c++)d=c==0?b[c]:merge(d,b[c]);return d}return b},correcttypes:b=>{toBoolean(a.correcttypes)&&isObject(b)&&traverse(b,(d,c,f,g)=>{switch(descType(c)){case "number":isString(c)&&(g[d]=Number(c));break;case "string":if(c.trim().toLowerCase()=="true"||c.trim().toLowerCase()=="false")g[d]=toBoolean(c);else{if(isDef(ow.format.fromISODate)){if(c.trim().match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\d+Z$/)){g[d]=
+ow.format.fromISODate(c);break}}else if(c.trim().match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/)){g[d]=new Date(c);break}c.trim().match(/^\d{4}-\d{2}-\d{2}$/)?g[d]=new Date(c):c.trim().match(/^\d{2}:\d{2}:\d{2}$/)?g[d]=new Date(c):c.trim().match(/^\d{2}:\d{2}$/)&&(g[d]=new Date(c))}}});return b},removenulls:b=>{toBoolean(a.removenulls)&&traverse(b,(d,c,f,g)=>{(isNull(c)||isUnDef(c))&&delete g[d]});return b},removeempty:b=>toBoolean(a.removeempty)&&isArray(b)?b.filter(d=>isDef(d)&&!isNull(d)):b,trim:b=>
+{toBoolean(a.trim)&&traverse(b,(d,c,f,g)=>{isString(c)&&(g[d]=c.trim())});return b},removedups:b=>{if(toBoolean(a.removedups)){if(isArray(b)){var d=new Set,c=[];b.forEach(f=>{var g=f;isObject(f)&&(g=Ja(g));g=stringify(g,__,!0);d.has(g)||(d.add(g),c.push(f))});return c}t(-1,"removedups is only supported for arrays")}return b},llmdecide:b=>{var d=a.llmdecide;if(isString(d))if(d=d.trim(),!/^[{(\[]/.test(d)&&io.fileExists(d)){io.fileInfo(d).isFile||t(-1,"llmdecide configuration must be a regular file");
+var c=P(io.readFileString(d),!0)}else c=P(d);else c=d;(!isMap(c)||!isMap(c.questions)||isDef(c.options)&&!isMap(c.options)||isDef(c.statePath)&&!isString(c.statePath)||isDef(c.assign)&&!isMap(c.assign)||isDef(c.overwrite)&&!isBoolean(c.overwrite)||Object.keys(c).some(w=>["questions","options","statePath","assign","overwrite"].indexOf(w)<0))&&t(-1,"llmdecide requires {questions, options?, statePath?, assign?, overwrite?}");var f=isDef(c.assign)?Object.keys(c.assign):[];isDef(c.assign)&&(f.length==
+0||f.some(w=>!isString(c.assign[w])||c.assign[w].trim()==""))&&t(-1,"llmdecide assign requires destination fields mapped to nonempty $path expressions");var g=(d=isArray(b))?b:[b],e=g.map((w,y)=>{isDef(c.assign)&&(isMap(w)||t(-1,"llmdecide entry "+y+" must be a map for assign"),!c.overwrite&&f.some(u=>Object.prototype.hasOwnProperty.call(w,u))&&t(-1,"llmdecide entry "+y+" already has an assign field; use overwrite=true in the configuration"));var v=isDef(c.statePath)?$path(w,c.statePath):w;isString(v)||
+isMap(v)||isArray(v)||t(-1,"llmdecide entry "+y+" state must be text, a map or an array");return v}),h=Xb(c.options,"llmdecide transform");if(g.length==0)return[];b=w=>{try{var y=h.client()[h.method](clone(e[w]),clone(c.questions),clone(h.options));if(isUnDef(c.assign))return y;var v=clone(g[w]);f.forEach(u=>{var p=$path(y,c.assign[u]);if(isUnDef(p))throw Error("assign expression for "+u+" returned undefined");Object.defineProperty(v,u,{value:p,enumerable:!0,writable:!0,configurable:!0})});return v}catch(u){throw w=
+Error("llmdecide entry "+w+": "+String(u)),isDef(u.code)&&(w.code=u.code),w.cause=u,w;}};var n=g.map((w,y)=>y);if(Nb()=="true"&&isDef(pForEach)){ow.loadObj();var r=new ow.obj.syncArray;b=pForEach(n,b,w=>r.add(w));if(r.length()>0)throw r.toArray()[0];}else b=n.map(b);return d?b:b[0]},llmprompt:b=>{if(isString(a.llmprompt)){a.llmenv=_$(a.llmenv,"llmenv").isString().default("OAFP_MODEL");a.llmenv=Ka(a.llmenv);a.llmoptions=_$(a.llmoptions,"llmoptions").isString().default(__);isUnDef(a.llmoptions)&&!isString(getEnv(a.llmenv))&&
+t(-1,"llmoptions not defined and "+a.llmenv+" not found.");var d=$llm(xb(isDef(a.llmoptions)?a.llmoptions:$sec("system","envs").get(a.llmenv)));isDef(a.llmconversation)&&io.fileExists(a.llmconversation)&&d.getGPT().setConversation(io.readFileJSON(a.llmconversation));var c="json",f=!0;isString(a.in)&&(a.in=="md"&&(c="markdown",f=!1),a.in=="mdtable"&&(c="markdown table",f=!1),a.in=="hsperf"&&(c="java hsperf file"),a.in=="raw"&&(c="raw",f=!1));d=d.withContext(f?stringify(b,__,!0):b,isDef(a.llmcontext)?
+a.llmcontext:`${c} input data`);if(isString(a.out)&&(a.out=="md"||a.out=="mdtable"||a.out=="raw"))return b=d.prompt(a.llmprompt),isDef(a.llmconversation)&&io.writeFileJSON(a.llmconversation,d.getGPT().getConversation(),""),b;b=d.promptJSON(a.llmprompt);isDef(a.llmconversation)&&io.writeFileJSON(a.llmconversation,d.getGPT().getConversation(),"");return b}return b},splitlines:b=>toBoolean(a.splitlines)&&isString(b)?b.split(/\r?\n/):b,regression:b=>{if(isString(a.regression)){ow.loadAI();var d=ow.ai.regression(),
+c=_$(a.regressionpath,"regressionpath").isString().default("@");let f=P(_$(a.regressionoptions,"regressionoptions").or().isString().isMap().default("{order:2,precision:5}"));c=$path(b,c);if(isArray(c)){if(isString(a.regressionx)){let e=$path(b,a.regressionx);c=c.map((h,n)=>[e[n],h])}else c=c.map((e,h)=>[h+1,e]);let g;switch(a.regression){case "exp":g=d.exponential(c,f);break;case "poly":g=d.polynomial(c,f);break;case "power":g=d.power(c,f);break;case "log":g=d.logarithmic(c,f);break;default:g=d.linear(c,
+f)}return isDef(g)&&isDef(g.points)?(isString(a.regressionforecast)&&(b=$path(b,a.regressionforecast),isArray(b)?b.forEach(e=>{g.points.push(g.predict(e))}):t(-1,"Invalid array of x for regression forecast")),g.points.map(e=>({x:e[0],y:e[1]}))):g}t(-1,"Invalid data for regression analysis")}return b},normalize:b=>{if(isString(a.normalize)||isMap(a.normalize)){var d=P(a.normalize);if(isMap(d)){ow.loadAI();if(isMap(b))return ow.ai.normalize.withSchema(b,d,!0);if(isArray(b))return b.map(c=>ow.ai.normalize.withSchema(c,
+d,!0))}else t(-1,"Invalid normalize schema")}else t(-1,"Invalid normalize schema")},denormalize:b=>{if(isString(a.denormalize)||isMap(a.denormalize)){var d=P(a.denormalize);if(isMap(d)){ow.loadAI();isUnDef(ow.ai.normalize.denormalizeWithSchema)&&t(-1,"This version of OpenAF does not support denormalizeWithSchema");if(isMap(b))return ow.ai.normalize.denormalizeWithSchema(b,d,!1);if(isArray(b))return b.map(c=>ow.ai.normalize.denormalizeWithSchema(c,d,!1))}else t(-1,"Invalid denormalize schema")}else t(-1,
+"Invalid denormalize schema")},kmeans:b=>{isNumber(a.kmeans)||(a.kmeans=5);isArray(b)||t(-1,"For kmeans transform you need to provide an array as input");ow.loadAI();return ow.ai.cluster({type:"kmeans",numberOfClusters:Number(a.kmeans)}).classify(b)},getlist:b=>{if(isObject(b)&&(toBoolean(a.getlist)||isNumber(a.getlist))){var d=!1,c,f=isNumber(a.getlist)?a.getlist:1;traverse(b,(g,e,h,n)=>{!d&&isArray(e)&&(f--,f==0&&(d=!0),c=e)});if(d)return c}return b},set:b=>{var d=P(a.set);!isMap(d)&&isUnDef(d.a)&&
+isUnDef(d.b)&&t(-1,"set.a path and set.b path are required.");isUnDef(pForEach)&&t(-1,"This version of OpenAF does not support the set transform");isString(d.a)||t(-1,"set.a path is not a string.");isString(d.b)||t(-1,"set.b path is not a string.");var c=$path(b,d.a);b=$path(b,d.b);isArray(c)||t(-1,"set.a path result is not an array.");isArray(b)||t(-1,"set.b path result is not an array.");if(isString(a.setkeys)){ow.loadObj();var f=a.setkeys.split(",").map(e=>e.trim());var g=e=>stringify(isObject(e)?
+Ja(ow.obj.filterKeys(f,e)):e,__,"");d=e=>pForEach(e,g).reduce((h,n)=>h.concat(n),[])}else g=e=>stringify(isObject(e)?Ja(e):e,__,""),d=e=>pForEach(e,g).reduce((h,n)=>h.concat(n),[]);switch(a.setop){case "union":let e=new Set(d(c));return c.concat(b.filter(p=>!e.has(g(p))));case "diffa":let h=new Set(d(b));return c.filter(p=>!h.has(g(p)));case "diffb":let n=new Set(d(c));return b.filter(p=>!n.has(g(p)));case "diffab":let r=new Set(d(c)),w=new Set(d(b));return c.filter(p=>!w.has(g(p))).concat(b.filter(p=>
+!r.has(g(p))));case "diff":let y=new Set(d(c)),v=new Set(d(b));return c.map(p=>Object.assign({"*":v.has(g(p))?__:"a"},p)).concat(b.map(p=>Object.assign({"*":y.has(g(p))?__:"b"},p))).filter(p=>isDef(p["*"]));default:let u=new Set(d(b));return c.filter(p=>u.has(g(p)))}},forcearray:b=>isMap(b)?[b]:b,spacekeys:b=>{isMap(b)&&traverse(b,(d,c,f,g)=>{d.indexOf(" ")>=0&&(g[d.replace(/ /g,a.spacekeys||"_")]=c,delete g[d])});return b},numformat:b=>{traverse(b,(d,c,f,g)=>{isTNumber(c)&&isString(a.numformat)&&
+(g[d]=$ft(a.numformat,c))});return b},xjs:b=>{if(isString(a.xjs)&&io.fileExists(a.xjs)){var d=io.readFileString(a.xjs);if(isString(d))return(new Function("args",d+"; return args"))(b)}return b},xpy:b=>isString(a.xpy)&&io.fileExists(a.xpy)?(b=$py(a.xpy,{args:b},["args"]),$pyStop(),b):b,xfn:b=>{if(isString(a.xfn))return(new Function("args","return "+a.xfn))(b)},xrjs:b=>{if(isString(a.xrjs)&&isArray(b)&&io.fileExists(a.xrjs)){var d=io.readFileString(a.xrjs);if(isString(d))return d=new Function("args",
+d+"; return args"),pForEach(b,d)}return b},xrpy:b=>isString(a.xrpy)&&isArray(b)&&io.fileExists(a.xrpy)?($pyStart(),b=pForEach(b,d=>$py(a.xrpy,{args:d},["args"])),$pyStop(),b):b,xrfn:b=>{if(isString(a.xrfn)&&isArray(b)){let d=new Function("args","return "+a.xrfn);return pForEach(b,d)}return b},val2icon:b=>{var d=["\ud83d\udd73\ufe0f","\u2705","\u274c"],c=["\u254d","\u2713","\u2715"];if(isDef(a.val2icon)){switch(a.val2icon){case "simple":var f=c;break;default:case "default":f=d}traverse(b,(g,e,h,n)=>
+{isUnDef(e)||isNull(e)?n[g]=f[0]:isBoolean(e)&&(n[g]=e?f[1]:f[2])})}return b},field2date:b=>{var d=a.field2date.split(",").map(c=>c.trim());traverse(b,(c,f,g,e)=>{if(d.indexOf(g.length>0&&!g.startsWith("[")?g.substring(1)+"."+c:c)>=0&&isNumber(f)&&f>0)try{e[c]=isString(f)?ow.format.fromISODate(f):new Date(f)}catch(h){printErr(h)}});return b},field2si:b=>{var d=a.field2si.split(",").map(c=>c.trim());traverse(b,(c,f,g,e)=>{d.indexOf(g.length>0&&!g.startsWith("[")?g.substring(1)+"."+c:c)>=0&&isNumber(f)&&
+(e[c]=ow.format.toAbbreviation(f))});return b},field2byte:b=>{var d=a.field2byte.split(",").map(c=>c.trim());traverse(b,(c,f,g,e)=>{d.indexOf(g.length>0&&!g.startsWith("[")?g.substring(1)+"."+c:c)>=0&&isNumber(f)&&(e[c]=ow.format.toBytesAbbreviation(f))});return b},field4map:b=>{var d=a.field4map.split(",").map(c=>c.trim());traverse(b,(c,f,g,e)=>{d.indexOf(g.length>0&&!g.startsWith("[")?g.substring(1)+"."+c:c)>=0&&isString(f)&&(e[c]=P(f))});return b},field2str:b=>{var d=a.field2str.split(",").map(c=>
+c.trim());traverse(b,(c,f,g,e)=>{d.indexOf(g.length>0&&!g.startsWith("[")?g.substring(1)+"."+c:c)>=0&&!isString(f)&&(e[c]=isMap(e[c])||isArray(e[c])?af.toSLON(e[c]):String(e[c]))});return b},allstrings:b=>{toBoolean(a.allstrings)&&traverse(b,(d,c,f,g)=>{isDef(c)&&!isString(c)&&(isNumber(c)?g[d]=String(c):isBoolean(c)?g[d]=String(c):isNull(c)&&(g[d]=""))});return b},oaf:b=>{if(isString(a.oaf)){let d;d=io.fileExists(a.oaf)?io.readFileString(a.oaf):a.oaf;if(isString(d))return(new Function("data",d+";return data"))(b)}return b}},
+Ra=new Map([["idesc",(b,d)=>dc(b)],["?",(b,d)=>{b=Array.from(Ra.keys()).filter(c=>c!="?").sort();V(b,d)}],["pm",(b,d)=>{V(b,d)}],["key",(b,d)=>{V(b,d)}],["html",(b,d)=>{var c;d=!1;a.htmlopen=_$(toBoolean(a.htmlopen),"htmlopen").isBoolean().default(!0);a.htmlwait=_$(a.htmlwait,"htmlwait").isNumber().default(2500);a.htmlopen&&(c=io.createTempFile("oafp_",".html"));ow.loadTemplate();a.htmldark=_$(toBoolean(a.htmldark),"htmldark").isBoolean().default(!1);isString(b)?(b=ow.template.html.genStaticVersion(ow.template.parseMD2HTML(b,
+!toBoolean(a.htmlpart),!toBoolean(a.htmlcompact),__,a.htmldark)),b=b.replace("<html>",'<html><meta charset="utf-8">')):(b=ow.template.html.parseMap(b,!0,a.htmldark),b='<html><meta charset="utf-8"><style>'+b.css+"\x3c/style><body"+(a.htmldark?' class="njsmap_dark"':"")+">"+b.out+"</body></html>");a.htmlopen&&(io.writeFileString(c,b),d=openInBrowser("file:///"+c.replace(/\\/g,"/")));d?sleep(a.htmlwait,!0):Q(b)}],["ctable",(b,d)=>{V(b,d)}],["stable",(b,d)=>{V(b,d)}],["table",(b,d)=>{V(b,d)}],["json",
+(b,d)=>{Q(stringify(b,__,""))}],["yaml",(b,d)=>{V(b,d)}],["cyaml",(b,d)=>{V(b,d)}],["kyaml",(b,d)=>{V(b,d)}],["ckyaml",(b,d)=>{V(b,d)}],["lkyaml",(b,d)=>{V(b,d)}],["clkyaml",(b,d)=>{V(b,d)}],["toon",(b,d)=>{V(b,d)}],["cjson",(b,d)=>{V(b,d)}],["slon",(b,d)=>{V(b,d)}],["cslon",(b,d)=>{V(b,d)}],["ctree",(b,d)=>{V(b,d)}],["tree",(b,d)=>{V(b,d)}],["mtree",(b,d)=>{typeof __flags.TREE.mono=="undefined"&&(d.__format="ctree");V(b,d)}],["btree",(b,d)=>{typeof __flags.TREE.mono=="undefined"&&(d.__format="btree");
+V(b,d)}],["res",(b,d)=>{V(b,d)}],["key",(b,d)=>{V(b,d)}],["text",(b,d)=>{V(b,d)}],["csv",(b,d)=>{V(b,d)}],["map",(b,d)=>{V(b,d)}],["md",(b,d)=>{V(toBoolean(a.mdtemplate)?$t(b):b,d)}],["log",(b,d)=>{if(isString(b)&&toBoolean(a.logprintall))Q(b.replace(/\n$/,""));else if(d=b,isMap(b)&&(d=[b]),isArray(d)){isUnDef(a.logtheme)&&isDef(getEnv("OAFP_LOGTHEME"))&&(a.logtheme=getEnv("OAFP_LOGTHEME"));b=P(_$(a.logtheme,"logtheme").isString().default(""));b=merge({errorLevel:"RED,BOLD",warnLevel:"YELLOW",timestamp:"BOLD"},
+b);var c=ansiColor(b.timestamp,"").replace("\u001b[m",""),f=ansiColor(b.errorLevel,"").replace("\u001b[m",""),g=ansiColor(b.warnLevel,"").replace("\u001b[m","");d.forEach(e=>{if(isMap(e)){let h=isDef(e["@timestamp"])&&isString(e["@timestamp"])?e["@timestamp"]:__,n=isDef(e.level)?e.level:__;e=isDef(e.message)?e.message:__;let r="";isDef(n)&&(n.toLowerCase().indexOf("err")>=0&&(r=f),n.toLowerCase().indexOf("warn")>=0&&(r=g));isDef(h)&&h.length>24&&(h=h.substring(0,23)+"Z");(isDef(e)||isDef(h))&&Q([c,
+h,isDef(n)?"\u001b[m | "+r+n:"","\u001b[m | ",r,e,"\u001b[m"].join(""))}})}}],["rawascii",(b,d)=>{isDef(a.rawasciistart)&&!isNumber(a.rawasciistart)&&t(-1,"rawasciistart must be a number");isDef(a.rawasciiend)&&!isNumber(a.rawasciiend)&&t(-1,"rawasciiend must be a number");if(isUnDef(a.rawasciitab)||!isNumber(a.rawasciitab))a.rawasciitab=8;var c=String(b).split("\n");b=c.length;var f=0;isNumber(a.rawasciistart)&&a.rawasciistart>0&&a.rawasciistart<=b&&(c=c.slice(a.rawasciistart-1),f=Number(a.rawasciistart-
+1));isNumber(a.rawasciiend)&&a.rawasciiend>0&&a.rawasciiend<b&&(c=c.slice(0,a.rawasciiend-(isNumber(a.rawasciistart-1)?a.rawasciistart-1:0)));var g=a.rawasciitab,e=/[\x00-\x08\x0A-\x1F\x80-\xFF]/g,h=/[\u0100-\uFFFF]/g,n=/$/,r=/\t/g,w=/\r/g,y=/ /g;b=toBoolean(a.rawasciinovisual)?c:pForEach(c,(v,u)=>{if(v=="")return u==c.length-1?__:"\u001b[31m\u240a\u001b[m";v=v.replace(e,G=>["\u001b[4m\u001b[38;5;4m","\\u"+G.charCodeAt(0).toString(16).padStart(2,"0").toUpperCase(),"\u001b[m"].join(""));v=v.replace(h,
+G=>["\u001b[4m\u001b[33m","\\u"+G.charCodeAt(0).toString(16).padStart(4,"0").toUpperCase(),"\u001b[m"].join(""));u<c.length-1&&(v=v.replace(n,"\u001b[31m\u240a\u001b[m"));v=v.replace(w,"\u001b[31m\u240d\u001b[m");var p=0;return v=v.replace(r,(G,oa)=>{G=g-(oa+p)%g;p+=G-1;return["\u001b[38;5;8m",G>2?"\u2508".repeat(G-1):"","\u2192\u001b[m"].join("")}).replace(y,"\u001b[38;5;8m\u00b7\u001b[m")}).filter(v=>typeof v!=="undefined");if(toBoolean(a.rawasciinolinenum))Q(b.map(v=>v).join("\n"));else{let v=
+"%"+String(b.length).length+".0f";Q(b.map((u,p)=>["\u001b[38;5;8m",$f(v,Number(p+1)+f),"\u001b[m\u001b[38;5;8m\u2502\u001b[m",u].join("")).join("\n"))}}],["raw",(b,d)=>{isString(b)?Q(b):Q(stringify(b,__,""))}],["lines",(b,d)=>{isArray(b)?b.forEach(c=>Q(c)):Q(b)}],["ini",(b,d)=>{isString(b)||(ow.loadJava(),d=new ow.java.ini,Q(d.put(b).save()))}],["toml",(b,d)=>{isUnDef(af.toTOML)&&t(-1,"TOML support not found.");if(isMap(b))Q(af.toTOML(b));else if(isArray(b))Q(af.toTOML({list:b}));else return __}],
+["mdyaml",(b,d)=>{isArray(b)?b.forEach((c,f)=>{V(c,merge(d,{__format:"yaml"}));f<b.length-1&&Q("---\n")}):V(b,merge(d,{__format:"yaml"}))}],["mdtable",(b,d)=>{isArray(b)&&(ow.loadTemplate(),Q(ow.template.md.table(b)))}],["template",(b,d)=>{isString(b)||(ow.loadTemplate(),ow.template.addConditionalHelpers(),ow.template.addOpenAFHelpers(),ow.template.addFormatHelpers(),isUnDef(a.template)&&isUnDef(a.templatepath)&&t(-1,"For out=template you need to provide a template=someFile.hbs or templatepath=..."),
+a.templatedata=_$(a.templatedata,"templatedata").isString().default("@"),d=isDef(a.template)?toBoolean(a.templatetmpl)?a.template:io.readFileString(a.template):$path(a.__origr,a.templatepath),Q($t(d,$path(b,a.templatedata))))}],["openmetrics",(b,d)=>{isString(b)?t(-1,"For out=openmetrics input needs to be an array or map."):(ow.loadMetrics(),b=ow.metrics.fromObj2OpenMetrics(b,a.metricsprefix,a.metricstimestamp),b=b.split("\n").map(c=>{c.indexOf('{_id="')>=0&&(c=c.replace(/{_id="\d+",/,"{"));c.indexOf(',_id="')>=
+0&&(c=c.replace(/,_id="\d+"}/,"}"));c.indexOf('_id="')>=0&&(c=c.replace(/,_id="\d+",/,","));return c}).filter(c=>c.length>0).join("\n"),Q(b))}],["pjson",(b,d)=>{d.__format="prettyjson";V(b,d)}],["ndjson",(b,d)=>{isArray(b)?b.forEach(c=>Q(stringify(c,__,""))):isMap(b)?Q(stringify(b,__,"")):V(b,d)}],["ndslon",(b,d)=>{isArray(b)?b.forEach(c=>Q(af.toSLON(c))):isMap(b)?Q(af.toSLON(b)):V(b,d)}],["ndcslon",(b,d)=>{isArray(b)?b.forEach(c=>Q(af.toCSLON(c))):isMap(b)?Q(af.toCSLON(b)):V(b,d)}],["base64",(b,
+d)=>{b=isString(b)?b:stringify(b);toBoolean(a.base64gzip)?Q(af.fromBytes2String(af.toBase64Bytes(io.gzip(af.fromString2Bytes(b))))):Q(af.fromBytes2String(af.toBase64Bytes(b)))}],["gb64json",(b,d)=>{b=isString(b)?b:stringify(b);Q(af.fromBytes2String(af.toBase64Bytes(io.gzip(af.fromString2Bytes(b)))))}],["jwt",(b,d)=>{isMap(b)?(isUnDef(a.jwtsecret)&&isUnDef(a.jwtprivkey)&&t(-1,"For out=jwt you need to provide a jwtsecret or a jwtprivkey"),ow.loadServer(),isDef(a.jwtprivkey)?(ow.loadJava(),d=new ow.java.cipher,
+Q(ow.server.jwt.sign(d.readKey4File(a.jwtprivkey,!0,a.jwtalg),b))):Q(ow.server.jwt.sign(a.jwtsecret,b))):t(-1,"For out=jwt input needs to be a map.")}],["grid",(b,d)=>{isUnDef(a.grid)&&t(-1,"For out=grid you need to provide a grid=...");d=P(_$(a.grid,"grid").or().isString().isMap().isArray().$_());isArray(d)&&d.length>0&&isArray(d[0])?(d.forEach((c,f)=>{c.forEach((g,e)=>{if(isUnDef(g.type)||g.type!="empty"){if(isDef(g.cmd)){var h=$sh(g.cmd).getJson(0);h=isDef(h)&&isDef(h.stdout)?h.stdout:""}else h=
+b;if(g.type=="chart"||g.type=="bar")e="_chrt"+(f+1)+"."+(e+1),g.obj=(g.type=="chart"?e+" ":"")+yb(h,g.obj,e),isUnDef(g.title)&&(g.title="Chart "+e);isDef(g.path)?(g.obj=$path(h,g.path),isUnDef(g.title)&&(g.title=g.path)):isString(h)?g.obj=h:isObject(h)&&g.type!="chart"&&(g.obj=$path(h,"@"))}else g.obj=""})}),d=ow.format.string.grid(d,__,__," ",!0),Q(d)):t(-1,"Invalid grid parameter: '"+stringify(a.grid,__,"")+"'")}],["envs",(b,d)=>{b=isArray(b)?b.map(g=>isObject(g)?ow.loadObj().flatMap(g,"_"):g):
+ow.loadObj().flatMap(b,"_");d=g=>String(g).indexOf(" ")>=0?'"'+g+'"':g;isUnDef(a.envscmd)&&(a.envscmd=ow.format.isWindows()?"set":"export");a.envscmd=String(a.envscmd);isUnDef(a.envsprefix)&&(a.envsprefix="_OAFP_");a.envsprefix=String(a.envsprefix);toBoolean(a.envsnoprefix)&&(a.envsprefix="");var c=new Set,f;for(f in b)c.add(a.envscmd+(a.envscmd.length>0?" ":"")+(a.envsprefix+f.replace(/[^a-zA-Z0-9_]/g,"_"))+"="+d(b[f]));Q(Array.from(c).join("\n"))}],["cmd",(b,d)=>{isString(a.outcmd)||t(-1,'For out=cmd you need to provide a outcmd="..."');
+toBoolean(a.outcmdtmpl)&&(ow.loadTemplate(),ow.template.addConditionalHelpers(),ow.template.addOpenAFHelpers(),ow.template.addFormatHelpers());var c=f=>{var g=isString(f)?f:stringify(f,__,"");if(toBoolean(a.outcmdparam))try{var e=$sh(a.outcmd.replace(/([^\\]?){}/g,"$1"+g)).get(0)}catch(h){sprintErr(h)}else e=toBoolean(a.outcmdtmpl)?$sh($t(a.outcmd,f)).get(0):$sh(a.outcmd,g).get(0);toBoolean(a.outcmdnl)?(e.stdout.length>0&&print(e.stdout),e.stderr.length>0&&printErr(e.stderr)):(e.stdout.length>0&&
+printnl(e.stdout),e.stderr.length>0&&printErrnl(e.stderr))};isArray(b)?toBoolean(a.outcmdjoin)?c(b):toBoolean(a.outcmdseq)?b.forEach(c):isDef(pForEach)?pForEach(b,f=>{c(f)}):parallel4Array(b,f=>{c(f)}):(isString(b),c(b))}],["chart",(b,d)=>{isUnDef(a.chart)&&t(-1,'For out=chart you need to provide a chart="<units> [<path[:color][:legend]>...]"');isUnDef(splitBySepWithEnc)&&t(-1,"output=chart is not supported in this version of OpenAF");b=yb(b,a.chart);b.length>0&&(b=printChart("oafp "+b),toBoolean(a.chartcls)&&
+cls(),Q(b))}],["schart",(b,d)=>{isUnDef(a.schart)&&t(-1,'For out=schart you need to provide a schart="<units> [<path[:color][:legend]>...]"');isUnDef(splitBySepWithEnc)&&t(-1,"Output=schart is not supported in this version of OpenAF");b=yb(b,a.schart,"_oafp_sfn_","soafp");b.length>0&&Q(printChart("soafp "+b))}],["ch",(b,d)=>{isUnDef(a.ch)&&t(-1,'For out=ch you need to provide a ch="(type: ...)"');isUnDef(a.chkey)&&t(-1,'For out=ch you need to provide a chkey="key1, key2"');b=isMap(b)?[b]:b;a.ch=P(a.ch);
+isMap(a.ch)?(isUnDef(a.ch.type)&&t(-1,"ch.type is not defined."),isDef(a.ch.lib)&&loadLib(a.ch.lib),a.ch.type=="remote"?$ch("oafp::outdata").createRemote(a.ch.url):$ch("oafp::outdata").create(a.ch.type,isMap(a.ch.options)&&isDef(a.ch.options.secKey)?$sec().procMap(a.ch.options):a.ch.options),toBoolean(a.chunset)?$ch("oafp::outdata").unsetAll(a.chkey.split(",").map(c=>c.trim()),b):$ch("oafp::outdata").setAll(a.chkey.split(",").map(c=>c.trim()),b),$ch("oafp::outdata").destroy()):t(-1,"Invalid ch parameter")}],
+["db",(b,d)=>{(!isArray(b)||b.length<1)&&t(-1,"db is only supported for filled arrays/lists");a.dbtable=_$(a.dbtable,"outdbtable").isString().default("data");a.dbnocreate=_$(toBoolean(a.dbnocreate),"outdbnocreate").isBoolean().default(!1);a.dbicase=_$(toBoolean(a.dbicase),"outdbicase").isBoolean().default(!1);a.dbbatchsize=_$(a.dbbatchsize,"dbbatchsize").isNumber().default(__);ow.loadObj();try{isString(a.dbjdbc)||t(-1,"dbjdbc URL is not defined.");isDef(a.dblib)&&loadLib("jdbc-"+a.dblib+".js");var c=
+new DB(a.dbjdbc,a.dbuser,a.dbpass,a.dbtimeout);if(!a.dbnocreate)try{var f=ow.obj.fromObj2DBTableCreate(a.dbtable,b,__,!a.dbicase);c.u(f);c.commit()}catch(r){c.rollback(),t(-1,"Error creating table: "+r)}var g=Object.keys(ow.obj.flatMap(b[0]));var e=a.dbicase?g.join(",").toUpperCase():'"'+g.join('", "')+'"';let n="";var h=b.map(r=>{var w=ow.obj.flatMap(r);r=[];for(var y in g)r.push(w[g[y]]);y=g.map(v=>String(w[v]));r="INSERT INTO "+(a.dbicase?a.dbtable:'"'+a.dbtable+'"')+" ("+e+") VALUES ("+y.map(v=>
+"?").join(", ")+")";r.length>n.length&&(n=String(r));return y});c.usArray(n,h,a.dbbatchsize)}catch(n){isDef(c)&&c.rollback(),t(-1,"Error connecting to the database: "+n)}finally{try{isDef(c)&&(c.commit(),c.close())}catch(n){t(-1,"Error closing the database connection: "+n)}}}],["sql",(b,d)=>{(!isArray(b)||b.length<1)&&t(-1,"sql is only supported for filled arrays/lists");a.sqltable=_$(a.sqltable,"sqltable").isString().default("data");a.sqlicase=_$(toBoolean(a.sqlicase),"sqlicase").isBoolean().default(!1);
+a.sqlnocreate=_$(toBoolean(a.sqlnocreate),"sqlnocreate").isBoolean().default(!1);ow.loadObj();a.sqlnocreate||Q(ow.obj.fromObj2DBTableCreate(a.sqltable,b,__,!a.sqlicase)+";\n");var c=Object.keys(ow.obj.flatMap(b[0]));var f=a.sqlicase?c.join(",").toUpperCase():'"'+c.join('", "')+'"';Q(b.map(g=>{var e=ow.obj.flatMap(g);g=[];for(var h in c)g.push(e[c[h]]);h=c.map(n=>{n=e[n];isString(n)&&(n="'"+n.replace(/'/g,"''")+"'");isNull(n)&&(n="null");return n});return"INSERT INTO "+(a.sqlicase?a.sqltable:'"'+a.sqltable+
+'"')+" ("+f+") VALUES ("+h.join(",")+");"}).join("\n"))}],["xml",(b,d)=>{Q(af.fromObj2XML(b,!0,a.outxmlprefix))}],["pxml",(b,d)=>{b=af.fromObj2XML(b,!0,a.pxmlprefix);Q('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n'+new XMLList(b))}],["xls",(b,d)=>{if(!isString(b)){try{includeOPack("plugin-XLS")}catch(e){t(-1,"plugin-XLS not found. You need to install it to use the XLS output (opack install plugin-XLS)")}plugin("XLS");if(isMap(b)){ow.loadObj();var c=ow.obj.flatMap(b);var f=Object.keys(c).map(e=>
+({key:e,value:c[e]}))}isArray(b)&&(f=b);traverse(f,(e,h,n,r)=>{isString(h)&&h.startsWith("=")&&(r[e]="'"+h)});b=!1;d=a.xlsfile;isUnDef(a.xlsfile)&&(b=!0,a.xlsfile=io.createTempFile("oafp",".xlsx"));d=new XLS(isDef(d)&&io.fileExists(d)?d:__);var g=d.getSheet(_$(a.xlssheet,"xlssheet").isString().default("data"));a.xlsformat=_$(a.xlsformat,"xlsformat").or().isString().isMap().default('(bold: true, borderBottom: "medium", borderBottomColor: "red")');a.xlsformat=P(a.xlsformat);ow.format.xls.setTable(d,
+g,"A",1,f,__,a.xlsformat);d.writeFile(a.xlsfile);d.close();a.xlsopenwait=_$(a.xlsopenwait,"xlsopenwait").isNumber().default(5E3);a.xlsopen=_$(toBoolean(a.xlsopen),"xlsopen").isBoolean().default(!0);a.xlsopen&&(ow.format.isWindows()?($sh("start "+a.xlsfile).exec(),b&&sleep(a.xlsopenwait,!0)):ow.format.getOS().startsWith("Mac")&&($sh("open "+a.xlsfile).exec(),b&&sleep(a.xlsopenwait,!0)))}}],["oaf",(b,d)=>{isUnDef(a.outoaf)&&t(-1,"For out=oaf you need to provide a outoaf=...");isString(a.outoaf)&&(d=
+io.fileExists(a.outoaf)?io.readFileString(a.outoaf):a.outoaf,isString(d)&&(new Function("data",d))(b))}],["dsv",(b,d)=>{isUnDef(a.dsvsep)&&(a.dsvsep=",");isUnDef(a.dsvquote)&&(a.dsvquote='\\"');isUnDef(a.dsvfields)&&(a.dsvfields=__);isUnDef(a.dsvuseslon)&&(a.dsvuseslon=!1);isUnDef(a.dsvnl)&&(a.dsvnl="\n");isUnDef(a.dsvheader)&&(a.dsvheader=!0);isString(a.dsvfields)&&(a.dsvfields=a.dsvfields.split(",").map(g=>g.trim()));a.dsvuseslon=toBoolean(a.dsvuseslon);isMap(b)&&(b=[b]);if(isArray(b)){var c=[],
+f=isArray(a.dsvfields)?a.dsvfields:b.length>0?Object.keys(b[0]):[];toBoolean(a.dsvheader)&&b.length>0&&(c.push(f.map(g=>'"'+String(g).replace(/"/g,'""')+'"').join(a.dsvsep)),a.dsvnl.length>0&&c.push(a.dsvnl));b.forEach((g,e)=>{e>0&&c.push(a.dsvnl);e=pForEach(f,h=>{h=g[h];if(isString(h))h=h.replace(/"/g,'""'),h=`"${h}"`;else if(isNull(h))h="";else if(isArray(h)||isMap(h))h=a.dsvuseslon?af.toSLON(h):stringify(h,__,""),h=h.replace(/"/g,a.dsvquote),h=`"${h}"`;return h});c.push(e.join(a.dsvsep))});a.dsvnl.length>
+0&&c.length>0&&c[c.length-1]!=a.dsvnl&&b.length>1&&c.push(a.dsvnl)}else t(-1,"For out=dsv, input needs to be an array or map.");Q(c.join(""))}]]);typeof Ka==="undefined"&&(Ka=function(b){b=="OAFP_MODEL"&&isUnDef(getEnv("OAFP_MODEL"))&&isDef(getEnv("OAF_MODEL"))&&(b="OAF_MODEL");return b});var Aa=new Map([["?",(b,d)=>{b=Array.from(Aa.keys()).filter(c=>c!="?").sort();H(b,d)}],["pm",(b,d)=>{R();isDef(__pm._map)&&(b=__pm._map);isDef(__pm._list)&&(b=__pm._list);H(b,d)}],["key",(b,d)=>{R();isString(b)||
+t(-1,"key is only supported with a string.");H($get(b),d)}],["jsonschema",(b,d)=>{R();b=jsonParse(b,__,__,!0);isMap(b)||t(-1,"jsonschema is only supported with a map.");ow.loadObj();b=ow.obj.schemaSampleGenerator(b);H(b,d)}],["yaml",(b,d)=>{R();b=af.fromYAML(b);H(b,d)}],["xml",(b,d)=>{R();a.xmlignored=_$(a.xmlignored,"xmlignored").isString().default(__);a.xmlprefix=_$(a.xmlprefix,"xmlprefix").isString().default(__);a.xmlfiltertag=_$(toBoolean(a.xmlfiltertag),"xmlfiltertag").isBoolean().default(__);
+b=af.fromXML2Obj(b,a.xmlignored,a.xmlprefix,!a.xmlfiltertag);H(b,d)}],["lines",(b,d)=>{a.linesjoin=_$(toBoolean(a.linesjoin),"linesjoin").isBoolean().default(!1);R();var c=__,f=[];a.linesvisualheadsep=_$(toBoolean(a.linesvisualheadsep),"linesvisualheadsep").isBoolean().default(!1);var g=!1,e=!1;isUnDef(a.linesvisualsepre)&&(a.linesvisualsepre=a.linesvisualheadsep?"\\s+":" \\s+");var h=r=>{r=r.split("\n").map(y=>{var v="",u=0;for(let p=0;p<y.length;p++)if(y[p]==="\t"){let G=8-u%8;v+=" ".repeat(G);
+u+=G}else v+=y[p],u++;return v}).join("\n");if(g&&e){var w={};f.forEach((y,v)=>{w[c[v]]=r.substring(y,v+1<f.length?f[v+1]-1:__).trim()});return w}g||(c=[]);r.split(new RegExp(a.linesvisualsepre)).reduce((y,v)=>{if(v.trim().length!=0){g||c.push(v);if(!a.linesvisualheadsep&&!g||g&&a.linesvisualheadsep&&!e)v=r.substring(y).match(new RegExp(ow.format.escapeRE(v)+"("+a.linesvisualsepre+"|$)")),!isNull(v)&&isDef(v.index)?(f.push(y+v.index),y+=v[0].length):t(-1,"Problem with linesvisual to find header positioning.");
+return y}},0);g?a.linesvisualheadsep&&!e&&(e=!0):(g=!0,a.linesvisualheadsep||(e=!0));return __};if(a.linesjoin)if(b=Bb(b),b=b.split(/\r?\n/),toBoolean(a.linesvisual)){var n=[];b.forEach(r=>{r.length!=0&&(r=h(r),isDef(r)&&n.push(r))});H(n,d)}else H(b,d);else Cb(b,r=>toBoolean(a.linesvisual)?h(r):r,r=>{isDef(r)&&H(r,d,!0)},!1)}],["ndjson",(b,d)=>{a.ndjsonjoin=_$(toBoolean(a.ndjsonjoin),"ndjsonjoin").isBoolean().default(!1);R();if(a.ndjsonjoin){var c=[],f=cc();Bb(b).split(/\r?\n/).forEach(g=>f(g,e=>
+c.push(jsonParse(e,__,__,toBoolean(a.ndjsonfilter)))));f.end();H(c,d)}else Cb(b,g=>jsonParse(g,__,__,!0),g=>H(g,d,!0),!0,cc());xa()}],["ndslon",(b,d)=>{a.ndslonjoin=toBoolean(a.ndslonjoin);R();var c="",f=(e,h)=>{e.trim().length!=0&&(c+=e,!c.trim().startsWith("(")||c.trim().endsWith(")"))&&(h(c),c="")};f.end=()=>{if(c.trim().length>0)throw"Incomplete NDSLON record";};if(a.ndslonjoin){var g=[];Bb(b).split(/\r?\n/).forEach(e=>f(e,h=>g.push(af.fromSLON(h))));f.end();H(g,d)}else Cb(b,e=>af.fromSLON(e),
+e=>H(e,d,!0),!1,f);xa()}],["dsv",(b,d)=>{R();isUnDef(a.indsvsep)&&(a.indsvsep=",");isUnDef(a.indsvsepre)&&(a.indsvsepre=__);isUnDef(a.indsvquote)&&(a.indsvquote='"');isUnDef(a.indsvescape)&&(a.indsvescape="\\");isUnDef(a.indsvcomment)&&(a.indsvcomment="#");isUnDef(a.indsvheader)&&(a.indsvheader=!0);isUnDef(a.indsvtrim)&&(a.indsvtrim=!0);isUnDef(a.indsvjoin)&&(a.indsvjoin=!1);isUnDef(a.indsvfields)&&(a.indsvfields=__);a.indsvheader=toBoolean(a.indsvheader);a.indsvtrim=toBoolean(a.indsvtrim);a.indsvjoin=
+toBoolean(a.indsvjoin);isString(a.indsvfields)&&(a.indsvfields=a.indsvfields.trim().split(",").map(g=>g.trim()));isDef(a.indsvfields)&&!isArray(a.indsvfields)&&(a.indsvfields=__);var c=g=>{var e={};a.indsvfields.forEach((h,n)=>{e[h]=g[n]});return e},f=g=>{if(isUnDef(g)||g.length==0)return{};if(toBoolean(a.indsvheader)&&isUnDef(a.indsvfields))return isUnDef(a.indsvsepre)?a.indsvfields=g.split(a.indsvsep):a.indsvfields=g.split(new RegExp(a.indsvsepre)),a.indsvfields=a.indsvfields.map(h=>{a.indsvtrim&&
+(h=h.trim());a.indsvquote&&h.startsWith(a.indsvquote)&&h.endsWith(a.indsvquote)&&(h=h.substring(1,h.length-1));a.indsvescape&&(h=h.replace(new RegExp(a.indsvescape+a.indsvquote,"g"),a.indsvquote));return h}),__;var e={};if(isString(g))return e=isUnDef(a.indsvsepre)?pForEach(g.split(a.indsvsep),h=>{a.indsvtrim&&(h=h.trim());a.indsvquote&&h.startsWith(a.indsvquote)&&h.endsWith(a.indsvquote)&&(h=h.substring(1,h.length-1));a.indsvescape&&(h=h.replace(new RegExp(a.indsvescape+a.indsvquote,"g"),a.indsvquote));
+return h}):pForEach(g.split(new RegExp(a.indsvsepre)),h=>{a.indsvtrim&&(h=h.trim());a.indsvquote&&h.startsWith(a.indsvquote)&&h.endsWith(a.indsvquote)&&(h=h.substring(1,h.length-1));a.indsvescape&&(h=h.replace(new RegExp(a.indsvescape+a.indsvquote,"g"),a.indsvquote));return h}),c(e)};a.indsvjoin?(b=Bb(b),H(b.split(/\r?\n/).map(g=>isUnDef(g)||g.length==0||g.trim().startsWith(a.indsvcomment)?__:f(g)).filter(g=>isDef(g)),d)):Cb(b,g=>g.length==0||g.trim().startsWith(a.indsvcomment)?__:f(g),g=>{isDef(g)&&
+H(g,d,!0)},!1);xa()}],["md",(b,d)=>{R();__conConsole=__ansiColorFlag=!0;isUnDef(a.format)&&isUnDef(d.__format)&&(a.format="md",d.__format="md");H(b,d)}],["mdtable",(b,d)=>{R();ow.loadTemplate();if(toBoolean(a.inmdtablejoin)){var c=new Set,f=new Set,g=()=>{f.size>0&&(c.add(ow.template.md.fromTable(Array.from(f).join("\n"))),f.clear())};b.split("\n").forEach(e=>{/^\|.+\|$/.test(e.trim())?f.add(e.trim()):g()});g();H(Array.from(c),d)}else f=ow.template.md.fromTable(b),H(f,d)}],["mdcode",(b,d)=>{R();var c=
+[];b=b.split("\n");var f=!1,g={language:"",code:[],startLine:-1,endLine:-1};b.forEach((e,h)=>{var n=e.trim().match(/^```+[^`]+```+$/),r=e.trim().match(/^```+(.+)?$/),w=f&&(e.trim().match(/^```+$/)||e.trim().match(/[^`]```+$/));n?(f=!1,g={language:__,code:e.replace(/^```+/,"").replace(/```+$/,"").trim(),startLine:h+1,endLine:h+1},c.push(g)):r&&!f?(f=!0,g={language:r[1],code:[],startLine:h+1,endLine:-1}):w&&f?(f=!1,g.endLine=h+1,g.code=g.code.join("\n"),c.push(g),g={language:"",code:[],startLine:-1,
+endLine:-1}):f&&g.code.push(e)});f&&(g.endLine=b.length,g.code=g.code.join("\n"),c.push(g));H(c,d)}],["ask",(b,d)=>{var c=[];b=P(b);isDef(askStruct)&&isArray(b)&&(__conConsole=!0,__con.getTerminal().settings.set("-icanon min 1 -echo"),c=askStruct(b),__con.getTerminal().settings.set("icanon echo"),print(""));H(c,d)}],["raw",(b,d)=>{R();H(b,d)}],["ini",(b,d)=>{R();ow.loadJava();var c=new ow.java.ini;b=isDef(a.file)?(La()?c.load(b):c.loadFile(a.file)).get():c.load(b).get();H(b,d)}],["jwt",(b,d)=>{ow.loadServer();
+if(toBoolean(a.injwtverify)){isUnDef(a.injwtsecret)&&isUnDef(a.injwtpubkey)&&t(-1,"injwtsecret or injwtpubkey is not defined.");try{if(isDef(a.injwtpubkey)){ow.loadJava();var c=new ow.java.cipher;ow.server.jwt.verify(c.readKey4File(a.injwtpubkey,!1,a.injwtalg),b.trim())}else ow.server.jwt.verify(a.injwtsecret,b.trim());var f=!0}catch(g){isDef(g.javaException)&&printErr(g.javaException.getMessage()),f=!1}}b=ow.server.jwt.decode(b);isDef(f)&&(b.__verified=f);!toBoolean(a.injwtraw)&&isDef(b)&&isMap(b.claims)&&
+(isDef(b.claims.exp)&&(b.claims.exp=new Date(b.claims.exp*1E3)),isDef(b.claims.iat)&&(b.claims.iat=new Date(b.claims.iat*1E3)),isDef(b.claims.nbf)&&(b.claims.nbf=new Date(b.claims.nbf*1E3)));H(b,d)}],["sql",(b,d)=>{isString(b)?toBoolean(a.sqlparse)?(isUnDef(ow.format.sqlFormat)&&t(-1,"SQL parse not available."),H(ow.format.sqlFormat(b,isDef(a.sqloptions)?P(a.sqloptions):__),d)):H(af.fromSQL(b).ast,d):H(b,d)}],["openmetrics",(b,d)=>{isString(b)?(ow.loadMetrics(),H(ow.metrics.fromOpenMetrics2Array(b),
+d)):H(b,d)}],["ch",(b,d)=>{R();isUnDef(a.inch)&&t(-1,"inch is not defined.");a.inch=P(a.inch);if(isMap(a.inch)){isUnDef(a.inch.type)&&t(-1,"inch.type is not defined.");isDef(a.inch.lib)&&loadLib(a.inch.lib);a.inch.type=="remote"?$ch("oafp::indata").createRemote(a.inch.url):$ch("oafp::indata").create(a.inch.type,isMap(a.inch.options)&&isDef(a.inch.options.secKey)?$sec().procMap(a.inch.options):a.inch.options);var c=P(b,!0);toBoolean(a.inchall)||b.trim().length==0?H($ch("oafp::indata").getAll(isMap(c)?
+c:__),d):H($ch("oafp::indata").get(isMap(c)?c:__),d);$ch("oafp::indata").destroy()}else t(-1,"inch is not a valid map.")}],["db",(b,d)=>{if(isString(b)){R();isString(a.indbjdbc)||t(-1,"indbjdbc URL is not defined.");try{isDef(a.indblib)&&loadLib("jdbc-"+a.indblib+".js");var c=new DB(a.indbjdbc,a.indbuser,a.indbpass,a.indbtimeout);c.convertDates(!0);toBoolean(a.indbautocommit)&&c.setAutoCommit(!0);if(toBoolean(a.indbexec)){var f=c.u(b);H({affectedRows:f},d);c.commit()}else if(toBoolean(a.indbstream)){var g=
+c.qsRS(b);try{for(;g.next();){f={};for(var e=1;e<=g.getMetaData().getColumnCount();e++){var h=g.getObject(e);switch(g.getMetaData().getColumnType(e)){case java.sql.Types.BIGINT:case java.sql.Types.INTEGER:case java.sql.Types.TINYINT:case java.sql.Types.SMALLINT:case java.sql.Types.NUMERIC:h=Number(h);break;case java.sql.Types.DOUBLE:case java.sql.Types.FLOAT:case java.sql.Types.REAL:case java.sql.Types.DECIMAL:h=Number(h);break;case java.sql.Types.BOOLEAN:h=!!h;break;case java.sql.Types.TIME:case java.sql.Types.DATE:case java.sql.Types.TIMESTAMP:h=
+new Date(h.getTime());break;case java.sql.Types.NULL:h=null;break;default:h=String(h)}f[g.getMetaData().getColumnName(e)]=h}H(f,d)}}catch(n){t(-1,"Error streaming SQL: "+n.message)}finally{c.closeStatement(b),g.close()}}else if(toBoolean(a.indbdesc)){f=c.qsRS(b);g=[];try{for(e=1;e<=f.getMetaData().getColumnCount();e++)g.push({name:f.getMetaData().getColumnName(e),type:f.getMetaData().getColumnTypeName(e),size:f.getMetaData().getColumnDisplaySize(e),nullable:f.getMetaData().isNullable(e)==1,autoIncrement:f.getMetaData().isAutoIncrement(e),
+precision:f.getMetaData().getPrecision(e),scale:f.getMetaData().getScale(e),table:f.getMetaData().getTableName(e),schema:f.getMetaData().getSchemaName(e),catalog:f.getMetaData().getCatalogName(e),columnType:f.getMetaData().getColumnType(e)});H(g,d)}catch(n){t(-1,"Error getting SQL description: "+n.message)}finally{c.closeStatement(b),f.close()}}else f=c.q(b),isMap(f)&&isArray(f.results)?H(f.results,d):t(-1,"Invalid DB result: "+stringify(f))}catch(n){printErr(n.message),isDef(c)&&c.rollback(),t(-1,
+"Error executing SQL: "+n.message)}finally{isDef(c)&&(c.rollback(),c.close())}}else t(-1,"db is only supported with a SQL string.")}],["minia",(b,d)=>{a.minianolog=toBoolean(_$(a.minianolog,"minianolog").isString().default(!1));a.minianolog&&R();try{includeOPack("mini-a")}catch(e){t(-1,"mini-a not found. You need to install it to use the mini-a output (opack install mini-a)")}loadLib("mini-a.js");b=P(b,!0);isMap(b)||isArray(b)||t(-1,"mini-a is only supported with a map or array input.");var c=new MiniA,
+f=!0;isUnDef(b.format)&&(b.format="json",f=!1);isDef(b.goal)&&b.format=="json"&&(b.goal+="; answer in json",f=!1);b.shellbatch=!0;c.setInteractionFn((e,h)=>{c.defaultInteractionFn(e,h,(n,r,w)=>{a.minianolog||printErr(n+"  "+ansiColor("FAINT,ITALIC",r));isDef(a.minialogfile)&&io.writeFileString(a.minialogfile,`${ow.format.fromDate(new Date,"yyyy-MM-dd HH:mm:ss.SSS")} | INFO | ${w} | ${n} | ${r}\n`,__,!0)})});c.init(b);b=c.start(b);var g=f?b:P(b,!0);isDef(a.miniametrics)&&io.writeFileJSON($t(a.miniametrics,
+{id:c.getId()}),c.getMetrics(),"");H(isObject(g)&&f?g:b,d)}],["xls",(b,d)=>{R();try{includeOPack("plugin-XLS")}catch(n){t(-1,"plugin-XLS not found. You need to install it to use the XLS output (opack install plugin-XLS)")}plugin("XLS");var c=b=!1;a.inxlsdesc=toBoolean(_$(a.inxlsdesc,"inxlsdesc").isString().default(!1));a.inxlsdesc&&(isUnDef(a.inxlssheet)?c=!0:b=!0);a.inxlssheet=_$(a.inxlssheet||a.xlssheet,"xlssheet").isString().default(0);a.inxlsevalformulas=_$(toBoolean(a.inxlsevalformulas||a.xlsevalformulas),
+"xlsevalformulas").isBoolean().default(!0);a.inxlscol=_$(a.inxlscol||a.xlscol,"xlscol").isString().default("A");a.inxlsrow=_$(a.inxlsrow||a.xlsrow,"xlsrow").isString().default(1);if(isDef(a.file)||isDef(a.cmd)){var f=new XLS(isDef(a.cmd)?Sa(a.cmd):La()?ib(n=>af.fromInputStream2Bytes(n)):a.file);if(c)h=f.getSheetNames();else if(c=f.getSheet(a.inxlssheet),b){var g=f.getCellValues(c,!1),e=[];Object.keys(g).forEach(n=>{n=Object.keys(g[n]);n.length>e.length&&(e=n)});h=[];Object.keys(g).map(n=>{var r={" ":n};
+e.forEach(w=>r[w]=isNull(g[n][w])||g[n][w].type=="BLANK"?"___":"###");h.push(r)});isUnDef(a.format)&&isUnDef(d.__format)&&(a.format="ctable",d.__format="ctable")}else{var h=f.getTable(c,a.inxlsevalformulas,a.inxlscol,a.inxlsrow);isDef(h)&&isMap(h)&&(h=h.table)}f.close();H(h,d)}else t(-1,"XLS is only support with 'file' or 'cmd' defined. Please provide a file=... or a cmd=...")}],["csv",(b,d)=>{R();isUnDef(a.inputcsv)&&isDef(a.incsv)&&(a.inputcsv=a.incsv);b=kb(b,c=>$csv(a.inputcsv).fromInStream(c).toOutArray());
+H(b,d)}],["javathread",(b,d)=>{R();if(isDef(a.javathreadpid)){ow.loadJava();try{var c=ow.java.jcmd(a.javathreadpid,"Thread.print");c=c.split("\n").filter(e=>e.startsWith('"'))}catch(e){t(-1,"Error getting Java thread dump: "+e.message)}}else isString(b)?c=b.split("\n"):t(-1,"javathreads is only supported with a raw input or javathreadpid=.");var f=(e,h)=>{if(e===null||e===void 0)return"";if(isBoolean(e))return!!e;if(isNumber(e))return Number(e);if(h){var n=String(e);_$(n,"aStr").isString().$_();e=
+n.trim().match(/[\d\.]+[a-zA-Z]+/g);h=0;if(isArray(e)&&e.length!==0){for(y in e){var r=e[y].match(/(\d+(?:\.\d+)?)\s*([a-zA-Z]+)/);if(isArray(r)&&r.length>0){n=Number(r[1]);r=String(r[2]);var w={ms:1,s:1E3,m:6E4,h:36E5,d:864E5,w:6048E5,M:2592E6,y:31536E6};h=isDef(w[r])?h+n*w[r]:h+n}}var y=h}else y=parseFloat(n);return y}return String(e)},g=[];c.forEach(e=>{if(e.startsWith('"')){var h=java.util.regex.Pattern.compile('^\\"(?<threadName>[^"]+)\\"(?:\\s+#(?<threadId>\\d+))?(?:\\s+\\[(?<threadIndex>\\d+)\\])?(?:\\s+(?<daemon>daemon))?(?:\\s+prio=(?<prio>\\d+))?\\s+os_prio=(?<osPrio>\\d+)(?:\\s+cpu=(?<cpu>[0-9.]+ms))?(?:\\s+elapsed=(?<elapsed>[0-9.]+s))?(?:\\s+tid=(?<tid>0x[a-fA-F0-9]+))?(?:\\s+nid=(?<nid>0x[a-fA-F0-9]+|\\d+|\\S+))?(?:\\s+(?<state>.*?))?(?:\\s+\\[(?<address>[^\\]]+)\\])?\\s*$').matcher(e);
+h.find()?(e={threadGroup:f(h.group("threadName")).replace(/[^a-zA-z]?\d+$/,""),threadName:f(h.group("threadName")),threadId:f(h.group("threadId")),threadIndex:f(h.group("threadIndex")),daemon:f(h.group("daemon")),prio:f(h.group("prio")),osPrio:f(h.group("osPrio")),cpu_ms:f(h.group("cpu"),!0),elapsed_ms:f(h.group("elapsed"),!0),tid:f(h.group("tid")),nid:f(h.group("nid")),state:f(h.group("state")),address:f(h.group("address"))},g.push(e)):g.push({error:"Could not parse line: "+e})}});H(g,d)}],["javagc",
+(b,d)=>{a.javagcjoin=_$(toBoolean(a.javagcjoin),"javagcjoin").isBoolean().default(!1);var c=[/([^ ]+) (\d+\.\d+): \[(GC) \((.*?)\)(.+?)\[PSYoungGen: (\d+K)->(\d+K)\((.*?)\)\] (\d+K)->(\d+K)\((.*?)\), (\d+\.\d+) secs\] \[Times: user=(\d+\.\d+) sys=(\d+\.\d+), real=(\d+\.\d+) secs\]/s,/([^ ]+) (\d+\.\d+): \[(GC) \((.*?)\) \[PSYoungGen: (\d+K)->(\d+K)\((.*?)\)\] (\d+K)->(\d+K)\((.*?)\), (\d+\.\d+) secs\]/,/([^ ]+) (\d+\.\d+): \[(Full GC) \((.*?)\) \[PSYoungGen: (\d+K)->(\d+K)\((.*?)\)\] \[ParOldGen: (\d+K)->(\d+K)\((.*?)\)\] (\d+K)->(\d+K)\((.*?)\), \[Metaspace: (\d+K)->(\d+K)\((.*?)\)\], (\d+\.\d+) secs\] \[Times: user=(\d+\.\d+) sys=(\d+\.\d+), real=(\d+\.\d+) secs\]/,
+/([^ ]+) (\d+\.\d+): \[(Full GC) \((.*?)\) \[PSYoungGen: (\d+K)->(\d+K)\((.*?)\)\] \[ParOldGen: (\d+K)->(\d+K)\((.*?)\)\] (\d+K)->(\d+K)\((.*?)\), \[Metaspace: (\d+K)->(\d+K)\((.*?)\)\], (\d+\.\d+) secs\]/,/([^ ]+) (\d+\.\d+): \[(GC) \((.*?)\) \[PSYoungGen: (\d+K)->(\d+K)\((.*?)\)\] (\d+K)->(\d+K)\((.*?)\), (\d+\.\d+) secs\] \[Times: user=(\d+\.\d+) sys=(\d+\.\d+), real=(\d+\.\d+) secs\]/,/(\d+\.\d+): \[(GC|Full GC) \((.*?)\)\s+(\d+K)->(\d+K)\((\d+K)\), (\d+\.\d+) secs\]/,/^\[(.+)\]\s+GC\((\d+)\)\s*(.*?)\s*(\d+[GMK])->(\d+[GMK])\((\d+[GMK])\)\s*(\d+\.\d+)ms/,
+/^\[(.+)\]\s+GC\((\d+)\)\s*(.*?)\s*Metaspace:\s*(\d+[GMK])\((\d+[GMK])\)->(\d+[GMK])\((\d+[GMK])\)\s*NonClass:\s*(\d+[GMK])\((\d+[GMK])\)->(\d+[GMK])\((\d+[GMK])\)\s*Class:\s*(\d+[GMK])\((\d+[GMK])\)->(\d+[GMK])\((\d+[GMK])\)/,/^\[(.+)\]\s+GC\((\d+)\)\s*(Allocation Failure)\s*(.*?)\s+(\d+[KMGT])->(\d+[KMGT])\((\d+[KMGT])\)\s+(\d+\.\d+)ms/],f=/^\d+\.\d+s$/,g=/\d{4}-\d{2}-\d{2}T/,e=y=>isDef(y)?ow.format.fromBytesAbbreviation(y+"B"):__,h=y=>{try{for(let u=0;u<c.length;u++){let p=y.match(c[u]);if(p){let G=
+{};if(y.charCodeAt(0)===91){var v=p[1].split("][");for(y=0;y<v.length;y++){let oa=v[y];f.test(oa)?G.sinceStart=parseFloat(oa.slice(0,-1)):g.test(oa)&&(G.timestamp=ow.format.toDate(oa,"yyyy-MM-dd'T'HH:mm:ss.SSSZ"))}G.gcId=parseInt(p[2]);G.gcType=p[3].trim()||"none";G.durationSecs=parseFloat(p[p.length-1])/1E3;u===5?(G.heapBeforeGC=e(p[4]),G.heapAfterGC=e(p[5]),G.heapTotal=e(p[6])):u>5&&(u==6?(G.metaUsedBeforeGC=e(p[4]),G.metaTotalBeforeGC=e(p[5]),G.metaUsedAfterGC=e(p[6]),G.metaTotalAfterGC=e(p[7]),
+G.nonClassUsedBeforeGC=e(p[8]),G.nonClassTotalBeforeGC=e(p[9]),G.nonClassUsedAfterGC=e(p[10]),G.nonClassTotalAfterGC=e(p[11]),G.classUsedBeforeGC=e(p[12]),G.classTotalBeforeGC=e(p[13]),G.classUsedAfterGC=e(p[14]),G.classTotalAfterGC=e(p[15])):(G.heapBeforeGC=e(p[4]),G.heapAfterGC=e(p[5]),G.heapTotal=e(p[6])))}else if(u==5)G.sinceStart=parseFloat(p[1]),G.gcType=p[2]+" "+p[3],G.heapBeforeGC=e(p[4]),G.heapAfterGC=e(p[5]),G.heapTotal=e(p[6]),G.durationSecs=parseFloat(p[7]);else if(G.timestamp=ow.format.toDate(p[1],
+"yyyy-MM-dd'T'HH:mm:ss.SSSZ"),G.sinceStart=parseFloat(p[2]),G.gcType=p[3]+" "+p[4],u<=4){v=5;G.PSYoungGenBeforeGC=e(p[v++]);G.PSYoungGenAfterGC=e(p[v++]);G.PSYoungGenTotal=e(p[v++]);if(u==2||u==3)G.ParOldGenBeforeGC=e(p[v++]),G.ParOldGenAfterGC=e(p[v++]),G.ParOldGenTotal=e(p[v++]);G.heapBeforeGC=e(p[v++]);G.heapAfterGC=e(p[v++]);G.heapTotal=e(p[v++]);if(u==2||u==3)G.metaBeforeGC=e(p[v++]),G.metaAfterGC=e(p[v++]),G.metaTotal=e(p[v++]);G.durationSecs=parseFloat(p[v++]);if(u==0||u==2||u==4)G.userTime=
+parseFloat(p[v++]),G.sysTime=parseFloat(p[v++]),G.realTime=parseFloat(p[v++])}return G}}}catch(u){printErr(u),t(-2,"Error parsing Java GC log: "+u)}};R();if(isString(b)){var n=b.split("\n"),r=/^(\[?\d+|\d{4}-\d{2}-\d{2}T)/;b=[];var w="";let y=!1;for(let v=0;v<n.length;v++){let u=n[v];r.test(u)?(y&&b.push(w),w=u,y=!0):y&&(w+="\n"+u)}y&&b.push(w);n=[];for(r=0;r<b.length;r++)w=h(b[r]),isMap(w)&&n.push(w);if(a.javagcjoin)H(n,d,!0);else for(h=0;h<n.length;h++)H(n[h],d,!0)}else t(-1,"javagc is only supported with a string input.")}],
+["hsperf",(b,d)=>{if(isDef(a.file)||isDef(a.cmd)){R();ow.loadJava();isBoolean(a.hsperfmetadata)||(a.hsperfmetadata=_$(toBoolean(a.hsperfmetadata),"hsperfmetadata").isBoolean().default(!1));b=u=>ow.java.parseHSPerf(u,!1,{metadata:a.hsperfmetadata});b=isDef(a.cmd)?b(Sa(a.cmd)):jb(b);isMap(b)||t(-1,"Invalid, inaccessible or unsupported hsperf data.");!a.hsperfmetadata||isMap(b.values)&&isMap(b.header)&&isMap(b.entries)||t(-1,"hsperfmetadata requires an updated OpenAF runtime with parseHSPerf metadata support.");
+var c=a.hsperfmetadata?b.values:b;c.__ts=new Date;var f=c.sun||{},g=f.gc;f=(f.os||{}).hrt||{};var e=u=>isDef(u)&&isFinite(Number(u)),h=e(f.frequency)&&Number(f.frequency)>0?1/Number(f.frequency):__,n=0,r=0,w=!1;if(isMap(g)){(g.generation||[]).forEach(u=>{(u.space||[]).forEach(p=>{w=!0;e(p.used)&&(r+=Number(p.used));e(p.capacity)&&(n+=Number(p.capacity));e(p.used)&&e(p.capacity)&&Number(p.capacity)>0&&(g["__percUsed_"+p.name]=100*Number(p.used)/Number(p.capacity))})});[["metaspace","meta"],["compressedclassspace",
+"ccs"]].forEach(u=>{var p=g[u[0]];isMap(p)&&e(p.used)&&e(p.capacity)&&Number(p.capacity)>0&&(g["__percUsed_"+u[1]]=100*Number(p.used)/Number(p.capacity))});f=(g.collector||[]).filter(isMap);var y=f.filter(u=>u.name=="PSScavenge")[0],v=f.filter(u=>u.name=="PSParallelCompact"||u.name=="")[0];[[y,"ygc"],[v,"fgc"]].forEach(u=>{u[0]&&(e(u[0].invocations)&&(g["__"+u[1]]=Number(u[0].invocations)),isDef(h)&&e(u[0].time)&&(g["__"+u[1]+"t"]=Number(u[0].time)*h))});f=f.filter(u=>e(u.time));isDef(h)&&f.length&&
+(g.__gct=f.reduce((u,p)=>u+Number(p.time)*h,0))}f=(g||{}).metaspace||{};if(w||Object.keys(f).length)isMap(c.java)||(c.java={}),c.java.__mem={total:w?n:__,used:w?r:__,free:w?n-r:__,metaMax:f.maxCapacity,metaTotal:f.capacity,metaUsed:f.used,metaFree:e(f.capacity)&&e(f.used)?Number(f.capacity)-Number(f.used):__};H(b,d)}else t(-1,"hsperf is only supported with either 'file' or 'cmd' defined.")}],["jfr",(b,d)=>{ow.loadJava();isUnDef(ow.java.parseJFR)&&t(-1,"jfr not available.");isBoolean(a.jfrjoin)||(a.jfrjoin=
+_$(toBoolean(a.jfrjoin),"jfrjoin").isBoolean().default(!1));isBoolean(a.jfrdesc)||(a.jfrdesc=_$(toBoolean(a.jfrdesc),"jfrdesc").isBoolean().default(!1));R();isDef(a.file)&&isUnDef(a.cmd)&&(b=a.file);if(isDef(a.cmd)){b=Sa(a.cmd,!0);var c=io.createTempFile("jfr",".jfr");io.writeFileBytes(c,b);b=c}c=f=>{a.jfrjoin?H(ow.java.parseJFR(f,__,a.jfrdesc),d):ow.java.parseJFR(f,g=>H(g,d),a.jfrdesc)};isDef(a.file)&&isUnDef(a.cmd)?jb(c):c(b)}],["rawhex",(b,d)=>{a.inrawhexline=_$(a.inrawhexline,"inrawhexline").isNumber().default(__);
+R();b=isDef(a.file)||isDef(a.cmd)?isDef(a.cmd)?Sa(a.cmd):La()?ib(c=>af.fromInputStream2Bytes(c)):io.readFileBytes(a.file):af.fromString2Bytes(b);b=ow.format.string.toHexArray(b,a.inrawhexline);b.forEach(c=>{c.characters=c.characters.replace(/[\x00-\x1F\x80-\xFF]/g,".")});H(b,d)}],["base64",(b,d)=>{R();b=toBoolean(a.base64gzip)?af.fromBytes2String(io.gunzip(af.fromBase64(b,!0))):af.fromBytes2String(af.fromBase64(b));H(b,d)}],["gb64json",(b,d)=>{R();b=af.fromBytes2String(io.gunzip(af.fromBase64(b,!0)));
+H(b,d)}],["oaf",(b,d)=>{isString(b)||t(-1,"oaf is only supported with a string.");R();var c;isString(b)&&(b=io.fileExists(b)?io.readFileString(b):b,isString(b)&&(c=(new Function("var data;"+b+";return data"))()));H(c,d)}],["oafp",(b,d)=>{b=P(b,!0);var c="_oafp_key_"+genUUID();isMap(b)?(b.out="key",b.__key=c,b.__inception=!0,oafp(b),b=$get(c),$unset(c),H(b,d)):isArray(b)?($set(c,!0),b=pForEach(b,(f,g)=>{g=c+"_"+String(g);var e=!1;isUnDef(f.out)&&(f.out="key",f.__key=g,e=f.__inception=!0);try{if(oafp(f),
+e){var h=$get(g);$unset(g)}}catch(n){sprintErr(n)}finally{return h}},__,isDef(a.inoafpseq)?toBoolean(a.inoafpseq):__),H(b,d)):t(-1,"oafp input data needs to be a map or an array.")}],["ojob",(b,d)=>{var c=P(b,!0);isString(c)&&(c={ojob:c,args:{}});_$(c.ojob,"ojob").isString().$_();c.args=_$(c.args,"args").isMap().default({});R();b=genUUID();c.args.__format="key";c.args.__key=b;oJobRunFile(c.ojob,c.args);c=$get(b);delete c.__format;delete c.__key;H($get(b),d)}],["sh",(b,d)=>{R();b=P(b,!0);if(isString(b))b=
+$sh(b).get(0);else{isMap(b)||t(-1,"For in=sh the input data needs to a string or a map");var c=$sh();isUnDef(b.cmd)&&t(-1,"For in=sh the input data needs to a string or a map with the a 'cmd'");c=c.sh(b.cmd);isDef(b.envs)&&(c=c.envs(b.envs,b.envsall));isDef(b.prefix)&&(c=c.prefix(b.prefix));isDef(b.pwd)&&(c=c.pwd(b.pwd));switch(a.inshformat){case "raw":b=c.get(0);break;case "yaml":b=c.getYaml(0);break;default:b=c.getJson(0)}}H(b,d)}],["llmdecide",(b,d)=>{["llmconversation","llmcontext","llmprompt"].forEach(g=>
+{isDef(a[g])&&t(-1,"in=llmdecide does not support "+g)});if(isDef(a.llmdecidesample))["gemini","ollama"].indexOf(a.llmdecidesample)<0&&t(-1,"llmdecidesample must be gemini or ollama"),H({state:{ticket:"The customer was charged twice."},questions:{route:{type:"choice",instructions:"Select the responsible team.",criteria:{billing:"Charges, payments, and refunds",technical:"Software errors and outages"}},urgent:{type:"boolean",instructions:"Does this require immediate attention?"},priority:{type:"score",
+instructions:"Assess the urgency.",criteria:["Routine","Soon","Urgent"]}},options:a.llmdecidesample=="gemini"?{strategy:"structured"}:{strategy:"native",requireProbabilities:!0,providerOptions:{keepAlive:0}}},d);else{b=P(b,!0);(!isMap(b)||isUnDef(b.state)||!isMap(b.questions)||!(isString(b.state)||isMap(b.state)||isArray(b.state))||isDef(b.options)&&!isMap(b.options)||Object.keys(b).some(g=>["state","questions","options"].indexOf(g)<0))&&t(-1,"in=llmdecide requires {state, questions, options?} with text/map/array state, a questions map and optional options map");
+var c=Xb(b.options,"in=llmdecide");R();var f=c.client();H(f[c.method](b.state,b.questions,c.options),d)}}],["llm",(b,d)=>{a.llmenv=_$(a.llmenv,"llmenv").isString().default("OAFP_MODEL");a.llmenv=Ka(a.llmenv);a.llmoptions=_$(a.llmoptions,"llmoptions").or().isString().isMap().default(__);isUnDef(a.llmoptions)&&!isString(getEnv(a.llmenv))&&t(-1,"llmoptions not defined and "+a.llmenv+" not found.");R();var c=$llm(xb(isDef(a.llmoptions)?P(a.llmoptions):$sec("system","envs").get(a.llmenv)));isDef(a.llmconversation)&&
+io.fileExists(a.llmconversation)&&c.getGPT().setConversation(io.readFileJSON(a.llmconversation));var f;isString(a.llmimage)&&(a.llmimage.toLowerCase().match(/^https?:\/\//)?f=af.fromBytes2String(af.toBase64Bytes(af.fromInputStream2Bytes($rest().get2Stream(a.llmimage)))):io.fileExists(a.llmimage)&&(f=af.fromBytes2String(af.toBase64Bytes(io.readFileBytes(a.llmimage)))));b=a.out=="md"||a.out=="mdtable"||a.out=="raw"?isDef(f)?c.promptImage(b,f):c.prompt(b):isDef(f)?c.promptImage(b,f,__,__,__,__,!0):c.promptJSON(b);
+isDef(a.llmconversation)&&(c=c.getGPT().getConversation(),io.writeFileJSON(a.llmconversation,c,""));H(jsonParse(b,__,__,isString(b)),d)}],["llmmodels",(b,d)=>{a.llmenv=_$(a.llmenv,"llmenv").isString().default("OAFP_MODEL");a.llmenv=Ka(a.llmenv);a.llmoptions=_$(a.llmoptions,"llmoptions").or().isString().isMap().default(__);isUnDef(a.llmoptions)&&!isString(getEnv(a.llmenv))&&t(-1,"llmoptions not defined and "+a.llmenv+" not found.");R();b=$llm(xb(isDef(a.llmoptions)?P(a.llmoptions):$sec("system","envs").get(a.llmenv)));
+isUnDef(b.getModels)&&t(-1,"OpenAF support for llm model listing API not found.");H(b.getModels(),d)}],["javas",(b,d)=>{a.javasinception=toBoolean(a.javasinception);R();plugin("JMX");ow.loadJava();b=(new JMX).getLocals().Locals;a.javasinception||(b=b.filter(f=>f.id!=getPid()));var c={};try{ow.java.getLocalJavaPIDs().forEach(f=>{c[String(f.pid)]=f.path})}catch(f){}b.forEach(f=>{isDef(c[String(f.id)])&&(f.path=c[String(f.id)])});H(b,d)}],["jmx",(b,d)=>{a.jmxop=_$(a.jmxop,"jmxop").oneOf(["all","get",
+"query","domains"]).default("all");isUnDef(a.jmxurl)&&isUnDef(a.jmxpid)&&t(-1,"jmxurl or jmxpid is not defined.");R();plugin("JMX");ow.loadJava();if(isUnDef(a.jmxurl)){ow.loadServer();var c=new ow.java.JMX((new JMX).attach2Local(a.jmxpid).URL)}else c=new ow.java.JMX(a.jmxurl,a.jmxuser,a.jmxpass,a.jmxprovider);switch(a.jmxop){case "domains":var f=c.getDomains();break;case "query":isString(b)?f=c.queryNames(b):t(-1,"Input needs to be a JMX query string (e.g. java.lang:*)");break;case "get":isString(b)?
+f=c.getObject(b):t(-1,"Input needs to be a JMX object name (e.g. java.lang:type=Memory)");break;default:case "all":f=c.getAll()}H(f,d)}],["snmp",(b,d)=>{_$(a.insnmp,"insnmp").isString().$_();a.insnmpcommunity=_$(a.insnmpcommunity,"insnmpcommunity").isString().default("public");a.insnmptimeout=_$(a.insnmptimeout,"insnmptimeout").isNumber().default(__);a.insnmpretries=_$(a.insnmpretries,"insnmpretries").isNumber().default(__);a.insnmpversion=_$(a.insnmpversion,"insnmpversion").isString().default(__);
+a.insnmpsec=P(_$(a.insnmpsec,"insnmpsec").or().isString().isMap().default(__));R();plugin("SNMP");var c=new SNMP(a.insnmp,a.insnmpcommunity,a.insnmptimeout,a.insnmpversion,a.insnmpsec),f={};f=P(b,!0);if(isString(f))f=f.split("\n").map(e=>e.trim()).filter(e=>e.length>0),f.length==1?(f=c.get(b),isMap(f)&&(f=f[b])):f=pForEach(f,e=>{var h=c.get(e);isMap(h)&&(h=h[e]);return h});else{b=isMap(f);ow.loadObj();var g=e=>c.get(e)[e];if(b){let e=[];traverse(f,(h,n,r,w)=>{isString(n)&&e.push({o:w,k:h,v:n})});
+pForEach(e,h=>h.o[h.k]=g(h.v))}else f=pForEach(f,e=>g(e))}H(f,d)}],["ls",(b,d)=>{R();if(isString(b)){var c=toBoolean(a.lsposix);isDef(a.file)&&(b=a.file);var f=io.fileExists(b),g;f&&(g=io.fileInfo(b));if(f&&g.isFile)switch(isDef(a.lsext)?a.lsext:g.filename.replace(/^.*\./,"").toLowerCase()){case "tgz":case "gz":b=io.listFilesTAR(b,!0);break;case "tar":b=io.listFilesTAR(b);break;default:plugin("ZIP"),b=$m4a((new ZIP).list(b))}else b=toBoolean(a.lsrecursive)?af.fromJavaArray(listFilesRecursive(b,c)):
+af.fromJavaMap(io.listFiles(b,c)).files;H(b,d)}else t(-1,"ls is only supported with a string.")}],["mcp",(b,d)=>{R();isUnDef($mcp)&&t(-1,"mcp support not found.");var c=P(b,!0);b=$mcp(c);b=b.initialize();toBoolean(a.inmcptoolslist)?(c=b.listTools(),isMap(c)&&isDef(c.tools)&&(c=c.tools)):toBoolean(a.inmcplistprompts)?(c=b.listPrompts(),isMap(c)&&isDef(c.prompts)&&(c=c.prompts)):(isUnDef(c.tool)&&t(-1,"For in=mcp a tool needs to be defined."),isUnDef(c.params)&&(c.params={}),c=b.callTool(c.tool,c.params));
+b.destroy();H(c,d)}],["toml",(b,d)=>{R();isUnDef(af.fromTOML)&&t(-1,"TOML support not found.");H(af.fromTOML(b),d)}],["toon",(b,d)=>{R();isUnDef(af.fromTOON)&&t(-1,"TOON support not found.");H(af.fromTOON(b),d)}],["slon",(b,d)=>{R();H(af.fromSLON(b),d)}],["json",(b,d)=>{R();if(toBoolean(a.stream)){if(toBoolean(a.jsondesc)||isDef(a.jsonprefix))throw"stream=true cannot be combined with jsondesc or jsonprefix";var c=Jb(f=>jsonParse(f),f=>H(f,merge(d,{__keepNull:!0}),!0),!0);try{kb(b,f=>{(isFunction(io.readJSONArray)?
+io.readJSONArray.bind(io):Jc)(f,g=>{c.add(g);return!1},va,!0)}),c.done()}catch(f){try{c.abort()}catch(g){}throw f;}}else isString(b)&&(b=jsonParse(b,__,__,!0)),H(b,d)}]]),Ia={};isString(a.libs)&&(a.libs=a.libs.split(",").map(b=>b.trim()).filter(b=>b.length>0));isDef(__flags.OAFP)&&isArray(__flags.OAFP.libs)&&isArray(a.libs)?a.libs=__flags.OAFP.libs.concat(a.libs):a.libs=isDef(__flags.OAFP)?__flags.OAFP.libs:[];isArray(a.libs)&&a.libs.forEach(b=>{try{if(b.startsWith("@"))if(/^@([^\/]+)\/(.+)\.js$/.test(b)){var d=
+b.match(/^@([^\/]+)\/(.+)\.js$/),c=getOPackPath(d[1])+"/"+d[2]+".js";io.fileExists(c)?loadLib(c):t(-1,"ERROR: Library '"+b+"' not found.")}else t(-1,"ERROR: Library '"+b+"' does not have the correct format (@oPack/library.js).");else{var f=require("oafp_"+b+".js");if(isDef(f.oafplib)){var g=f.oafplib(clone(a),H,V,{_runCmd2Bytes:Sa,_fromJSSLON:P,_msg:"(processing data)",_showTmpMsg:R,_clearTmpMsg:xa,_chartPathParse:yb,_exit:t,_print:Q,_o$o:V});isMap(g)&&(isArray(g.fileExtensions)&&g.fileExtensions.forEach(e=>
+{var h=e.ext;e=e.type;eb.has(h)?a.debug&&printErr("WARN: Extension '"+h+"' already exists."):eb.set(h,e)}),isArray(g.fileExtensionsNoMem)&&g.fileExtensionsNoMem.forEach(e=>{e=e.ext;Vb.has(e)?a.debug&&printErr("WARN: Extension '"+e+"' already exists."):Vb.add(e)}),isArray(g.input)&&g.input.forEach(e=>{var h=e.type;e=e.fn;Aa.has(h)?a.debug&&printErr("WARN: Input type '"+h+"' already exists."):Aa.set(h,e)}),isArray(g.inputLine)&&g.inputLine.forEach(e=>{var h=e.type;e=e.fn;isUnDef(Ib[h])?Ib[h]=e:a.debug&&
+printErr("WARN: Input type '"+h+"' already exists.")}),isArray(g.transform)&&g.transform.forEach(e=>{var h=e.type;e=e.fn;isUnDef(za[h])?za[h]=e:a.debug&&printErr("WARN: Transform '"+h+"' already exists.")}),isArray(g.output)&&g.output.forEach(e=>{var h=e.type;e=e.fn;Ra.has(h)?a.debug&&printErr("WARN: Output type '"+h+"' already exists."):Ra.set(h,e)}),isString(g.help)&&(Ia[b.toLowerCase()]=g.help))}else printErr("WARN: Library '"+b+"' does not have oafplib.")}}catch(e){printErr("WARN: Library '"+
+b+"' error: "+e)}});(a["-h"]==""||isString(a.help)&&a.help.length>0)&&Fa();a.format=_$(a.format,"format").isString().default(__);(toBoolean(a.pause)||toBoolean(a.color))&&__initializeCon();fa=!String(java.lang.System.getProperty("os.name")).match(/Windows/);Fa=getEnv("OAFP_RESET");var va=getEnv("OAFP_CODESET");isDef(Fa)&&(fa=toBoolean(Fa)?!1:!0);fa&&isDef(__con)&&isFunction(__con.getTerminal)&&__con.getTerminal().settings.set("sane");if(isDef(a.secKey)){toBoolean(a.secEnv)&&(a.secRepo="system",a.secBucket=
+"envs");a.secRepo=_$(a.secRepo,"secRepo").isString().default(getEnv("OAFP_SECREPO"));a.secBucket=_$(a.secBucket,"secBucket").isString().default(getEnv("OAFP_SECBUCKET"));a.secPass=_$(a.secPass,"secPass").isString().default(getEnv("OAFP_SECPASS"));a.secMainPass=_$(a.secMainPass,"secMainPass").isString().default(getEnv("OAFP_SECMAINPASS"));a.secFile=_$(a.secFile,"secFile").isString().default(getEnv("OAFP_SECFILE"));let b=$sec(a.secRepo,a.secBucket,a.secPass,a.secMainPass,a.secFile).get(secKey);isDef(b)&&
+Object.keys(b).forEach(d=>a[d]=b[d])}var sa={__format:a.format,__from:a.from,__ifrom:a.ifrom,__isql:a.isql,__sql:a.sql,__path:a.path,__opath:a.opath,__csv:a.csv,__pause:a.pause,__key:a.__key,mdformat:a.mdformat};isDef(a.inputcsv)&&(a.inputcsv=P(a.inputcsv));isDef(a.incsv)&&(a.incsv=P(a.incsv));isDef(a.csv)&&(a.csv=P(a.csv));var Ua=!1;if(a["-v"]==""||toBoolean(a.version))Ua=!0;if(a["-examples"]==""||isString(a.examples)&&a.examples.length>0)a.url="https://ojob.io/oafp-examples.yaml",a.in="yaml",isString(a.examples)&&
+a.examples.length>0?(a.examples.trim()!="?"&&(sa.__format="template"),sa.__path="data",a.templatepath="tmpl",a.examples.indexOf("::")>0?(fa=a.examples.split("::").filter(b=>b.length>0),sa.__sql=fa.length==1?"select * where c like '"+fa[0]+"'":"select * where c like '"+fa[0]+"' and s like '"+fa[1]+"'"):a.examples.trim()=="?"?(sa.__path="data.sort(map(&concat(c,concat('::',s)),[]))",a.removedups=!0):sa.__sql="select * where d like '%"+a.examples+"%' or s like '%"+a.examples+"%' or c like '%"+a.examples+
+"%'"):(sa.__path="data[].{category:c,subCategory:s,description:d}",sa.__from="sort(category,subCategory,description)",sa.__format="ctable"),delete a["-examples"];isUnDef(a.type)&&isString(a.file)&&(fa=hb().substring(hb().lastIndexOf(".")),eb.has(fa)&&(a.type=eb.get(fa),db()));var Fc=Object.keys(za).filter(b=>isDef(a[b]));Nb();var ka="",Pa=!1;db=[];typeof a.outfile!=="undefined"&&("undefined"===typeof global.__oafp_streams&&(global.__oafp_streams={}),"undefined"===typeof global.__oafp_streams[a.outfile]&&
+toBoolean(a.outfileappend)&&(global.__oafp_streams[a.outfile]={s:io.writeFileStream(a.outfile,toBoolean(a.outfileappend))},db.push(a.outfile)));a.type=="llmdecide"&&isDef(a.llmdecidesample)&&(a.data="");if(isString(a.chs)||isMap(a.chs))fa=af.fromJSSLON(a.chs),isArray(fa)||(fa=[fa]),fa.forEach(b=>{isMap(b)?isString(b.name)&&isString(b.type)?$ch(b.name).create(b.type,b.options):t(-1,"ERROR: chs must have a name and a type."):t(-1,"ERROR: chs must be an object or array of objects with name and a type")});
+var Ec=()=>{var b=ka;ka="";return b},id=fa=()=>{R();isDef(a.idescsource)&&a.idescsource!="stream"&&a.idescsource!="loaded"&&t(-1,"idescsource must be loaded or stream");var b=isDef(a.idescrecipe)?io.readFileJSON(a.idescrecipe).source:__;isDef(a.idescsource)&&isDef(b)&&a.idescsource!=b&&t(-1,"idescsource conflicts with the recipe source mode");if(Ua||a.idescsource!="stream"&&b!="stream")if(a.type=="llmdecide"&&isDef(a.llmdecidesample))Aa.get("llmdecide")("",sa);else if(!Ua&&isDef(a.file)&&a.file.indexOf("::")<
+0&&!io.fileExists(a.file)&&t(-1,"ERROR: File not found: '"+a.file+"'"),!Ua&&isUnDef(a.url)&&(["lines","ndjson","ndslon","dsv","csv"].indexOf(a.type)>=0||a.type=="json"&&toBoolean(a.stream)))Aa.get(a.type)(isString(a.data)?a.data:"",sa),delete a.__origr;else{if(Ua)ka=hd();else if(a.jsonprefix=_$(a.jsonprefix,"jsonprefix").isString().default(__),a.jsondesc=_$(toBoolean(a.jsondesc),"jsondesc").isBoolean().default(!1),typeof a.insecure!=="undefined"&&toBoolean(a.insecure)&&ow.loadJava().setIgnoreSSLDomains(),
+isDef(a.file)){if(a.file.indexOf("::")<0&&!io.fileExists(a.file)&&t(-1,"ERROR: File not found: '"+a.file+"'"),!Vb.has(a.type))if(a.type=="json"||isUnDef(a.type))if(a.jsondesc)ka=stringify(jb(g=>Hc(g,a.jsonprefix)),__,"");else if(isDef(a.jsonprefix)){var d=jb(g=>io.readStreamJSON(g,e=>e.substring(2).startsWith(a.jsonprefix)));ka=a.type=="json"?d:stringify(d,__,"")}else ka=bc(),toBoolean(a._shebang)&&(ka=ka.replace(/^#!.*\n/,""));else ka=bc(),toBoolean(a._shebang)&&(ka=ka.replace(/^#!.*\n/,""))}else if(a.jsondesc&&
+t(-1,"ERROR: jsondesc only available for file input."),a.jsonprefix&&t(-1,"ERROR: jsonprefix only available for file input."),typeof a.cmd!=="undefined")ka=Sa(a.cmd,!0),Mb=!0;else if(isString(a.data))ka=a.data;else if(isDef(a.url)){a.urlmethod=_$(a.urlmethod,"urlmethod").isString().default("GET");b=P(_$(a.urlparams).or().isString().isMap().default("{}"));isDef(a.urldata)&&(d=P(a.urldata));switch(a.urlmethod.toLowerCase()){case "post":ka=$rest(b).post(a.url,d);break;case "put":ka=$rest(b).put(a.url,
+d);break;case "delete":ka=$rest(b).delete(a.url,d);break;case "head":ka=$rest(b).head(a.url,d);break;default:ka=$rest(b).get(a.url)}isObject(ka)&&(ka=stringify(ka,__,""))}else if(a.input!="pm"){var c=new java.lang.StringBuilder,f=!0;io.pipeLn(g=>{if(isDef(Ib[a.type])&&!Ib[a.type](vb(g),clone(sa)))return!1;f||c.append("\n");c.append(g);return f=!1});ka=String(c.toString());Mb=!0}Pa||(isUnDef(a.type)&&(isDef(a.file)&&(d=hb().substring(hb().lastIndexOf(".")),eb.has(d)&&(a.type=eb.get(d))),isUnDef(a.type)&&
+(d=ka.trim(),d.startsWith("{")||d.startsWith("[")?a.type="json":d.startsWith("(")?a.type="slon":d.startsWith("<")?a.type="xml":isString(d)&&d.length>0?d.substring(0,d.indexOf("\n")).split(",").length>1?a.type="csv":d.substring(0,d.indexOf(": ")>0)&&(a.type="yaml"):t(-1,"Please provide the input type."))),isDef(a.type)&&Aa.has(a.type)?Aa.get(a.type)(Ec(),sa):(isString(a.type)&&printErr("WARN: "+a.type+" input type not supported. Using json."),Aa.get("json")(Ec(),sa)),delete a.__origr)}else{xa();try{gd()}catch(g){t(-1,
+String(g))}}};fa=()=>Kc(id);a.debug&&printErr("DEBUG: "+colorify(a));try{if(isNumber(a.loop))for(;;)toBoolean(a.loopcls)&&isDef(a.outfile)&&isDef(global.__oafp_streams[a.outfile])&&(global.__oafp_streams[a.outfile].s.close(),global.__oafp_streams[a.outfile]={s:io.writeFileStream(a.outfile,toBoolean(a.outfileappend))}),ac(fa),sleep(a.loop*1E3,!0),isDef(Oa)&&(a=clone(Oa));else ac(fa)}finally{xa(),delete a.__origr,typeof global.__oafp_streams!=="undefined"&&db.forEach(b=>{global.__oafp_streams[b].s.close();
+delete global.__oafp_streams[b]})}}};oafp(_params);

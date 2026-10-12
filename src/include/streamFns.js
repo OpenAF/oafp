@@ -13,7 +13,9 @@ const _withCommandStream = (cmd, fn) => {
             failure = e
         } finally {
             // Also drain any remaining stdout if a reader terminates early.
-            try { ioStreamReadBytes(out, () => false) } catch(ignore) {}
+            if (typeof _idescSample == "undefined" || failure !== _idescSample.stop) {
+                try { ioStreamReadBytes(out, () => false) } catch(ignore) {}
+            }
             out.close()
             $doWait(drain)
             err.close()
@@ -73,8 +75,15 @@ const _describeJSONPaths = (file, prefix) => {
     return Array.from(paths)
 }
 
+// Set once stdin/cmd output has already been read into memory (e.g. to auto-detect the input type)
+var _inputBuffered = false
 // Keep streams owned by this call separate from the process-wide stdin stream.
 const _withInputStream = (res, fn) => {
+    // stdin/cmd can only be consumed once: stream from what was already buffered instead
+    if (_inputBuffered && isString(res)) {
+        var bstream = af.fromString2InputStream(res)
+        try { return fn(bstream) } finally { bstream.close() }
+    }
     if (isDef(params.file) && isUnDef(params.cmd)) {
         return _withFileStream(fn)
     }
