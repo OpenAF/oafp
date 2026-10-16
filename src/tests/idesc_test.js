@@ -3,7 +3,7 @@ exports.run = function() {
    var eq = (a,b,msg) => ow.test.assert(a,b,msg)
    var fails = (fn, msg) => { var failed = false; try {fn()} catch(e) {failed = true}; eq(failed,true,msg) }
    var sessions = [], sampleFactory = new Function("params", "capture",
-      io.readFileString("../include/idescFns.js").replace("const _idescOutput = value => {", "const _idescOutput = value => { capture(value); return;") + "\nreturn { run: _withIDescSample, add: value => _idescSample.add(value) }")
+      "var _progressGuard = f => f(), _eraseProgress = () => {}, printErr = () => {};\n" + io.readFileString("../include/idescFns.js").replace("const _idescOutput = (value, batch, recipe) => {", "const _idescOutput = (value, batch, recipe) => { return capture(value, batch, recipe) || {outcome:\"quit\"};") + "\nreturn { run: _withIDescSample, add: value => _idescSample.add(value) }")
    var sample = sampleFactory({format:"idesc",idescrecords:2}, rows => sessions.push(rows))
    var visited = 0
    sample.run(() => { [null,{n:2},{n:3}].forEach(row => { visited++; sample.add(row) }) })
@@ -13,12 +13,47 @@ exports.run = function() {
    eq(sessions[1],[{n:4}],"Short stream opens once at EOF with fresh state")
    fails(() => sample.run(() => { sample.add(1); throw "parse failed" }),"Stream errors propagate")
    eq(sessions.length,2,"Failed streams do not open partial samples")
+   // Batch paging: "next" keeps reading, anything else stops; only one batch is held at a time.
+   var paged = (limit, outcomes, input) => {
+      var got = [], seen = [], i = 0
+      var s2 = sampleFactory({format:"idesc",idescrecords:limit}, (rows, batch, recipe) => {
+         got.push(rows); seen.push(batch)
+         return {outcome: outcomes[i++] || "quit", recipe: {n: got.length}}
+      })
+      var visited = 0
+      s2.run(() => input.forEach(v => { visited++; s2.add(v) }))
+      return {got: got, seen: seen, visited: visited}
+   }
+   var r = paged(2, ["next","next","quit"], [1,2,3,4,5])
+   eq(r.got, [[1,2],[3,4],[5]], "Next batches are consecutive and the partial tail opens at EOF")
+   eq(r.seen.map(b => [b.from,b.to,b.last]), [[1,2,false],[3,4,false],[5,5,true]], "Batch ranges and last flag")
+   eq(r.got[0] !== r.got[1], true, "Each batch is a fresh array")
+   r = paged(2, ["next","quit"], [1,2,3,4,5,6])
+   eq(r.got, [[1,2],[3,4]], "Quit stops reading further batches")
+   eq(r.visited, 4, "Records after a quit are not read")
+   r = paged(2, ["next","next"], [1,2,3,4])
+   eq(r.got, [[1,2],[3,4]], "Exact boundary opens no empty batch")
+   // Real reader/transform/output dispatch; replace only terminal rendering.
+   var script = io.createTempFile("idesc-sample-", ".js")
+   var pageScript = io.createTempFile("idesc-pages-", ".js")
+   try {
+      var src = io.readFileString("../oafp.source.js")
+      io.writeFileString(pageScript, src.replace("const _idescOutput = (value, batch, recipe) => {",
+         'const _idescOutput = (value, batch, recipe) => { print(stringify({v:value,b:batch}, __, "")); return {outcome:"next"};'))
+      var pageFile = io.createTempFile("idesc-pagein-", ".txt")
+      io.writeFileString(pageFile, '{"n":1}\n{"n":2}\n{"n":3}\n{"n":4}\n{"n":5}')
+      var pr = $sh(["java", "-jar", getOpenAFPath() + "/openaf.jar", "-f", pageScript,
+         "-e", "file=" + pageFile + " in=ndjson out=idesc parallel=false idescrecords=2"]).get(0)
+      io.rm(pageFile)
+      eq(pr.exitcode, 0, "Paged input succeeds: " + pr.stderr)
+      eq(pr.stdout.trim().split("\n").map(l => jsonParse(l)).map(o => [o.v.length, o.b.from, o.b.to, o.b.last]),
+         [[2,1,2,false],[2,3,4,false],[1,5,5,true]], "Real reader pages through every record")
+   } finally { io.rm(pageScript) }
    ;[0,-1,1.5,"bad"].forEach(limit => fails(() => sampleFactory({format:"idesc",idescrecords:limit}, () => {}).run(() => {}),"Reject invalid record limit"))
    // Keep real reader/transform/output dispatch; replace only terminal rendering.
-   var script = io.createTempFile("idesc-sample-", ".js")
    try {
       io.writeFileString(script, io.readFileString("../oafp.source.js").replace(
-         "const _idescOutput = value => {", 'const _idescOutput = value => { print(stringify(value, __, "")); return;'))
+         "const _idescOutput = (value, batch, recipe) => {", 'const _idescOutput = (value, batch, recipe) => { print(stringify(value, __, "")); return {outcome:"quit"};'))
       var checkSample = (input, options, expected, command) => {
          var inputFile = io.createTempFile("idesc-records-", ".txt")
          try {
@@ -233,6 +268,20 @@ exports.run = function() {
       var has = (t, text, msg) => eq(t.indexOf(text) >= 0, true, msg + " (missing: " + text + ")")
       var lacks = (t, text, msg) => eq(t.indexOf(text) >= 0, false, msg + " (unexpected: " + text + ")")
       var cursorRow = t => t.last.split("\n").filter(l => l.charAt(0) == "▌")[0] || ""
+      var batchTui = (keys, batch) => {
+         var queue = keys.slice(), frames = []
+         var bb = create([{n:1},{n:2}], undefined, {write:t => frames.push(strip(t)), readKey:() => queue.length ? queue.shift() : "eof", size:() => ({width:80, height:20})}, batch)
+         return {outcome: bb.run(), last: frames[frames.length - 1]}
+      }
+      var bt = batchTui(["n"], {from:1, to:2, last:false})
+      eq(bt.outcome, "next", "n requests the next batch")
+      has(bt.last, "records 1–2", "Header shows the record range")
+      has(batchTui([":", "n", "e", "x", "t", "enter"], {from:1, to:2, last:false}).outcome, "next", ":next requests the next batch")
+      bt = batchTui(["n", "q"], {from:3, to:3, last:true})
+      eq(bt.outcome, "quit", "n does nothing on the last batch")
+      has(bt.last, "(last)", "Header marks the last batch")
+      eq(batchTui(["n", "q"]).outcome, "quit", "n does nothing without batches")
+      eq(batchTui(["q"], {from:1, to:2, last:false}).outcome, "quit", "q quits without requesting more")
       var originalTable = printTable, originalTree = printTreeOrS, widths = [], treeWidths = []
       var tableSpy = function(v, width) { widths.push(width); return originalTable.apply(this, arguments) }
       var treeSpy = function(v, width) { treeWidths.push(width); return originalTree.apply(this, arguments) }
