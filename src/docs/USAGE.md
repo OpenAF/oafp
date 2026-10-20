@@ -474,7 +474,7 @@ List of options to use when _in=llmdecide_:
 |--------|------|-------------|
 | llmenv | String | Environment variable containing the model configuration (defaults to OAFP_MODEL, falling back to OAF_DECIDE_MODEL and then OAF_MODEL when absent). |
 | llmoptions | String/Map | Model configuration as a JSON/SLON string or map; overrides llmenv. Supports the shared sBucket options below. |
-| llmdecidesample | String | Emit a gemini or ollama request sample without input, credentials or inference. Use out=yaml or out=json. |
+| llmdecidesample | String | Emit a gemini, ollama or openai request sample without input, credentials or inference. Use out=yaml or out=json. |
 | llmimage | String | Local PNG/JPEG/WebP image file to encode as options.images for Ollama native decisions. Cannot be combined with options.images. |
 | llmdecidestats | Boolean | Return {response, stats} from one decideWithStats() execution (defaults to false). |
 
@@ -497,6 +497,7 @@ Generate a request, edit its state and questions, then run it with _file=_ and y
 ```sh
 oafp in=llmdecide llmdecidesample=gemini out=yaml > gemini-request.yaml
 oafp in=llmdecide llmdecidesample=ollama out=json > ollama-request.json
+oafp in=llmdecide llmdecidesample=openai out=yaml > openai-request.yaml
 ```
 
 > See _help=examples_ for complete request files and provider requirements. Samples use common OpenAF question definitions with provider-specific strategy options.

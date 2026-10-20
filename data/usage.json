@@ -1112,7 +1112,7 @@
     {
       "Option": "llmdecidesample",
       "Type": "String",
-      "Description": "Emit a gemini or ollama request sample without input, credentials or inference. Use out=yaml or out=json."
+      "Description": "Emit a gemini, ollama or openai request sample without input, credentials or inference. Use out=yaml or out=json."
     },
     {
       "Option": "llmimage",
@@ -1673,12 +1673,17 @@
     {
       "Option": "chart",
       "Type": "String",
-      "Description": "Chart definition in the format `\"<unit> <path:color:legend>... [-min:<n>] [-max:<n>] [-hsize:<n>] [-vsize:<n>]\"`. The 'unit' must be one of: `int`, `dec1`, `dec2`, `dec3`, `dec4`, `dec`, `bytes` or `si`. The 'path' is a JMESPath expression equivalent to the `path=` filter (use quotes for non-basic expressions; use `@` for the current root value). The 'color' should be one of the basic ANSI color names. The 'legend' is the series label (quote it if it contains spaces). The `-min` and `-max` flags set the Y-axis range; `-hsize` and `-vsize` override the default chart width and height in terminal columns/rows."
+      "Description": "Required. Unit, one or more series, and optional axis/size flags, as described below."
     },
     {
       "Option": "chartcls",
       "Type": "Boolean",
-      "Description": "If true the screen will be cleared before rendering each update (alternative to `loopcls=true`)"
+      "Description": "Clear the screen before printing each chart update. Use this or the general `loopcls=true` option to redraw in place. Otherwise updates are printed one after another."
+    },
+    {
+      "Option": "loop",
+      "Type": "Number",
+      "Description": "General oafp option: repeat the input and output, waiting this many seconds between runs. Use a changing source such as `cmd=`, `url=`, or `in=oaf` for live data."
     }
   ],
   [

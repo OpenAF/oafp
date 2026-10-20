@@ -1191,8 +1191,8 @@ var _inputFns = new Map([
             if (isDef(params[key])) _exit(-1, "in=llmdecide does not support " + key)
         })
         if (isDef(params.llmdecidesample)) {
-            if (["gemini", "ollama"].indexOf(params.llmdecidesample) < 0)
-                _exit(-1, "llmdecidesample must be gemini or ollama")
+            if (["gemini", "ollama", "openai"].indexOf(params.llmdecidesample) < 0)
+                _exit(-1, "llmdecidesample must be gemini, ollama or openai")
             var sample = {
                 state: { ticket: "The customer was charged twice." },
                 questions: {
@@ -1202,7 +1202,9 @@ var _inputFns = new Map([
                     urgent: { type: "boolean", instructions: "Does this require immediate attention?" },
                     priority: { type: "score", instructions: "Assess the urgency.", criteria: ["Routine", "Soon", "Urgent"] }
                 },
-                options: params.llmdecidesample == "gemini" ? { strategy: "structured" } : {
+                options: params.llmdecidesample == "gemini" ? { strategy: "structured" } : params.llmdecidesample == "openai" ? {
+                    strategy: "native", requireProbabilities: true
+                } : {
                     strategy: "native", requireProbabilities: true, providerOptions: { keepAlive: 0 }
                 }
             }

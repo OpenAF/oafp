@@ -575,16 +575,17 @@
          eq(configs[configs.length-1],{type:"fixture",key:"fixture-secret"},"secret resolution")
          eq(secretCalls[secretCalls.length-1],["repo","bucket","test"],"secret selector")
          env = {}
-         ;["gemini", "ollama"].forEach(provider => {
+         ;["gemini", "ollama", "openai"].forEach(provider => {
             var before = calls.length, configBefore = configs.length
             var sample = run(undefined,{llmdecidesample:provider,llmoptions:undefined})
             eq(sample.options.strategy,provider == "gemini" ? "structured" : "native","sample strategy")
+            if (provider == "openai") eq(sample.options,{strategy:"native",requireProbabilities:true},"OpenAI native sample options")
             eq(calls.length,before,"sample makes no inference")
             eq(configs.length,configBefore,"sample needs no configuration")
             run(af.toYAML(sample))
             eq(calls[calls.length-1].questions,sample.questions,"sample can be submitted")
          })
-         rejects(undefined,{llmdecidesample:"invalid"},"gemini or ollama")
+         rejects(undefined,{llmdecidesample:"invalid"},"gemini, ollama or openai")
          rejects(stringify(request),{llmoptions:undefined},"llmoptions not defined")
          ;["invalid","[]","{}",'{"state":2,"questions":{}}','{"state":{},"questions":[]}',
            '{"state":{},"questions":{},"options":[]}', '{"state":{},"questions":{},"extra":true}'].forEach(data => rejects(data,{},"requires"))
@@ -621,6 +622,7 @@
          runOafp = loadEntrypoint("../oafp.js")
          transformCases()
          eq(run(undefined,{llmdecidesample:"ollama",llmoptions:undefined}).options.strategy,"native","compiled sample")
+         eq(run(undefined,{llmdecidesample:"openai",llmoptions:undefined}).options,{strategy:"native",requireProbabilities:true},"compiled OpenAI sample")
          eq(run(stringify(request),{path:"answers.route.value"}),"billing","compiled decision filter")
          run(stringify(imageRequest))
          eq(calls[calls.length-1].options.images,imageRequest.options.images,"compiled image decision")
