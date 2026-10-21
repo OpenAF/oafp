@@ -10,7 +10,7 @@
       "Function": "a4m(arr, 'key', dontRemove)",
       "OpenAF": "20240209",
       "Description": "Converts an array into a map",
-      "Example": "a4m([], 'name', \\`true`)"
+      "Example": "a4m(@, 'name', `true`)"
     },
     {
       "Function": "abs(number)",
@@ -22,7 +22,7 @@
       "Function": "add(number, number)",
       "OpenAF": "20240217",
       "Description": "Adds two numbers",
-      "Example": "add(1, 2)"
+      "Example": "add(`1`, `2`)"
     },
     {
       "Function": "amerge(x, y)",
@@ -33,14 +33,14 @@
     {
       "Function": "assign(obj, objPath, value)",
       "OpenAF": "20241010",
-      "Description": "Given an 'obj' will try to set the object path objPath to value",
-      "Example": "assign([?id='12']"
+      "Description": "Sets a property path on obj and returns obj",
+      "Example": "assign(@, 'status', 'valid')"
     },
     {
       "Function": "assignp(path, objPath, value)",
       "OpenAF": "20241010",
-      "Description": "Given a path will try to set the object path objPath to value",
-      "Example": "assignp('[?id='12']', 'status', 'valid')"
+      "Description": "Sets a property on the object selected from the original input and returns the original input",
+      "Example": "assignp('items[0]', 'status', 'valid')"
     },
     {
       "Function": "avg(arrayNumber)",
@@ -49,22 +49,22 @@
       "Example": "avg([].y)"
     },
     {
-      "Function": "at(idx)",
+      "Function": "at(array, index)",
       "OpenAF": "20241205",
-      "Description": "Returns the array index entry",
-      "Example": "[].at(5)"
+      "Description": "Returns the element at the given array index",
+      "Example": "at(@, `0`)"
     },
     {
       "Function": "ceil(number)",
       "OpenAF": "base",
-      "Description": "Returns the smallest integer that is equal or less than a specific numeric field value",
-      "Example": "[].ceil(y)"
+      "Description": "Returns the smallest integer greater than or equal to the number",
+      "Example": "ceil(`1.2`)"
     },
     {
-      "Function": "ch(name, op, arg1, args2)",
+      "Function": "ch(name, op, arg1, arg2)",
       "OpenAF": "20240801",
       "Description": "Wrapper for OpenAF's channel functions over a 'name' channel, an 'op' operation between get, set, unset, size, getAll, getKeys, unsetAll; depending on the 'op', 'arg1' and 'arg2' can be provided with values as objects or JSON/SLON",
-      "Example": "ch('a', 'set', 'a', 'abc').ch('a', 'get', 'a', __)"
+      "Example": "ch('a', 'get', 'key', `null`)"
     },
     {
       "Function": "chq(name, op, max, value)",
@@ -75,14 +75,14 @@
     {
       "Function": "concat(x, y)",
       "OpenAF": "20240209",
-      "Description": "Concats arrays or strings",
+      "Description": "Concatenates arrays or strings",
       "Example": "concat('abc', '123')"
     },
     {
       "Function": "contains(string/array, any)",
       "OpenAF": "base",
-      "Description": "Returns true of false if a string field contains a specific value",
-      "Example": "files[?contains(filename, 'openaf.jar') == `true`"
+      "Description": "Returns whether a string contains a substring or an array contains a value",
+      "Example": "files[?contains(filename, 'openaf.jar')]"
     },
     {
       "Function": "count_by(arr, 'field')",
@@ -111,13 +111,13 @@
     {
       "Function": "div(a, b)",
       "OpenAF": "20240217",
-      "Description": "Divides two numbers.",
-      "Example": "div(6, 2)"
+      "Description": "Divides two numbers",
+      "Example": "div(`6`, `2`)"
     },
     {
-      "Function": "ends_with(string, array)",
+      "Function": "ends_with(string, suffix)",
       "OpenAF": "base",
-      "Description": "Returns true if a field has the provided suffix",
+      "Description": "Returns whether a string ends with the suffix",
       "Example": "files[?ends_with(filename, '.jar')]"
     },
     {
@@ -135,26 +135,26 @@
     {
       "Function": "flat_map(x)",
       "OpenAF": "all",
-      "Description": "Returns a flat, one level, version of the provided map.",
+      "Description": "Flattens nested keys into dot-separated keys in a map or array of maps.",
       "Example": "flat_map(data)"
     },
     {
       "Function": "floor(number)",
       "OpenAF": "base",
-      "Description": "Returns the greatest integer that is equal or greater than a specific numeric field value",
-      "Example": "[].floor(y)"
+      "Description": "Returns the greatest integer less than or equal to the number",
+      "Example": "floor(`1.8`)"
     },
     {
       "Function": "format(x, 'format')",
       "OpenAF": "20240209",
-      "Description": "OpenAF's function $f (similar to printf) with type conversion",
-      "Example": "format(to_number(`123.12`), '%05.0f')"
+      "Description": "Formats a string or number using OpenAF's $ft with type conversion",
+      "Example": "format(`123.12`, '%05.0f')"
     },
     {
       "Function": "formatn(x, 'format')",
       "OpenAF": "20240209",
-      "Description": "OpenAF's function $ft (similar to printf) without type conversion",
-      "Example": "format(string, '%10s')"
+      "Description": "Formats a string or number using OpenAF's $f without type conversion",
+      "Example": "formatn(name, '%10s')"
     },
     {
       "Function": "from_base64(str)",
@@ -172,25 +172,25 @@
       "Function": "from_csv(str, options)",
       "OpenAF": "20240801",
       "Description": "Given a string CSV representation tries to parse to an array",
-      "Example": "from_csv(@, '(withDelimiter:\\\""
+      "Example": "from_csv(@, '(withDelimiter:\"\\"
     },
     {
       "Function": "from_datef(date, 'format')",
       "OpenAF": "20240228",
-      "Description": "Converts a date type into a string given a 'format' (equivalent to OpenAF's ow.format.fromDate)",
+      "Description": "Formats a date as text using a Java date pattern",
       "Example": "from_datef(to_datef('20240202', 'yyyyMMdd'), 'yyyy')"
     },
     {
       "Function": "from_kyaml(str)",
       "OpenAF": "20251115",
-      "Description": "Converts a KYAML string representation into an object",
+      "Description": "Parses a KYAML/lenient JSON string",
       "Example": "from_kyaml(@)"
     },
     {
       "Function": "from_json(str)",
       "OpenAF": "20240215",
-      "Description": "Converts a json string representation into an object",
-      "Example": "from_json('{a:123}')\""
+      "Description": "Parses a JSON string",
+      "Example": "from_json('{\"a\":123}')"
     },
     {
       "Function": "from_ms(x, 'format')",
@@ -211,7 +211,7 @@
       "Example": "from_siAbbr('100m')"
     },
     {
-      "Function": "from_slon(obj)",
+      "Function": "from_slon(str)",
       "OpenAF": "20240215",
       "Description": "Converts a slon string representation into an object",
       "Example": "from_slon('(abc: 123)')"
@@ -249,31 +249,31 @@
     {
       "Function": "get(nameOrPath)",
       "OpenAF": "20240305",
-      "Description": "Given a path to the original object or a name set by 'set' or 'setp' returns the corresponding value",
-      "Example": "packages[].{name: name, version: version, parentVersion: get('version') }"
+      "Description": "Returns a truthy locally stored value, falling back to the corresponding path in the original input",
+      "Example": "packages[].{name: name, parentVersion: get('version')}"
     },
     {
       "Function": "geta(nameOrPath, arrayIndex)",
       "OpenAF": "20240415",
-      "Description": "Given a path to the original object or name set by 'set' or 'setp' returns the arrayIndex element of the corresponding returning array",
-      "Example": "ranges(length(get('arr')),`0`,`1`).map(&{ elem: geta('arr',@).elem }, @)"
+      "Description": "Returns a truthy indexed local value, falling back to the indexed original-input value",
+      "Example": "geta('arr', `0`)"
     },
     {
       "Function": "getc(name)",
       "OpenAF": "20240428",
       "Description": "Returns the current value of a counter name user with inc/dec",
-      "Example": "[].{ idx: inc('my_counter'), code: concat('c', get('my_counter')), name: name}"
+      "Example": "getc('my_counter')"
     },
     {
       "Function": "group(arr, 'field')",
       "OpenAF": "all",
-      "Description": "Given an array will return a new array grouping the entries for each value of the provided field",
+      "Description": "Returns an object whose keys are field values and whose values are arrays of matching entries",
       "Example": "group(files, 'isDirectory')"
     },
     {
       "Function": "group_by(arr, 'field1,field2')",
       "OpenAF": "all",
-      "Description": "Given ar array will return a multi-level array grouping entries for each value of the provided fields (comma delimited)",
+      "Description": "Returns nested objects grouping entries by the comma-delimited field names",
       "Example": "group_by(files, 'isFile, permissions')"
     },
     {
@@ -297,7 +297,8 @@
     {
       "Function": "insert(obj, 'field', value)",
       "OpenAF": "20240302",
-      "Description": "Adds a 'field' with the corresponding value to the object."
+      "Description": "Sets a property path on a map and returns the map",
+      "Example": "insert(@, 'status', 'valid')"
     },
     {
       "Function": "join(string, arrayString)",
@@ -326,8 +327,8 @@
     {
       "Function": "length(string/array/object)",
       "OpenAF": "base",
-      "Description": "Returns the size of any array or list",
-      "Example": "length(keys(files[0]))"
+      "Description": "Returns string length, array length, or the number of object keys",
+      "Example": "length(@)"
     },
     {
       "Function": "lower_case(str)",
@@ -360,9 +361,9 @@
       "Example": "match('abc 123', '\\\\d+', 'g')"
     },
     {
-      "Function": "max(number)",
+      "Function": "max(arrayNumber/arrayString)",
       "OpenAF": "base",
-      "Description": "Returns the maximum of a numeric field",
+      "Description": "Returns the largest number or string in an array",
       "Example": "max(files[].size)"
     },
     {
@@ -375,12 +376,12 @@
       "Function": "merge(object, object)",
       "OpenAF": "base",
       "Description": "Returns the merge of two objects",
-      "Example": "merge([0],[1])"
+      "Example": "merge(`{\"a\":1}`, `{\"b\":2}`)"
     },
     {
-      "Function": "min(number)",
+      "Function": "min(arrayNumber/arrayString)",
       "OpenAF": "base",
-      "Description": "Returns the minimum of a numeric field",
+      "Description": "Returns the smallest number or string in an array",
       "Example": "min(files[].size)"
     },
     {
@@ -392,7 +393,7 @@
     {
       "Function": "mod(a, b)",
       "OpenAF": "20240217",
-      "Description": "Returns the modular of two numbers",
+      "Description": "Returns the remainder of dividing a by b",
       "Example": "mod(`5`, `2`)"
     },
     {
@@ -402,15 +403,16 @@
       "Example": "mul(`5`, `2`)"
     },
     {
-      "Function": "not_null(any)",
+      "Function": "not_null(any, ...)",
       "OpenAF": "base",
-      "Description": "Returns the non-null value between the provided fields",
+      "Description": "Returns the first non-null argument",
       "Example": "[].not_null(a,b)"
     },
     {
       "Function": "now(diff)",
       "OpenAF": "20240302",
-      "Description": "Returns the current unix timestamp number with a negative diff (or positive for dates in the future)"
+      "Description": "Returns the current Unix timestamp in milliseconds minus diff; negative diff selects a future time",
+      "Example": "now(`0`)"
     },
     {
       "Function": "nvl(field, value)",
@@ -451,14 +453,14 @@
     {
       "Function": "progress(value, max, min, size, indicator, space)",
       "OpenAF": "20240712",
-      "Description": "Returns a progress string to represent a value, between a max and a min, using an indicator char and space chars within a size limit",
-      "Example": "{ val: v, p: progress(v, 100, 0, 10, __, __) }"
+      "Description": "Builds a progress string within the given bounds and width",
+      "Example": "progress(`5`, `10`, `0`, `10`, '#', ' ')"
     },
     {
       "Function": "random(min, max)",
       "OpenAF": "20241205",
-      "Description": "Returns a random number between a minimum and maximum limit",
-      "Example": "random(0, 100)"
+      "Description": "Returns a random integer between the inclusive bounds",
+      "Example": "random(`0`, `100`)"
     },
     {
       "Function": "range(size)",
@@ -469,8 +471,8 @@
     {
       "Function": "ranges(size, start, step)",
       "OpenAF": "20240502",
-      "Description": "Produces an array with exactly 'size' members starting in 'start' and adding 'step' for the next member",
-      "Example": "ranges(`15`,`8`,`2`)"
+      "Description": "Produces size numbers using (zero-based index + start) * step",
+      "Example": "ranges(`3`,`2`,`2`)"
     },
     {
       "Function": "replace(str, 're', 'flags', 'replaceText')",
@@ -479,10 +481,10 @@
       "Example": "replace('This is a test', ' a', 'i', ' not a')"
     },
     {
-      "Function": "reverse(array)",
+      "Function": "reverse(string/array)",
       "OpenAF": "base",
-      "Description": "Reverse the provided array",
-      "Example": "\"reverse(@)\""
+      "Description": "Reverses a string or array",
+      "Example": "reverse(@)"
     },
     {
       "Function": "search_keys(arr, 'text')",
@@ -497,16 +499,16 @@
       "Example": "search_values(files, '.git')"
     },
     {
-      "Function": "set(obj, path)",
+      "Function": "set(obj, name)",
       "OpenAF": "20240305",
-      "Description": "Given an object will set the value to a name that it's equal to it's path",
-      "Example": "set(@, 'version').packages[].{ name: name, parentVersion: get('version') }"
+      "Description": "Stores obj under a local name and returns obj",
+      "Example": "set(version, 'ver')"
     },
     {
       "Function": "setp(obj, path, name)",
       "OpenAF": "20240305",
       "Description": "Given an object will set the value to a name given the provided path",
-      "Example": "set(@, 'version', 'ver').packages[].{ name: name, parentVersion: get('ver') }"
+      "Example": "setp(@, 'version', 'ver').packages[].{ name: name, parentVersion: get('ver') }"
     },
     {
       "Function": "semver(version, operation, arg)",
@@ -523,26 +525,26 @@
     {
       "Function": "sh_json(cmd, stdin)",
       "OpenAF": "20241116",
-      "Description": "Executes a shell command with a stdin. Parses json returning stdout, stderr, exitcode, cmd and in.",
-      "Example": "sh('cmd', out).stdout"
+      "Description": "Runs a shell command and returns its parsed JSON output",
+      "Example": "sh_json('printf 123', '')"
     },
     {
       "Function": "sh_jsslon(cmd, stdin)",
       "OpenAF": "20241116",
-      "Description": "Executes a shell command with a stdin. Parses jsslon returning stdout, stderr, exitcode, cmd and in.",
-      "Example": "sh('cmd', out).stdout"
+      "Description": "Runs a shell command and returns its parsed JSON/SLON output",
+      "Example": "sh_jsslon('printf 123', '')"
     },
     {
       "Function": "sh_yaml(cmd, stdin)",
       "OpenAF": "20241116",
-      "Description": "Executes a shell command with a stdin. Parses yaml output returning stdout, stderr, exitcode, cmd and in.",
-      "Example": "sh('cmd', out).stdout"
+      "Description": "Runs a shell command and returns its parsed YAML output",
+      "Example": "sh_yaml('printf 123', '')"
     },
     {
-      "Function": "sort(array)",
+      "Function": "sort(arrayNumber/arrayString)",
       "OpenAF": "base",
-      "Description": "Sorts the provided array",
-      "Example": "\"sort(@)\""
+      "Description": "Sorts numbers or strings in ascending order",
+      "Example": "sort(@)"
     },
     {
       "Function": "sort_by(array, expression)",
@@ -554,7 +556,7 @@
       "Function": "split(str, 'sep')",
       "OpenAF": "20240209",
       "Description": "Equivalent to the split Javascript's function for a string given a separator",
-      "Example": "split(@, '\\n')"
+      "Example": "split(@, `\"\\n\"`)"
     },
     {
       "Function": "split_re(str, 're')",
@@ -565,13 +567,13 @@
     {
       "Function": "split_sep(str, sep, arrEnc)",
       "OpenAF": "20240217",
-      "Description": "Given a string, a separator regexp and an array of pairs of enclosure chars",
-      "Example": "split_sep(@, '\\\\s+', from_slon('[['{'"
+      "Description": "Splits using a separator regexp, respecting and removing enclosure pairs",
+      "Example": "split_sep(@, ',', `[[\"(\",\")\"]]`)"
     },
     {
-      "Function": "starts_with(string, array)",
+      "Function": "starts_with(string, prefix)",
       "OpenAF": "base",
-      "Description": "Returns true if a field has the provided prefix",
+      "Description": "Returns whether a string starts with the prefix",
       "Example": "files[?starts_with(filename, 'openaf.jar')]"
     },
     {
@@ -595,25 +597,25 @@
     {
       "Function": "srandom(min, max)",
       "OpenAF": "20241205",
-      "Description": "Returns a secure random number between a minimum and maximum limit",
-      "Example": "srandom(0, 100)"
+      "Description": "Returns a secure random integer between the inclusive bounds",
+      "Example": "srandom(`0`, `100`)"
     },
     {
       "Function": "sub(a, b)",
       "OpenAF": "20240217",
-      "Description": "Substracts two numbers",
-      "Example": "sub(`2`, `2`)"
+      "Description": "Subtracts the second number from the first",
+      "Example": "sub(`5`, `2`)"
     },
     {
       "Function": "substring(str, ini, end)",
       "OpenAF": "all",
-      "Description": "Given a string will return a sub-string starting on the initial index until the ending index",
-      "Example": "substring(@, index_of('test'), 5)"
+      "Description": "Returns the substring between zero-based indices, excluding end",
+      "Example": "substring(@, `0`, `5`)"
     },
     {
-      "Function": "sum(array)",
+      "Function": "sum(arrayNumber)",
       "OpenAF": "base",
-      "Description": "Sums the numberic field of a provided array",
+      "Description": "Returns the sum of an array of numbers",
       "Example": "sum(files[].size)"
     },
     {
@@ -626,30 +628,30 @@
       "Function": "tF(obj, 'template')",
       "OpenAF": "20240228",
       "Description": "Applies the Handlebars 'template', with all OpenAF helpers, to the provided array or map",
-      "Example": "tF(@, '{{\\$env 'TITLE'}}: {{filename}}')"
+      "Example": "tF(@, '{{filename}} ({{size}})')"
     },
     {
       "Function": "template(a, 'template')",
       "OpenAF": "20240209",
       "Description": "Applies the Handlebars 'template' to the provided array or map",
-      "Example": "t(@, '{{filename}} ({{size}})')"
+      "Example": "template(@, '{{filename}} ({{size}})')"
     },
     {
       "Function": "templateF(x, 'template')",
       "OpenAF": "20240209",
       "Description": "Applies the Handlebars 'template', with all OpenAF helpers, to the provided array or map",
-      "Example": "tF(@, '{{\\$env 'TITLE'}}: {{filename}}')"
+      "Example": "templateF(@, '{{filename}} ({{size}})')"
     },
     {
       "Function": "timeago(num)",
       "OpenAF": "20240209",
-      "Description": "Given a ms timestamp will return a human readable string of how log ago that timestamp occurred.",
+      "Description": "Given a ms timestamp will return a human readable string of how long ago that timestamp occurred.",
       "Example": "files[].{path:filepath,howLongAgo:timeago(lastModified)}"
     },
     {
       "Function": "timeagoAbbr(num)",
       "OpenAF": "20240810",
-      "Description": "Given a ms timestamp will return an abbreviated human readable string of how long ago that timestemp occurred.",
+      "Description": "Given a ms timestamp will return an abbreviated human readable string of how long ago that timestamp occurred.",
       "Example": "files[].{path:filepath,howLongAgo:timeagoAbbr(lastModified)}"
     },
     {
@@ -674,7 +676,7 @@
       "Function": "to_csv(obj, options)",
       "OpenAF": "20240801",
       "Description": "Given an object will try to convert it to CSV with $csv options",
-      "Example": "to_csv(@, '(withDelimiter:\\\""
+      "Example": "to_csv(@, '(withDelimiter:\"\\"
     },
     {
       "Function": "to_date(x)",
@@ -701,10 +703,10 @@
       "Example": "to_json(@, '')"
     },
     {
-      "Function": "to_kyaml(obj)",
+      "Function": "to_kyaml(obj, isMultiDoc, shouldColor)",
       "OpenAF": "20251115",
-      "Description": "Given an object will return the KYAML representation of it.",
-      "Example": "to_kyaml(@)"
+      "Description": "Returns KYAML with boolean multi-document and color controls",
+      "Example": "to_kyaml(@, `false`, `false`)"
     },
     {
       "Function": "to_map(arr, 'field')",
@@ -715,7 +717,7 @@
     {
       "Function": "to_ms(date)",
       "OpenAF": "20240810",
-      "Description": "Converts a date field into a number of ms",
+      "Description": "Converts a Date to Unix milliseconds; other values pass through unchanged",
       "Example": "to_ms(createDate)"
     },
     {
@@ -734,7 +736,7 @@
       "Function": "to_numSpace(num, space)",
       "OpenAF": "20241207",
       "Description": "Transforms a number input to a string with thousands separator 'space'",
-      "Example": "to_numSpace(123456, ',')"
+      "Example": "to_numSpace(`123456`, ',')"
     },
     {
       "Function": "to_slon(obj)",
@@ -767,9 +769,9 @@
       "Example": "to_xml(@)"
     },
     {
-      "Function": "to_yaml(obj, inline)",
+      "Function": "to_yaml(obj, isMultiDoc)",
       "OpenAF": "20240215",
-      "Description": "Given an object will return the YAML representation of it with optional inline boolean flag",
+      "Description": "Given an object will return the YAML representation of it with a boolean controlling multi-document output",
       "Example": "to_yaml(@, `true`)"
     },
     {
@@ -797,10 +799,10 @@
       "Example": "upper_case('AbC')"
     },
     {
-      "Function": "unset(name)",
+      "Function": "unset(obj, name)",
       "OpenAF": "20240428",
-      "Description": "Resets a counter name or a set/setp name",
-      "Example": "unset('my_counter')"
+      "Description": "Removes a value from OpenAF shared storage and returns obj",
+      "Example": "unset(@, 'my_counter')"
     },
     {
       "Function": "values(a)",

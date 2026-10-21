@@ -1,0 +1,10 @@
+# Replace with the intended endpoint, or override with url=... on the CLI.
+url: https://example.org/items.json
+urlmethod: GET
+urlparams:
+  requestHeaders:
+    Accept: application/json
+  connectionTimeout: 10000
+in: json
+path: items[].name
+out: json

@@ -1096,7 +1096,7 @@ const _idescOutput = (value, batch, recipe) => {
 const _idescSource = () => {
     if (!isFunction(io.scanJSON) || !isFunction(io.copyJSONRange)) throw "idescsource=stream requires OpenAF io.scanJSON/copyJSONRange; rebuild/update OpenAF"
     if (isDef(params.type) && params.type != "json") throw "idescsource=stream supports JSON input only"
-    var incompatible = ["path", "opath", "from", "ifrom", "sql", "isql", "jsonprefix", "jsondesc", "stream", "outputkey", "outkey", "loop", "pipe", "outfileappend"]
+    var incompatible = ["path", "opath", "from", "ifrom", "sql", "isql", "jq", "ijq", "ojq", "jsonprefix", "jsondesc", "stream", "outputkey", "outkey", "loop", "pipe", "outfileappend"]
         .concat(Object.keys(_transformFns))
     incompatible.forEach(k => { if (isDef(params[k])) throw "idescsource=stream cannot use " + k + "; narrow/query inside idesc or use loaded mode" })
     if (isDef(params.chs) || isDef(params.paramsfile) && params.paramsfile == "-") throw "idescsource=stream requires an independent JSON source"

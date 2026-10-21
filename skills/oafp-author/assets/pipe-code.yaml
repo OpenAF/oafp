@@ -1,0 +1,17 @@
+in: json
+data:
+  - {name: alpha, score: "1"}
+  - {name: beta, score: "2"}
+correcttypes: true
+out: json
+pipe:
+  in: json
+  oaf: |
+    data = data.map(function(row) {
+      return { name: row.name, doubled: row.score * 2 }
+    })
+  out: json
+  pipe:
+    in: json
+    path: '{names:[].name,total:sum([].doubled)}'
+    out: json

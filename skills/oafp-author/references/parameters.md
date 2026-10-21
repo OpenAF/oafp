@@ -5,6 +5,8 @@ Resolve paths from the oafp repository root. These are live references, not a fr
 | Need | Authoritative local source |
 | --- | --- |
 | Source selection, aliases, parameter-file loading, runtime flags, library registration | `src/oafp.source.js.hbs` and Main options in `src/docs/USAGE.md` |
+| Command transport and exit handling | `_withCommandStream` in `src/include/streamFns.js`; `cmd` in `src/include/outputFns.js` |
+| OpenAF JavaScript input, transform and sink contracts | `oaf` in `src/include/inputFns.js`, `transformFns.js` and `outputFns.js` |
 | All built-in input types and their options | Input types and Input options in `src/docs/USAGE.md`; `src/include/inputFns.js`, `inputLineFns.js`, `fileExtensions.json`, `fileExtensionsNoMem.json` |
 | All transforms, companion parameters and execution order | Optional transforms and Transform options in `src/docs/USAGE.md`; `src/include/transformFns.js` |
 | All output formats and options | Output formats and Output options in `src/docs/USAGE.md`; `src/include/outputFns.js`; fallback OpenAF `$output` implementation for formats not handled there |

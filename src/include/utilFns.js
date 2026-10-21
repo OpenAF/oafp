@@ -17,6 +17,8 @@ const _transform = r => {
 const _$f = (r, options) => {
     params.__origr = r
 
+    var jq = isDef(options.__ijq) || isDef(options.__ojq)
+
     // Input filters
     if (options.__ifrom) {
         r = $from(isArray(r) ? r : [ r ]).query(af.fromNLinq(options.__ifrom.trim()))
@@ -60,8 +62,14 @@ const _$f = (r, options) => {
 
     //if (!Array.isArray(params.__origr) && Array.isArray(r) && r.length <= 1) r = r[0]
 
+    if (isDef(options.__ijq)) {
+        r = $jq(r, options.__ijq)
+        delete options.__ijq
+        if (typeof r === "undefined") return r
+    }
+
     // Transforms
-    if (isString(r)) return _transform(r)
+    if (isString(r) && !jq) return _transform(r)
     r = _transform(r)
 
     // Output filters
@@ -104,11 +112,17 @@ const _$f = (r, options) => {
         delete options.__opath
     }
     
+    if (isDef(options.__ojq)) {
+        r = $jq(r, options.__ojq)
+        delete options.__ojq
+    }
+
     //if (!Array.isArray(__origr2) && Array.isArray(r) && r.length <= 1) r = r[0]
     return r
 }
 const _$o = (r, options, lineByLine) => {
-    if ((r == null && !options.__keepNull && options.__format != "idesc" && isUnDef(params.idescrecipe)) || ("undefined" == typeof r)) {
+    var jq = isDef(options.__ijq) || isDef(options.__ojq)
+    if ((r == null && !jq && !options.__keepNull && options.__format != "idesc" && isUnDef(params.idescrecipe)) || ("undefined" == typeof r)) {
         _clearTmpMsg()
         return
     }
@@ -122,7 +136,10 @@ const _$o = (r, options, lineByLine) => {
             __conAnsi = false
         }
     }
-    if (!isString(r)) {
+    if (jq) {
+        r = _$f(r, nOptions)
+        if (typeof r === "undefined") { _clearTmpMsg(); return }
+    } else if (!isString(r)) {
         if (lineByLine)
             r = _$f([r], nOptions)[0]
         else

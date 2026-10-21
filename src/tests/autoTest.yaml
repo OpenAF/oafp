@@ -1,8 +1,12 @@
 todo:
 - Load test
+- oafp::EnvsNoCmd
 - oafp::IDesc
 - oafp::JSONDescriptions
 - oafp::FormatHelp
+- oafp::JqFilters
+- oafp::FilterReference
+- oafp::TerminalInitialization
 - oafp::DevScope
 - oafp::StreamingPerformance
 - oafp::GzipInputs
@@ -80,6 +84,12 @@ ojob:
 
 jobs:
 # ---------------
+- name: oafp::EnvsNoCmd
+  to  : oJob Test
+  deps: Load test
+  args:
+    func: "global.test.testEnvsNoCmd()"
+
 - name: Load test
   exec: |
     global.test = require("autoTest.js")
@@ -324,3 +334,21 @@ jobs:
   deps: Load test
   args:
     func: "global.test.testFormatHelp()"
+
+- name: oafp::TerminalInitialization
+  to: oJob Test
+  deps: Load test
+  args:
+    func: "global.test.testTerminalInitialization()"
+
+- name: oafp::JqFilters
+  to: oJob Test
+  deps: Load test
+  args:
+    func: "global.test.testJqFilters()"
+
+- name: oafp::FilterReference
+  to: oJob Test
+  deps: Load test
+  args:
+    func: "global.test.testFilterReference()"

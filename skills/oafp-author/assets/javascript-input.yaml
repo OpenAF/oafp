@@ -1,0 +1,7 @@
+in: oaf
+data: |
+  data = [1, 2, 3].map(function(value) {
+    return { value: value, doubled: value * 2 }
+  })
+path: '{total:sum([].doubled),count:length(@)}'
+out: json

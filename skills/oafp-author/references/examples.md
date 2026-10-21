@@ -2,7 +2,7 @@
 
 Run from the oafp repository root. The assets contain synthetic data and do not need network access.
 
-These assets are checked by `testSkillRecipes` in `src/tests/autoTest.js` through the generated CLI. To run the full regression suite after rebuilding, use `cd src && ojob build.yaml op=test`. Installed `oafp` commands below exercise the installed version, which may differ from the checkout.
+The original filter, summary and NDJSON assets below are checked by `testSkillRecipes` in `src/tests/autoTest.js` through the generated CLI. To run the full regression suite after rebuilding, use `cd src && ojob build.yaml op=test`. Installed `oafp` commands below exercise the installed version, which may differ from the checkout.
 
 ## Filter, transform, sort, project
 
@@ -71,3 +71,16 @@ The sibling `../ojob.io/oafp-examples.yaml` stores recipes in `data[]` with `c` 
 - DB / H2: demonstrates separate read and write recipes; do not execute these just to validate syntax.
 
 Treat examples as patterns to check against the target runtime, not commands to execute wholesale. Read the `e` value as YAML before adapting its shell quoting; escaped text embedded in another format may have extra quoting layers.
+
+## Commands, URLs, JavaScript and nested pipelines
+
+Use [commands and HTTP](commands-and-http.md) for `cmd`, `out=cmd` and URL request configuration; [JavaScript](javascript.md) for generation, transformation and output; and [parameter files and pipes](files-and-pipes.md) for stage boundaries and file invocation.
+
+| Asset | Expected result | Check |
+| --- | --- | --- |
+| [command-input.yaml](../assets/command-input.yaml) | `{"total":6}` | Local `printf` stdout |
+| [javascript-input.yaml](../assets/javascript-input.yaml) | `{"total":12,"count":3}` | OpenAF code generation and filtering |
+| [pipe-code.yaml](../assets/pipe-code.yaml) | `{"names":["alpha","beta"],"total":6}` | Three sequential stages |
+| [url-input.yaml](../assets/url-input.yaml) | Array of names from `items` | Requires an endpoint override; optional loopback test |
+
+Run `python3 skills/oafp-author/scripts/check_recipes.py` from the repository root to check the new assets and equivalent CLI forms, parameter overrides, stdin modes, code files and output sinks. Add `--http` to test GET/POST using a temporary loopback server; no external service or credentials are needed. Use `--oafp /absolute/path/to/oafp` to select a different executable. This is a targeted recipe check, independent of the repository build and full suite.

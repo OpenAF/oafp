@@ -57,6 +57,18 @@
       "Description": "A SQL expression to filter output"
     },
     {
+      "Option": "ijq",
+      "Description": "A jq expression to filter input after path and before transforms; requires OpenAF $jq"
+    },
+    {
+      "Option": "jq",
+      "Description": "Alias for ijq; do not combine with ijq"
+    },
+    {
+      "Option": "ojq",
+      "Description": "A jq expression to filter output after opath"
+    },
+    {
       "Option": "opath",
       "Description": "A JMESPath expression to filter output data"
     },
@@ -70,7 +82,7 @@
     },
     {
       "Option": "path",
-      "Description": "A JMESPath expression to filter output"
+      "Description": "A JMESPath expression to filter input before transforms"
     },
     {
       "Option": "csv",
@@ -1804,6 +1816,11 @@
       "Description": "If defined will output the provided command to set each environment variable (defaults to 'export' or 'set' in Windows)"
     },
     {
+      "Option": "envsnocmd",
+      "Type": "Boolean",
+      "Description": "If true omits the command before each environment variable assignment, including a custom envscmd (defaults to false)"
+    },
+    {
       "Option": "envsprefix",
       "Type": "String",
       "Description": "If defined uses the provided prefix for each environment variable key (defaults to '_OAFP_')"
@@ -2109,7 +2126,11 @@
   [
     {
       "Help": "help=filters",
-      "Description": "Provides more details regarding the use of \"path=\", \"from=\" and \"sql=\""
+      "Description": "Filter order, JMESPath functions, jq, nLinq and SQL"
+    },
+    {
+      "Help": "`help=\"filter=keys\"`",
+      "Description": "Return the exact JMESPath function row, including signature, availability, description and example"
     },
     {
       "Help": "help=template",

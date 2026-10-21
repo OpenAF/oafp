@@ -26,10 +26,13 @@ Takes an input, usually a data structure such as json, and transforms it to an e
 | isql | A SQL expression to filter input data |
 | from   | An OpenAF nLinq path expression to filter output |
 | sql    | A SQL expression to filter output |
+| ijq | A jq expression to filter input after path and before transforms; requires OpenAF $jq |
+| jq | Alias for ijq; do not combine with ijq |
+| ojq | A jq expression to filter output after opath |
 | opath | A JMESPath expression to filter output data |
 | sqlfilter | Enables the forcing of the sql filter parser (values: auto, simple, advanced) |
 | sqlfiltertables | A JSON/SLON array composed of 'table' name and 'path' to each table's data to be used with the sqlfilter |
-| path   | A JMESPath expression to filter output |
+| path   | A JMESPath expression to filter input before transforms |
 | csv    | If type=csv, the CSV options to use | 
 | outkey | If defined the map/list output will be prefixed with the provided key |
 | outfile | If defined all output will be written to the provided file |
@@ -56,7 +59,7 @@ Takes an input, usually a data structure such as json, and transforms it to an e
 | -v | Changes the input to a map with the tool's version info |
 | debug | If true prints debugging messages |
 
-> Filter options apply in the following order: _path_, _from_ and _sql_.
+> Filter order: _ifrom_, _isql_, _path_, _ijq_ (alias _jq_), transforms, _from_, _sql_, _opath_, _ojq_. See _help=filters_ for syntax, examples, and jq result/record handling.
 
 > For _path_ syntax check https://jmespath.org/tutorial.html
 
@@ -1145,6 +1148,7 @@ List of options to use when _out=envs_:
 | Option | Type | Description |
 |--------|------|-------------|
 | envscmd | String | If defined will output the provided command to set each environment variable (defaults to 'export' or 'set' in Windows) |
+| envsnocmd | Boolean | If true omits the command before each environment variable assignment, including a custom envscmd (defaults to false) |
 | envsprefix | String | If defined uses the provided prefix for each environment variable key (defaults to '_OAFP_') |
 | envsnoprefix | Boolean | Boolean flag to indicate that no envsprefix should be used (defaults to false) |
 
@@ -1437,7 +1441,8 @@ pipe:
 
 | Help | Description |
 |------|-------------|
-| help=filters | Provides more details regarding the use of "path=", "from=" and "sql=" |
+| help=filters | Filter order, JMESPath functions, jq, nLinq and SQL |
+| `help="filter=keys"` | Return the exact JMESPath function row, including signature, availability, description and example |
 | help=template | Provides more details regarding the use of "output=template" |
 | help=examples | Provide several examples |
 | help=jsonschema | JSON Schema validation, options, drafts and sample generation |

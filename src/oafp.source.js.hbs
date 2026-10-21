@@ -91,6 +91,18 @@ const _exit = (code, msg) => {
 
 // Select complete Markdown option sections, ignoring headings inside code fences.
 const _formatHelp = (markdown, selector) => {
+    var filter = selector.trim().match(/^filter=(.*)$/i)
+    if (filter) {
+        var name = filter[1].trim(), lines = markdown.split(/\r?\n/)
+        var header, separator, row
+        lines.forEach(line => {
+            if (/^\|\s*Function\s*\|\s*OpenAF\s*\|/.test(line)) header = line
+            else if (header && !separator && /^\|[- :|]+\|\s*$/.test(line)) separator = line
+            var entry = line.match(/^\|\s*([A-Za-z_][A-Za-z0-9_]*)\(/)
+            if (entry && entry[1] == name) row = line
+        })
+        return header && separator && row ? [header, separator, row].join("\n") : "No documented function found for `help=filter=" + name.replace(/`/g, "") + "`. See `help=filters`."
+    }
     var request = selector.match(/^(in|out):(.*)$/i)
     if (!request) return markdown
     var normalize = value => value.toLowerCase().replace(/[^a-z0-9]/g, "")
@@ -125,6 +137,8 @@ const showHelp = () => {
     var _ff
     params.help = _$(params.help, "help").isString().default("")
 
+    params.help = params.help.trim()
+    var _filterSelector = /^filter=/i.test(params.help)
     var _formatSelector = /^(in|out):/i.test(params.help)
     var _f
     switch(params.help.toLowerCase()) {
@@ -136,7 +150,9 @@ const showHelp = () => {
     case "usage"   : _ff = "docs/USAGE.md"; break
     default        : 
         var _r = params.help.toLowerCase()
-        if (!_formatSelector && isDef(_oafhelp_libs[_r]))
+        if (_filterSelector)
+            _ff = "docs/FILTERS.md"
+        else if (!_formatSelector && isDef(_oafhelp_libs[_r]))
             _ff = "docs/" + _r + ".md"
         else
             _ff = "docs/USAGE.md"
@@ -375,8 +391,9 @@ if (params["-h"] == "" || (isString(params.help) && params.help.length > 0)) sho
 // Default format
 params.format = _$(params.format, "format").isString().default(__)
 
-// Interactive consumers initialize the console only when needed.
-if (toBoolean(params.pause) || toBoolean(params.color)) __initializeCon()
+// All interactive outputs need terminal dimensions, independently of color.
+// Keep redirected/streaming invocations lazy unless explicitly requested.
+if (java.lang.System.console() != null || toBoolean(params.pause) || toBoolean(params.color)) __initializeCon()
 var _dr = !String(java.lang.System.getProperty("os.name")).match(/Windows/)
 var _drev = getEnv("OAFP_RESET")
 var _cs = getEnv("OAFP_CODESET")
@@ -408,6 +425,16 @@ if (isDef(params.secKey)) {
     }
 }
 
+// jq is an input-stage alias. Validate only explicitly requested jq filters.
+if (isDef(params.jq) && isDef(params.ijq)) _exit(-1, "Use either jq or ijq, not both")
+;["jq", "ijq", "ojq"].forEach(name => {
+    if (isDef(params[name])) {
+        if (!isString(params[name]) || params[name].trim().length == 0) _exit(-1, name + " requires a nonempty jq expression")
+        if (typeof $jq !== "function") _exit(-1, name + " requires an OpenAF runtime providing $jq")
+        params[name] = params[name].trim()
+    }
+})
+
 // Set options
 var options = { 
     __format: params.format, 
@@ -417,6 +444,8 @@ var options = {
     __sql: params.sql, 
     __path: params.path, 
     __opath: params.opath,
+    __ijq: isDef(params.ijq) ? params.ijq : params.jq,
+    __ojq: params.ojq,
     __csv: params.csv, 
     __pause: params.pause, 
     __key: params.__key,

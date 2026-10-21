@@ -1,6 +1,6 @@
 ---
 name: oafp-author
-description: Build, explain, and troubleshoot oafp command lines and YAML parameter files, combining inputs, filters, transforms, outputs, pipes, and extension parameters. Use for OpenAF processor recipes and conversions between CLI and YAML.
+description: Build, explain, and troubleshoot oafp command lines and YAML parameter files, including -f recipes, command and URL input, OpenAF JavaScript, recursive pipes, filters, transforms, and outputs. Use for OpenAF processor recipes and conversions between CLI and YAML.
 ---
 
 # Author oafp recipes
@@ -15,6 +15,20 @@ Use `src/docs/USAGE.md` for option names, values, defaults and companion options
 
 For stateless decision requests, consult [oafp-decide](../oafp-decide/SKILL.md); for validation, inference or sample generation, consult [oafp-json-schema](../oafp-json-schema/SKILL.md). If those companions are unavailable, use the corresponding documentation listed in the discovery guide.
 
+## Choose the execution model
+
+| Requested work | Use | Read when needed |
+| --- | --- | --- |
+| Read a program's stdout | `cmd=...` plus its actual `in` format | [Commands and HTTP](references/commands-and-http.md) |
+| Fetch an HTTP resource | `url=...`, optional `urlmethod`, `urlparams`, `urldata` | [Commands and HTTP](references/commands-and-http.md) |
+| Generate data with OpenAF JavaScript | `in=oaf`, code assigning `data` | [JavaScript contracts](references/javascript.md) |
+| Transform parsed data with JavaScript | `oaf=...`, reading/replacing `data` | [JavaScript contracts](references/javascript.md) |
+| Send results to a program or custom JS sink | `out=cmd outcmd=...` or `out=oaf outoaf=...` | Both references above |
+| Reusable file or several sequential stages | `-f recipe.yaml` with nested `pipe` maps | [Parameter files and pipelines](references/files-and-pipes.md) |
+| Combine independent inputs | `in=oafp` with child parameter maps | [Composition examples](references/examples.md) |
+
+“Run a command” is an intent, not a `run=` parameter. Likewise, do not invent `in=js`, `exec=`, or shell-style `pipe` strings. Select the supported mechanism above. Prefer ordinary filters/transforms for simple data manipulation; use JavaScript when it makes the requested operation clearer or supplies an OpenAF API.
+
 ## Compose the stages
 
 1. Choose one input source: stdin, `file`, `data`, `cmd`, or `url`; specify `in` when detection is ambiguous. Distinguish a data YAML file (`oafp file=data.yaml in=yaml`) from a parameter YAML file (`oafp -f recipe.yaml`). The latter is a top-level parameter map, not an oJob `todo/jobs` document.
@@ -27,12 +41,14 @@ For stateless decision requests, consult [oafp-decide](../oafp-decide/SKILL.md);
 
 - Prefer canonical lowercase `in` and `out`; avoid mixing aliases (`input/type`, `output/format`) in overrides.
 - `oafp -f recipe.yaml` and `oafp paramsfile=recipe.yaml` load parameter maps. Existing CLI keys take precedence over the same keys from the file. `oafp -f -` consumes stdin for the parameters, so give the recipe another input source.
-- Use native YAML maps/lists for `data` and `pipe`. For options documented and parsed as JSON/SLON **strings** (such as `csv`, `diff`, `set`, or `sqlfiltertables`), preserve that string representation unless the handler explicitly accepts native objects.
+- Use native YAML maps/lists for structured `data` and maps for `pipe`; JavaScript input needs a string. For options documented and parsed as JSON/SLON **strings** (such as `csv`, `diff`, `set`, or `sqlfiltertables`), preserve that string representation unless the handler explicitly accepts native objects.
 - Use YAML `>-` for long expressions and `|` for literal input/code. YAML does not expand shell variables; an environment variable reference inside a YAML scalar is not shell interpolation.
 - Quote whole shell arguments containing whitespace, `|`, `&`, `>`, `$`, backticks or glob characters. POSIX single quotes preserve backticks but cannot contain a raw apostrophe; use a YAML file for quote-heavy expressions or correctly escape double-quoted shell arguments. Never add shell escaping to a YAML expression.
 - Include only parameters that contribute to the request. Explain mutually exclusive sources, dependencies, and version requirements when they affect this recipe. Capability breadth does not mean enabling every parameter together.
 
 ## Verify and deliver
+
+Run the optional fixture check with `python3 skills/oafp-author/scripts/check_recipes.py` (Python 3 and oafp on PATH); it tests local commands, code, parameter overrides and nested pipes without external services. Use `--help` to select a checkout CLI or include a loopback HTTP check. This validates the selected executable, not every installed version.
 
 Start from [tested composition patterns](references/examples.md) or the runnable YAML assets linked there. Use small local fixtures and `out=json` to verify values, types, empty/missing fields, and the final shape. Test the actual shell quoting or `-f` invocation, not only the underlying expression. Set explicit data for capability probes so they do not wait on stdin.
 

@@ -1,5 +1,51 @@
 (function() {
 
+   exports.testEnvsNoCmd = function() {
+      var params, printed
+      var _print = text => { printed = text }
+      var output = eval(io.readFileString("../include/outputFns.js") + "\n_outputFns.get('envs')")
+      var defaultCmd = ow.format.isWindows() ? "set" : "export"
+      var run = options => {
+         params = clone(options)
+         output({"some-key": "two words", nested: {value: 7}}, {})
+         return printed
+      }
+      var assignments = '_OAFP_some_key="two words"\n_OAFP_nested_value=7'
+      var withCmd = cmd => assignments.split("\n").map(line => cmd + " " + line).join("\n")
+      ow.test.assert(run({}), withCmd(defaultCmd), "envs keeps the default command")
+      ;[false, "false"].forEach(flag => {
+         ow.test.assert(run({envsnocmd:flag}), withCmd(defaultCmd), "envsnocmd=false keeps the command")
+         ow.test.assert(run({envsnocmd:flag, envscmd:"custom"}), withCmd("custom"), "envsnocmd=false keeps a custom command")
+      })
+      ;[true, "true"].forEach(flag => {
+         ow.test.assert(run({envsnocmd:flag}), assignments, "envsnocmd omits command and space")
+         ow.test.assert(run({envsnocmd:flag, envscmd:"custom"}), assignments, "envsnocmd overrides a custom command")
+      })
+      ow.test.assert(run({envsnocmd:true, envsnoprefix:true}), assignments.replace(/_OAFP_/g, ""), "envsnocmd combines with envsnoprefix")
+      ow.test.assert(run({envsnocmd:true, envsprefix:"APP_"}), assignments.replace(/_OAFP_/g, "APP_"), "envsnocmd preserves custom prefixes")
+   }
+
+   exports.testTerminalInitialization = function() {
+      var source = io.readFileString("../oafp.source.js.hbs")
+      var code = source.substring(source.indexOf("// Default format"), source.indexOf("// Check for OpenAF's sec buckets"))
+      ;[false, true].forEach(interactive => {
+         ;[{}, {color:false}, {color:true}, {pause:true}].forEach(options => {
+            var params = clone(options), calls = 0, resets = 0, __con
+            var java = {lang:{System:{console:() => interactive ? {} : null, getProperty:() => "Mac OS X"}}}
+            var getEnv = () => undefined
+            var __initializeCon = () => {
+               calls++
+               __con = {getTerminal:() => ({settings:{set:() => { resets++ }}})}
+            }
+            eval(code)
+            var expected = interactive || options.color === true || options.pause === true ? 1 : 0
+            ow.test.assert(calls,expected,"Console initialization: " + stringify({interactive:interactive,options:options}))
+            ow.test.assert(resets,expected,"Only initialized consoles receive terminal settings")
+            ow.test.assert(params.color,options.color,"Terminal detection preserves explicit color preference")
+         })
+      })
+   }
+
    exports.testIDesc = function() { require("idesc_test.js").run() }
 
    exports.testJSONDescriptions = function() {
@@ -45,6 +91,17 @@
       var _exit = () => {}, getOPackPath = () => root
       var help = eval(code + "\n({select:_formatHelp,show:showHelp})")
       var docs = io.readFileString("../docs/USAGE.md")
+      var filters = io.readFileString("../docs/FILTERS.md")
+      ;["keys","tF","to_kyaml","path"].forEach(name => {
+         var row = filters.split("\n").filter(line => line.indexOf("| " + name + "(") == 0)[0]
+         eq(help.select(filters,"filter=" + name).split("\n"),[
+            "| Function | OpenAF | Description | Example |", "|----------|--------|-------------|---------|", row
+         ],"Exact original row for " + name)
+      })
+      eq(help.select(filters," FILTER= keys "),help.select(filters,"filter=keys"),"Trim selector")
+      ;["", "key", "TF", "keys.*"].forEach(name => {
+         eq(help.select(filters,"filter=" + name).indexOf("help=filters") >= 0,true,"Missing exact function " + name)
+      })
       ;[["in:json","JSON input options"],["out:sql","SQL output options"],
         ["IN:CsV","CSV input/output options"],["out:csv","CSV input/output options"],
         ["in:base64","Base64 input/output options"],["out:base64","Base64 input/output options"],
@@ -74,13 +131,106 @@
          params.pause = true; help.show()
          eq(paused,printed,"Pause raw output")
          params.out = undefined; help.show(); eq(paused,"rendered","Pause rendered output")
+         params = {help:"filter=keys",out:"raw"}; help.show()
+         eq(printed,help.select(filters,params.help),"File function help")
+         params.pause = true; help.show(); eq(paused,printed,"Page function help")
+         params.out = undefined; help.show(); eq(paused,"rendered","Render function help")
          root = "../missing-help-fixture"
          global._oafphelp = {"docs/USAGE.md":docs}
          params = {help:"in:csv",out:"raw"}; help.show()
          eq(printed,help.select(docs,params.help),"Embedded and installed parity")
+         global._oafphelp["docs/FILTERS.md"] = filters
+         params = {help:"filter=keys",out:"raw"}; help.show()
+         eq(printed,help.select(filters,params.help),"Embedded function help")
       } finally {
          ow.format.withMD = md; ow.format.string.pauseString = pause; global._oafphelp = embedded
       }
+   }
+
+   exports.testFilterReference = function() {
+      loadCompiledLib("jmespath_js")
+      var eq = (a,b,msg) => ow.test.assert(a,b,msg), examples = {}
+      io.readFileString("../docs/FILTERS.md").split("\n").forEach(line => {
+         var name = line.match(/^\| (\w+)\(/)
+         if (!name) return
+         var cells = line.replace(/\\\|/g,"\u0000").split("|")
+         eq(cells.length,6,"Four table cells for " + name[1])
+         eq(isDef(examples[name[1]]),false,"Unique function " + name[1])
+         var expression = cells[4].trim().replace(/\u0000/g,"|").replace(/\\`/g,"`")
+         jmespath.compile(expression)
+         examples[name[1]] = expression
+      })
+      ;[["at",[10,20],10],["add",{},3],["ceil",{},2],["floor",{},1],
+        ["div",{},3],["from_json",{},{a:123}],["length",{a:1,b:2},2],
+        ["insert",{a:1},{a:1,status:"valid"}],["assign",{a:1},{a:1,status:"valid"}],
+        ["assignp",{items:[{id:1}]},{items:[{id:1,status:"valid"}]}],
+        ["substring","abcdef","abcde"],["reverse","abc","cba"],
+        ["sort",[3,1,2],[1,2,3]],["sub",{},3],["to_numSpace",{},"123,456"],
+        ["merge",{},{a:1,b:2}],["ranges",{},[4,6,8]],["split","a\nb",["a","b"]],["split_sep","a,(b,c),d",["a","b,c","d"]]
+      ].forEach(test => eq($path(test[1],examples[test[0]]),test[2],"Documented example " + test[0]))
+   }
+
+   exports.testJqFilters = function() {
+      var processExpr = () => undefined
+      var __flags = clone(global.__flags); __flags.OAFP = {libs:[]}
+      var output = [], nativeJq = global.$jq, $jq = nativeJq
+      var print = value => output.push(String(value))
+      var runOafp = eval(io.readFileString("../oafp.source.js") + "\noafp")
+      var eq = (a,b,msg) => ow.test.assert(a,b,msg)
+      var run = (data, extra) => {
+         output = []
+         runOafp(merge({in:"json",data:data,out:"json",noexit:true,__inception:true,parallel:false},extra || {}))
+         return output.map(text => jsonParse(text))
+      }
+      var rejects = (extra, diagnostic) => {
+         var error
+         try { run("{}",extra) } catch(e) { error = e }
+         eq(isDef(error),true,"Reject " + diagnostic)
+         eq(String(error).indexOf(diagnostic) >= 0,true,"Diagnostic " + diagnostic)
+         eq(output,[],"No output on failure")
+      }
+      eq(run('{"a":2}',{jq:".a",ojq:". * 3"}),[6],"Both stages and jq alias")
+      eq(run('{"a":2}',{ijq:".a"}),[2],"Explicit input jq")
+      eq(run('[1,2,3]',{jq:"map(select(. > 1))"}),[[2,3]],"Array remains one input")
+      ;[null,false,0,"",[],{}].forEach(value => {
+         eq(run(stringify(value),{jq:".",ojq:"."}),[value],"Identity preserves " + stringify(value))
+         eq(run("{}",{jq:stringify(value)}),[value],"Emitted value " + stringify(value))
+      })
+      eq(run(stringify('{"a":1}'),{jq:"type"}),["string"],"Parsed JSON string is not reparsed")
+      eq(run('hello',{in:"raw",jq:"ascii_upcase",ojq:"length"}),[5],"Raw input and string output stage")
+      eq(run('{}',{jq:"1,2"}),[[1,2]],"Multiple results remain collected")
+      eq(run('{}',{ojq:"1,2"}),[[1,2]],"Multiple output results remain collected")
+      eq(run('{}',{jq:"empty",ojq:"error(\"must not run\")"}),[],"Empty input stage stops pipeline")
+      eq(run('{}',{ojq:"empty",outkey:"wrapped"}),[],"Empty output stage suppresses before wrapping")
+      eq(run('{"users":[{"x":1},{"x":2}]}',{
+         path:"users",ijq:"map(.x)",opath:"[0]",ojq:". + 10"
+      }),[11],"Path stages surround jq stages")
+      eq(run('[{"x":"2"}]',{ijq:"map({x:.x})",correcttypes:true,ojq:".[0].x | type"}),["number"],"Transforms run between jq stages")
+      eq(run('[{"x":3,"extra":true},{"x":2,"extra":true},{"x":1,"extra":true}]',{
+         ifrom:"limit(2)",isql:"select x",sqlfilter:"simple",
+         ijq:'map(if has("extra") then error("isql must run first") else . end)',
+         from:"sort(x)",sql:"select x where x > 2",opath:"[].x",ojq:"map(. + 10)"
+      }),[[13]],"nLinq and SQL surround jq in pipeline order")
+      var records = '{"x":1}\n{"x":2}\n'
+      eq(run('null\nfalse\n0\n""\n[]\n{}\n',{in:"ndjson",jq:"."}),[null,false,0,"",[],{}],"NDJSON scalar records")
+      eq(run(records,{in:"ndjson",jq:".x, .x + 10"}),[[1,11],[2,12]],"NDJSON direct records preserve multiple results")
+      eq(run(records,{in:"ndjson",ijq:"select(.x > 1)",ojq:".x"}),[2],"Record suppression and options reused")
+      eq(run(records,{in:"ndjson",ndjsonjoin:true,jq:"map(.x)"}),[[1,2]],"Joined NDJSON array")
+      eq(run('[null,false,0,"",[],{}]',{stream:true,jq:"."}),[null,false,0,"",[],{}],"Stream preserves JSON values")
+      eq(run('[1,2]',{stream:true,jq:"., . + 10"}),[[1,11],[2,12]],"Stream retains collected results")
+      eq(run(records,{in:"ndjson",path:"[].x"}),[1,2],"Legacy record wrapper without jq")
+      rejects({jq:".",ijq:"."},"either jq or ijq")
+      ;["", "   ", true, 1, {}].forEach(value => rejects({jq:value},"nonempty jq expression"))
+      rejects({ojq:" "},"nonempty jq expression")
+      rejects({jq:"["},"JqCompileError")
+      rejects({ojq:'error("fixture")'},"fixture")
+      ;["jq","ijq","ojq"].forEach(name => {
+         var spec = {out:"idesc",idescsource:"stream"}; spec[name] = "."
+         rejects(spec,name)
+      })
+      $jq = undefined
+      try { rejects({jq:"."},"runtime providing $jq"); eq(run('{}'),[{}],"Legacy invocation needs no jq runtime") }
+      finally { $jq = nativeJq }
    }
 
    exports.testGzipInputs = function() {

@@ -416,6 +416,7 @@ var _outputFns = new Map([
 
         if (isUnDef(params.envscmd)) params.envscmd = (ow.format.isWindows() ? "set" : "export")
         params.envscmd = String(params.envscmd)
+        if (toBoolean(params.envsnocmd)) params.envscmd = ""
 
         if (isUnDef(params.envsprefix)) params.envsprefix = "_OAFP_"
         params.envsprefix = String(params.envsprefix)
