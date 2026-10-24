@@ -60,6 +60,7 @@ jobs:
   - Remove shebang
   - Add header on compile
   - Generate data
+  - Generate completion
 
 # ==============
 - name : Op Pack
@@ -196,6 +197,17 @@ jobs:
     echo "Generating templates.json..."
     oafp in=mdtable inmdtablejoin=true file={{path}}/docs/TEMPLATE.md path="[-4]" out=pjson > {{path}}/../data/template.json
       
+# --------------------------
+- name : Generate completion
+  exec : |
+    log("Generating completion.yaml...")
+    var completion = require(args.path + "/buildCompletion.js").generate(
+      io.readFileString(args.path + "/docs/USAGE.md"),
+      io.readFileYAML(args.path + "/completionHints.yaml")
+    )
+    io.writeFileString(args.pack + "/data/completion.yaml",
+      "# Generated from src/docs/USAGE.md and src/completionHints.yaml. Do not edit.\n" + af.toYAML(completion))
+
 # -----------------------
 - name : Add default code
   exec : |

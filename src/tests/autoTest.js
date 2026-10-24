@@ -1,5 +1,30 @@
 (function() {
 
+   exports.testCompletionData = function() {
+      var generate = require("../buildCompletion.js").generate
+      var find = (entries, name) => entries.filter(entry => entry.name == name)[0]
+      var hints = io.readFileYAML("../completionHints.yaml")
+      var markdown = io.readFileString("../docs/USAGE.md")
+      var data = generate(markdown, hints)
+      var input = find(data.complete, "in="), output = find(data.complete, "out=")
+      ow.test.assert(isDef(find(input.opts, "in=llmdecide")), true, "New documented input formats are completed")
+      ow.test.assert(isDef(find(find(output.opts, "out=idesc").opts, "idescrecords=")), true, "Output options are grouped under their format")
+      ow.test.assert(isDef(find(data.complete, "ijq=")), true, "Main options are included")
+      ow.test.assert(isDef(find(data.complete, "secKey=")), true, "Case-sensitive sBucket parameters are preserved")
+      ow.test.assert(isDef(find(find(data.complete, "secKey=").opts, "secFile=")), true, "sBucket options remain grouped under secKey")
+      ow.test.assert(isDef(find(data.complete, "statePath=")), false, "Nested decision configuration fields are excluded")
+      ow.test.assert(isDef(find(data.complete, "withHeader=")), false, "CSV configuration fields are excluded")
+      ow.test.assert(isDef(find(find(input.opts, "in=dsv").opts, "indsvsep=")), true, "DSV input options remain available")
+      ow.test.assert(isDef(find(find(data.complete, "llmprompt=").opts, "llmenv=")), true, "Shared LLM options remain grouped across explanatory headings")
+      ow.test.assert(isDef(find(find(find(data.complete, "set=").opts, "setop=").opts, "setop=union")), true, "Curated values remain nested under their option")
+      ow.test.assert(isDef(find(find(data.complete, "help=").opts, "help=jsonschema")), true, "Help suggestions follow the documentation")
+      var fixture = markdown + '\n## Main options:\n\n| Option | Description |\n|---|---|\n| newflag | Fresh \\| description |\n\n~~~md\n| Option | Description |\n|---|---|\n| fakeflag | Example only |\n~~~\n'
+      var updated = generate(fixture, hints)
+      ow.test.assert(find(updated.complete, "newflag=").desc, "Fresh | description", "New options and escaped table pipes are handled")
+      ow.test.assert(isDef(find(updated.complete, "fakeflag=")), false, "Example tables are excluded")
+      ow.test.assert(stringify(generate(markdown, hints)), stringify(data), "Generation is deterministic")
+   }
+
    exports.testEnvsNoCmd = function() {
       var params, printed
       var _print = text => { printed = text }

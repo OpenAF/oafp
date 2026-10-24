@@ -207,6 +207,10 @@
       "Description": "A JDBC query to a database"
     },
     {
+      "Input type": "dsv",
+      "Description": "A DSV (Delimiter Separated Values) format"
+    },
+    {
       "Input type": "gb64json",
       "Description": "Equivalent to in=base64 and base64gzip=true"
     },
@@ -972,6 +976,13 @@
   ],
   [
     {
+      "Option": "javasinception",
+      "Type": "Boolean",
+      "Description": "If true includes oafp itself in the local Java process list"
+    }
+  ],
+  [
+    {
       "Option": "jfrjoin",
       "Type": "Boolean",
       "Description": "If true will join the JFR records to build an output array"
@@ -1238,6 +1249,13 @@
   ],
   [
     {
+      "Option": "inoafpseq",
+      "Type": "Boolean",
+      "Description": "If true processes an input array of oafp parameter maps sequentially"
+    }
+  ],
+  [
+    {
       "Option": "inrawhexline",
       "Type": "Number",
       "Description": "Number of hexadecimal characters per returned array line"
@@ -1373,37 +1391,54 @@
   ],
   [
     {
-      "Option": "format",
+      "Option": "inputcsv",
+      "Type": "String/Map",
+      "Description": "CSV input configuration as JSON/SLON"
+    },
+    {
+      "Option": "incsv",
+      "Type": "String/Map",
+      "Description": "Alias for inputcsv"
+    },
+    {
+      "Option": "csv",
+      "Type": "String/Map",
+      "Description": "CSV output configuration as JSON/SLON"
+    }
+  ],
+  [
+    {
+      "Field": "format",
       "Type": "String",
       "Description": "You can choose between DEFAULT, EXCEL, INFORMIX_UNLOAD, INFORMIX_UNLOAD_CSV, MYSQL, RFC4180, ORACLE, POSTGRESQL_CSV, POSTGRESQL_TEXT and TDF"
     },
     {
-      "Option": "withHeader",
+      "Field": "withHeader",
       "Type": "Boolean",
       "Description": "If true tries to automatically use the available header"
     },
     {
-      "Option": "withHeaders",
+      "Field": "withHeaders",
       "Type": "Array",
       "Description": "A list of headers to use with the corresponding order"
     },
     {
-      "Option": "quoteMode",
+      "Field": "quoteMode",
       "Type": "String",
       "Description": "You can choose between ALL, ALL_NON_NULL, MINIMAL, NON_NUMERIC and NONE."
     },
     {
-      "Option": "withDelimiter",
+      "Field": "withDelimiter",
       "Type": "String",
       "Description": "A single character as a custom delimiter"
     },
     {
-      "Option": "withEscape",
+      "Field": "withEscape",
       "Type": "String",
       "Description": "A single character as a custom escape"
     },
     {
-      "Option": "withNullString",
+      "Field": "withNullString",
       "Type": "String",
       "Description": "String to use as representation of null values"
     }
@@ -1963,6 +1998,13 @@
       "Option": "mdformat",
       "Type": "String",
       "Description": "For map or array values: `structured` (default) renders headings, scalar tables, and lists; `json` or `yaml` emits the value in a fenced code block."
+    }
+  ],
+  [
+    {
+      "Option": "outoaf",
+      "Type": "String",
+      "Description": "OpenAF code or a script file to execute with the transformed input as data"
     }
   ],
   [

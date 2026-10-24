@@ -1,0 +1,14 @@
+# Value suggestions that cannot be inferred from USAGE.md option tables.
+setop=:
+- name: setop=union
+  desc: Will return the union of the two sets
+- name: setop=diffa
+  desc: Will return the difference between 'a' and 'b'
+- name: setop=diffb
+  desc: Will return the difference between 'b' and 'a'
+- name: setop=diffab
+  desc: Will return the symmetric difference between 'a' and 'b'
+- name: setop=diff
+  desc: Will identify which set contains each entry
+- name: setop=intersect
+  desc: Will return the intersection of the two sets

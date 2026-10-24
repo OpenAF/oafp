@@ -1,5 +1,6 @@
 todo:
 - Load test
+- oafp::CompletionData
 - oafp::EnvsNoCmd
 - oafp::IDesc
 - oafp::JSONDescriptions
@@ -84,6 +85,12 @@ ojob:
   logToConsole: true 
 
 jobs:
+- name: oafp::CompletionData
+  to: oJob Test
+  deps: Load test
+  args:
+    func: "global.test.testCompletionData()"
+
 # ---------------
 - name: oafp::EnvsNoCmd
   to  : oJob Test
