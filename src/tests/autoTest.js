@@ -1136,6 +1136,67 @@
       } finally { $unset(key) }
    }
 
+   exports.testMapDiff = function() {
+      var processExpr = () => undefined
+      var key = genUUID()
+      var eq = (actual, expected, message) => ow.test.assert(stringify(actual, __, ""), stringify(expected, __, ""), message)
+      try {
+         ["../oafp.source.js", "../oafp.js"].forEach(file => {
+            var runOafp = eval(io.readFileString(file) + "\noafp")
+            var run = (data, options) => {
+               $unset(key)
+               runOafp(merge({in:"json",data:JSON.stringify(data),out:"key",__key:key,noexit:true,__inception:true,mapdiff:"(a: old, b: new)"}, options))
+               return $get(key)
+            }
+            var check = (a, b, expected, message) => eq(run({old:a,new:b}), expected, file + ": " + message)
+            var empty = {onlyA:{},onlyB:{},changed:{}}
+            check({z:1,a:[{z:2,a:3},[[1]],null]}, {a:[{a:3,z:2},[[1]],null],z:1}, empty, "key order ignored at every map depth")
+            check({name:"old",config:{port:80},legacy:true}, {name:"new",config:{port:443},enabled:true},
+               {onlyA:{legacy:true},onlyB:{enabled:true},changed:{"/config/port":{a:80,b:443},"/name":{a:"old",b:"new"}}}, "documented comparison")
+            check({n:{a:null,empty:{},list:[]},gone:{z:1,a:2}}, {n:{b:false}},
+               {onlyA:{gone:{a:2,z:1},n:{a:null,empty:{},list:[]}},onlyB:{n:{b:false}},changed:{}}, "nested missing values and complete missing containers")
+            check({n:null,f:false,z:0,s:"",obj:{}}, {n:0,f:0,z:"0",s:null,obj:[]},
+               {onlyA:{},onlyB:{},changed:{"/f":{a:false,b:0},"/n":{a:null,b:0},"/obj":{a:{},b:[]},"/s":{a:"",b:null},"/z":{a:0,b:"0"}}}, "strict scalar and container types")
+            check({x:{a:1}}, {x:2}, {onlyA:{},onlyB:{},changed:{"/x":{a:{a:1},b:2}}}, "map to scalar reported once")
+            ;[[[1,2],[2,1]], [[1,1],[1]], [[[1]], [{"0":1}]], [[{a:2,z:1}], [{a:3,z:1}]]].forEach(pair => {
+               check({x:pair[0]}, {x:pair[1]}, {onlyA:{},onlyB:{},changed:{"/x":{a:pair[0],b:pair[1]}}}, "array change is atomic")
+            })
+            check({"a/b":{"~":1},"":1,"x.y":1}, {"a/b":{"~":2},"":2,"x.y":2},
+               {onlyA:{},onlyB:{},changed:{"/":{a:1,b:2},"/a~1b/~0":{a:1,b:2},"/x.y":{a:1,b:2}}}, "JSON Pointer escaping")
+            var specialA = JSON.parse('{"__proto__":{"z":1,"a":2},"constructor":1,"hasOwnProperty":true}')
+            var specialB = JSON.parse('{"constructor":2,"hasOwnProperty":false,"new":1}')
+            check(specialA, specialB, JSON.parse('{"onlyA":{"__proto__":{"a":2,"z":1}},"onlyB":{"new":1},"changed":{"/constructor":{"a":1,"b":2},"/hasOwnProperty":{"a":true,"b":false}}}'), "special property names")
+            check({x:[{constructor:1}]}, {x:[{constructor:1}]}, empty, "array equality handles constructor keys")
+            check({}, JSON.parse('{"__proto__":{"z":1,"a":2}}'), JSON.parse('{"onlyA":{},"onlyB":{"__proto__":{"a":2,"z":1}},"changed":{}}'), "special missing key in B")
+            check({x:JSON.parse('{"__proto__":1}')}, {x:JSON.parse('{"__proto__":2}')},
+               {onlyA:{},onlyB:{},changed:{"/x/__proto__":{a:1,b:2}}}, "special changed key")
+            var ordered = run({old:{z:1,a:2,n:{z:3,a:4}},new:{z:2,a:3,n:{z:4,a:5}}})
+            eq(run({old:{n:{a:4,z:3},a:2,z:1},new:{n:{a:5,z:4},a:3,z:2}}), ordered, file + ": deterministic output for reordered inputs")
+            eq(run({old:{},new:{}}, {mapdiff:{a:"old",b:"new"}}), empty, file + ": map configuration")
+            eq(run({old:{},new:{}}, {transforms:true,mapdiff:undefined}).indexOf("mapdiff") >= 0, true, file + ": transform discovery")
+            var baseline = run({old:"a",new:"b"}, {mapdiff:undefined,diff:"(a: old, b: new)"})
+            ow.test.assert(isArray(baseline), true, file + ": existing diff still returns chunks")
+         })
+         // Inspect the transform directly to prove it does not mutate or alias the input.
+         var params = {mapdiff:"(a: old, b: new)"}
+         var _fromJSSLON = value => isString(value) ? af.fromSLON(value) : value
+         var _exit = (code, message) => { throw message }
+         var transform = eval(io.readFileString("../include/transformFns.js") + "\n_transformFns.mapdiff")
+         var input = {old:{z:[[{z:1,a:2}]],nested:{missing:{z:2,a:1}}},new:{z:[]}}
+         var before = JSON.stringify(input), result = transform(input)
+         eq(JSON.stringify(input), before, "mapdiff preserves input values and order")
+         result.onlyA.nested.missing.a = 99
+         result.changed["/z"].a[0][0].a = 99
+         eq(JSON.stringify(input), before, "mapdiff copies reported containers")
+         ;["not a map", "[]", "{}", "(a: old)", {a:1,b:"new"}, {a:"",b:"new"}, {a:"old",b:"missing"}, {a:"old",b:"scalar"}, {a:"old",b:"["}].forEach(config => {
+            params.mapdiff = config
+            var error
+            try { transform({old:{},new:{},scalar:1}) } catch(e) { error = String(e) }
+            ow.test.assert(isString(error) && error.indexOf("mapdiff") >= 0, true, "Invalid mapdiff reports an actionable error: " + stringify(config))
+         })
+      } finally { $unset(key) }
+   }
+
    exports.testSortMapKeys = function() {
       var _f = io.createTempFile("testSortMapKeys", ".json")
       var data1 = { a: 123, z:[{b:4,a:3},{a:1,b:2}],b: true, c: [ 1, 2, 3 ] }

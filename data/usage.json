@@ -401,6 +401,11 @@
       "Description": "A JSON/SLON map with a 'a' path and a 'b' path to compare and provide diff data"
     },
     {
+      "Option": "mapdiff",
+      "Type": "String/Map",
+      "Description": "A JSON/SLON map with 'a' and 'b' paths selecting maps to compare structurally. Returns onlyA, onlyB and changed maps. See [Map diff](#map-diff)."
+    },
+    {
       "Option": "field2byte",
       "Type": "String",
       "Description": "A comma delimited list of fields whose value should be converted to a byte abbreviation"

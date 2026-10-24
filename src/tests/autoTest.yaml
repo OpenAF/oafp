@@ -30,6 +30,7 @@ todo:
 
 - oafp::merge
 - oafp::sortMapKeys
+- oafp::MapDiff
 - oafp::TransformDataIntegrity
 - oafp::correctTypes
 - oafp::searchKeys
@@ -215,6 +216,13 @@ jobs:
   deps: Load test
   args:
     func: "global.test.testSortMapKeys()"
+
+# -----------------
+- name: oafp::MapDiff
+  to  : oJob Test
+  deps: Load test
+  args:
+    func: "global.test.testMapDiff()"
 
 # ------------------------
 - name: oafp::correctTypes
