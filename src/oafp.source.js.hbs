@@ -562,6 +562,16 @@ var _run = () => {
     if (!_version && isDef(params.file) && params.file.indexOf("::") < 0 && !io.fileExists(params.file)) {
         _exit(-1, "ERROR: File not found: '" + params.file + "'")
     }
+    if (!_version && _tryRawCodec()) return
+    if (!_version && ["base64", "gb64json"].indexOf(params.type) >= 0 &&
+        (!isDef(params.url) || String(params.urlmethod || "GET").toLowerCase() != "head") &&
+        (!isString(params.file) || params.file.indexOf("::") < 0) &&
+        !toBoolean(params._shebang) && !params.jsondesc && !params.jsonprefix) {
+        if (isDef(params.insecure) && toBoolean(params.insecure)) ow.loadJava().setIgnoreSSLDomains()
+        _inputFns.get(params.type)(isString(params.data) ? params.data : "", options)
+        delete params.__origr
+        return
+    }
     // Stream-capable handlers own their input; do not first buffer it in _res.
     if (!_version && isUnDef(params.url) &&
         (["lines", "ndjson", "ndslon", "dsv", "csv"].indexOf(params.type) >= 0 ||
@@ -695,6 +705,7 @@ var _run = () => {
 
         // Determine input type and execute
         if (isDef(params.type) && _inputFns.has(params.type)) {
+            if (["base64", "gb64json"].indexOf(params.type) >= 0) _inputBuffered = true
             _inputFns.get(params.type)(_takeInput(), options)
         } else {
             if (isString(params.type)) printErr("WARN: " + params.type + " input type not supported. Using json.")

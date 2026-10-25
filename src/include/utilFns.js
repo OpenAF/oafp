@@ -218,7 +218,7 @@ const _llmDecisionSetup = (decisionOptions, context) => {
         if (isDef(opts) && Object.prototype.hasOwnProperty.call(opts, "images"))
             _exit(-1, context + " cannot combine llmimage with options.images")
         if (isUnDef(opts)) opts = {}
-        opts.images = [af.fromBytes2String(af.toBase64Bytes(io.readFileBytes(params.llmimage)))]
+        opts.images = [_codecs.encodeFile(params.llmimage)]
     }
     var env = _$(params.llmenv, "llmenv").isString().default("OAFP_MODEL")
     if (env == "OAFP_MODEL" && isUnDef(getEnv(env)) && isDef(getEnv("OAF_DECIDE_MODEL"))) env = "OAF_DECIDE_MODEL"

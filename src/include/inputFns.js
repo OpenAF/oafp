@@ -1066,22 +1066,8 @@ var _inputFns = new Map([
         })
         _$o(__r, options)
     }],
-    ["base64", (_res, options) => {
-        var _r
-        _showTmpMsg()
-        if (toBoolean(params.base64gzip)) {
-            _r = af.fromBytes2String(io.gunzip(af.fromBase64(_res, true)))
-        } else {
-            _r = af.fromBytes2String(af.fromBase64(_res))
-        }
-        _$o(_r, options)
-    }],
-    ["gb64json", (_res, options) => {
-        var _r
-        _showTmpMsg()
-        _r = af.fromBytes2String(io.gunzip(af.fromBase64(_res, true)))
-        _$o(_r, options)
-    }],
+    ["base64", (r, options) => _codecInput(r, options, toBoolean(params.base64gzip))],
+    ["gb64json", (r, options) => _codecInput(r, options, true)],
     ["oaf", (_res, options) => {
         if (!isString(_res)) _exit(-1, "oaf is only supported with a string.")
         _showTmpMsg()
@@ -1238,9 +1224,9 @@ var _inputFns = new Map([
         let img
         if (isString(params.llmimage)) {
             if (params.llmimage.toLowerCase().match(/^https?:\/\//))
-                img = af.fromBytes2String(af.toBase64Bytes(af.fromInputStream2Bytes($rest().get2Stream(params.llmimage))))
+                img = (function() { var input = $rest().get2Stream(params.llmimage); return _codecs.use([input], () => _codecs.encodeToString(input)); })()
             else if (io.fileExists(params.llmimage))
-                img = af.fromBytes2String(af.toBase64Bytes(io.readFileBytes(params.llmimage)))
+                img = _codecs.encodeFile(params.llmimage)
         } 
         if (params.out == "md" || params.out == "mdtable" || params.out == "raw") {
             __res = isDef(img) ? res.promptImage(_res, img) : res.prompt(_res)

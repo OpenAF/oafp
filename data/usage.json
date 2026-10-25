@@ -1386,7 +1386,7 @@
     {
       "Option": "base64gzip",
       "Type": "Boolean",
-      "Description": "If true the contents will thet gzip/gunzip respectively to reduce the size of the base64 output"
+      "Description": "If true, gzip before Base64 encoding or gunzip after Base64 decoding"
     }
   ],
   [

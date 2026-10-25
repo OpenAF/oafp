@@ -322,28 +322,8 @@ var _outputFns = new Map([
             _o$o(r, options)
         }
     }],
-    ["base64", (r, options) => {
-        var _o = ""
-        if (isString(r))
-            _o = r
-        else
-            _o = stringify(r)
-
-        if (toBoolean(params.base64gzip)) {
-            _print(af.fromBytes2String(af.toBase64Bytes(io.gzip(af.fromString2Bytes(_o)))))
-        } else {
-            _print(af.fromBytes2String(af.toBase64Bytes(_o)))
-        }
-    }],
-    ["gb64json", (r, options) => {
-        var _o = ""
-        if (isString(r))
-            _o = r
-        else
-            _o = stringify(r)
-
-        _print(af.fromBytes2String(af.toBase64Bytes(io.gzip(af.fromString2Bytes(_o)))))
-    }],
+    ["base64", (r, options) => _codecOutput(r, toBoolean(params.base64gzip))],
+    ["gb64json", (r, options) => _codecOutput(r, true)],
     ["jwt", (r, options) => {
         if (isMap(r)) {
             if (isUnDef(params.jwtsecret) && isUnDef(params.jwtprivkey)) _exit(-1, "For out=jwt you need to provide a jwtsecret or a jwtprivkey")

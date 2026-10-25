@@ -1,5 +1,6 @@
 todo:
 - Load test
+- oafp::Base64Streaming
 - oafp::CompletionData
 - oafp::EnvsNoCmd
 - oafp::IDesc
@@ -367,3 +368,9 @@ jobs:
   deps: Load test
   args:
     func: "global.test.testFilterReference()"
+
+- name: oafp::Base64Streaming
+  to: oJob Test
+  deps: Load test
+  args:
+    func: "global.test.testBase64Streaming()"

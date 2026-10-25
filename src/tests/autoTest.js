@@ -1,4 +1,47 @@
 (function() {
+   exports.testBase64Streaming = function() {
+      var processExpr = () => undefined
+      var __flags = clone(global.__flags); __flags.OAFP = {libs:[]}
+      var directory = io.createTempDir("oafp-codec-test-"), result = directory + "/out", input = directory + "/in"
+      var eq = (a,b,msg) => ow.test.assert(a,b,msg)
+      try {
+         ["../oafp.source.js", "../oafp.js"].forEach(script => {
+            var run = eval(io.readFileString(script) + "\noafp")
+            var invoke = params => {
+               run(merge({outfile:result,noexit:true,__inception:true,parallel:false},params))
+               return io.readFileString(result)
+            }
+            var text = "hello € 世界\n", encoded = af.fromBytes2String(af.toBase64Bytes(text))
+            io.writeFileString(input,text)
+            eq(invoke({file:input,in:"raw",out:"base64"}),encoded,"File stream Base64")
+            eq(invoke({data:text,in:"raw",out:"base64"}),encoded,"Data Base64")
+            var alias = directory + "/alias"
+            io.writeFileString(alias, text)
+            run({file:alias,in:"raw",out:"base64",outfile:alias,noexit:true,__inception:true,parallel:false})
+            eq(io.readFileString(alias), encoded, "Input/output alias does not truncate input")
+            var compressed = invoke({file:input,in:"raw",out:"base64",base64gzip:true})
+            eq(af.fromBytes2String(io.gunzip(af.fromBase64(compressed))),text,"GZIP/Base64 output")
+            eq(invoke({data:compressed,in:"base64",out:"raw",base64gzip:true}),text,"GZIP/Base64 input")
+            eq(invoke({data:encoded,in:"base64",out:"raw"}),text,"Base64 input")
+            var object = {x:"€",a:[1,2]}
+            var structured = invoke({data:stringify(object),in:"json",out:"gb64json"})
+            eq(jsonParse(af.fromBytes2String(io.gunzip(af.fromBase64(structured)))),object,"Structured GB64JSON")
+            eq(invoke({data:structured,in:"gb64json",out:"json"}),stringify(object,__ ,""),"GB64JSON input")
+            eq(invoke({data:encoded,in:"base64",out:"raw",jq:"ascii_upcase"}),text.toUpperCase(),"Input filters preserved")
+            io.writeFileString(result, "")
+            invoke({data:"one",in:"raw",out:"base64",outfileappend:true})
+            invoke({data:"two",in:"raw",out:"base64",outfileappend:true})
+            eq(io.readFileString(result),"b25l\ndHdv\n","Append boundaries")
+            var oldBytes = af.toBase64Bytes, oldGzip = io.gzip, oldRead = io.readFileBytes
+            try {
+               af.toBase64Bytes = io.gzip = io.readFileBytes = function() { throw "Whole-payload bytes forbidden" }
+               eq(invoke({file:input,in:"raw",out:"base64"}),encoded,"Raw conversion avoids complete byte arrays")
+               eq(invoke({file:input,in:"raw",out:"base64",base64gzip:true}),compressed,"Composed output avoids complete byte arrays")
+            } finally { af.toBase64Bytes = oldBytes; io.gzip = oldGzip; io.readFileBytes = oldRead }
+         })
+      } finally { io.rm(directory) }
+   }
+
 
    exports.testCompletionData = function() {
       var generate = require("../buildCompletion.js").generate

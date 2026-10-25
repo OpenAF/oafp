@@ -727,9 +727,19 @@ List of options to use when _in=base64_ or _out=base64_:
 
 | Option | Type | Description |
 |--------|------|-------------|
-| base64gzip | Boolean | If true the contents will thet gzip/gunzip respectively to reduce the size of the base64 output |
+| base64gzip | Boolean | If true, gzip before Base64 encoding or gunzip after Base64 decoding |
 
 ---
+
+Base64 conversions use bounded conversion buffers for files, stdin, commands, URLs, and `data`.
+Direct `in=raw out=base64` output streams automatically when no filtering, transformation,
+paging, or `pipe` requires a complete value. Text encodings and stdin line normalization
+are preserved. JSON parsing, object serialization, paging, and `pipe` can still require
+complete strings or objects; streaming removes intermediate byte arrays rather than
+making those operations constant-memory. GZIP and Base64 are composed without an
+intermediate compressed array. Direct raw conversions stage file output before
+replacement or append, preserving data when the source reads the same destination.
+Archive-entry paths retain the existing buffered reader.
 
 ### 🧾 CSV input/output options
 
