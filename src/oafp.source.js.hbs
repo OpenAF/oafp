@@ -733,16 +733,20 @@ if (isNumber(params.loop)) {
                 global.__oafp_streams[params.outfile] = { s: io.writeFileStream(params.outfile, toBoolean(params.outfileappend)) }
             }
         }
-        _withProgress(_run)
+        _httpdPass(() => _withProgress(_run))
+        _httpdFlush()
         sleep(params.loop * 1000, true)
         // Ensure params have a fresh copy
         if (isDef(bkprms)) params = clone(bkprms)
     }
 } else {
-    _withProgress(_run)
+    _httpdPass(() => _withProgress(_run))
+    _httpdFlush()
+    _httpdWait()
 }
 
 } finally {
+    _httpdStop()
     _clearTmpMsg()
     delete params.__origr
     if (typeof global.__oafp_streams !== "undefined") _ownedStreams.forEach(s => {

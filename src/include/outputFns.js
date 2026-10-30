@@ -508,6 +508,26 @@ var _outputFns = new Map([
             _exit(-1, "Invalid ch parameter")
         }
     }],
+    ["httpd", (r, options) => {
+        // Never blocks (it may be called once per record): it starts the server on the first call and
+        // afterwards only publishes the new snapshot. The server survives loop= passes, and the wait
+        // for httpdcount/httpdtimeout happens in the main flow (see _httpdWait).
+        if (isUnDef(global.__oafp_httpd)) {
+            var _h = { snap: { data: r, params: Object.assign({}, params), cache: {} }, queue: new java.util.concurrent.LinkedBlockingQueue() }
+            _h.srv = _httpdServer("httpd", (req, hs, hdrs) => {
+                if (req.method != "GET" && req.method != "HEAD") return hs.reply("Method not allowed", "text/plain", 405, merge(hdrs, { Allow: "GET, HEAD, OPTIONS" }))
+                var _snap = _h.snap
+                var _fmt = String((req.params || {}).format || _snap.params.httpdformat || "json").toLowerCase()
+                if (!_httpdFormats.has(_fmt)) return hs.reply("Unsupported format '" + _fmt + "'. Use one of: " + Array.from(_httpdFormats.keys()).join(", "), "text/plain", 400, hdrs)
+                var _body = _httpdRender(_snap, _fmt)
+                _h.queue.offer(1)
+                var _mime = _snap.params.httpdmime || _httpdFormats.get(_fmt) || "text/plain; charset=utf-8"
+                return hs.reply(_body, _mime, Number(_snap.params.httpdstatus || 200), hdrs)
+            })
+            global.__oafp_httpd = _h
+        }
+        global.__oafp_httpd.snap = { data: r, params: Object.assign({}, params), cache: {} }
+    }],
     ["http", (r, options) => {
         if (!isString(params.httpurl)) _exit(-1, "For out=http you need to provide a httpurl=\"...\"")
         var _method = String(params.httpmethod || "post").toLowerCase()

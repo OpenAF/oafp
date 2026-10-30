@@ -699,6 +699,10 @@
       "Description": "Sends the output as the body of an HTTP request (POST, PUT, PATCH or DELETE)"
     },
     {
+      "Output format": "httpd",
+      "Description": "Serves the output over a local HTTP server (e.g. a live JSON endpoint or an OpenMetrics exporter with loop)"
+    },
+    {
       "Output format": "idesc",
       "Description": "Interactive full-screen tree browser for maps, arrays and scalar values; expand/collapse, zoom, filter, queries, previews, bookmarks, comparison and export"
     },
@@ -1032,6 +1036,31 @@
       "Option": "inhttpdenvelope",
       "Type": "Boolean",
       "Description": "If true the input is a map with method, uri, headers, params and body instead of just the parsed body"
+    },
+    {
+      "Option": "inhttpduser",
+      "Type": "String",
+      "Description": "If provided requests need HTTP basic authentication with this user"
+    },
+    {
+      "Option": "inhttpdpass",
+      "Type": "String",
+      "Description": "The password for _inhttpduser_"
+    },
+    {
+      "Option": "inhttpdcors",
+      "Type": "Boolean",
+      "Description": "If true adds CORS headers and answers OPTIONS preflight requests"
+    },
+    {
+      "Option": "inhttpdkeystore",
+      "Type": "String",
+      "Description": "A Java keystore path to serve HTTPS"
+    },
+    {
+      "Option": "inhttpdkeypass",
+      "Type": "String",
+      "Description": "The password of _inhttpdkeystore_"
     }
   ],
   [
@@ -2012,6 +2041,73 @@
       "Field": "space",
       "Type": "String",
       "Description": "Background character (default: ` `)"
+    }
+  ],
+  [
+    {
+      "Option": "httpdport",
+      "Type": "Number",
+      "Description": "The port to listen on (if not provided a free port is chosen and reported on stderr)"
+    },
+    {
+      "Option": "httpdhost",
+      "Type": "String",
+      "Description": "The address to bind to (defaults to 127.0.0.1; use 0.0.0.0 to accept remote connections)"
+    },
+    {
+      "Option": "httpdpath",
+      "Type": "String",
+      "Description": "If provided only requests to this path (or below) are accepted; others get a 404"
+    },
+    {
+      "Option": "httpdformat",
+      "Type": "String",
+      "Description": "The output format served (defaults to json). A request can override it with _?format=_"
+    },
+    {
+      "Option": "httpdmime",
+      "Type": "String",
+      "Description": "Forces the Content-Type of the replies"
+    },
+    {
+      "Option": "httpdstatus",
+      "Type": "Number",
+      "Description": "The HTTP status code of the replies (defaults to 200)"
+    },
+    {
+      "Option": "httpdcount",
+      "Type": "Number",
+      "Description": "Stop after this many requests were answered (defaults to 0: serve until interrupted)"
+    },
+    {
+      "Option": "httpdtimeout",
+      "Type": "Number",
+      "Description": "Stop after this many milliseconds without requests (defaults to 0: no limit)"
+    },
+    {
+      "Option": "httpduser",
+      "Type": "String",
+      "Description": "If provided requests need HTTP basic authentication with this user"
+    },
+    {
+      "Option": "httpdpass",
+      "Type": "String",
+      "Description": "The password for _httpduser_"
+    },
+    {
+      "Option": "httpdcors",
+      "Type": "Boolean",
+      "Description": "If true adds CORS headers and answers OPTIONS preflight requests"
+    },
+    {
+      "Option": "httpdkeystore",
+      "Type": "String",
+      "Description": "A Java keystore path to serve HTTPS"
+    },
+    {
+      "Option": "httpdkeypass",
+      "Type": "String",
+      "Description": "The password of _httpdkeystore_"
     }
   ],
   [

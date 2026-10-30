@@ -27,6 +27,7 @@ todo:
 - oafp::JSON2Base64Gzip
 - oafp::OutHTTP
 - oafp::InHTTPd
+- oafp::OutHTTPd
 - oafp::JSON2TOON
 - oafp::JSON2Markdown
 - oafp::CSV2JSON
@@ -194,6 +195,13 @@ jobs:
   deps: Load test
   args:
     func: "global.test.testInHTTPd()"
+
+# -----------------------
+- name: oafp::OutHTTPd
+  to  : oJob Test
+  deps: Load test
+  args:
+    func: "global.test.testOutHTTPd()"
 
 # -----------------------
 - name: oafp::JSON2TOON

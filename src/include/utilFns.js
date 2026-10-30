@@ -170,6 +170,11 @@ const _$o = (r, options, lineByLine) => {
     _clearTmpMsg()
     if (isUnDef(nOptions.__format)) nOptions.__format = getEnvsDef("OAFP_OUTPUT", nOptions.__format, "ctree")
     if (lineByLine && nOptions.__format == "idesc" && isDef(_idescSample)) return _idescSample.add(r)
+    // out=httpd serves the whole pass; the records are published once the pass ends (see _httpdFlush)
+    if (lineByLine && nOptions.__format == "httpd") {
+        if (isUnDef(global.__oafp_httpd_buf)) global.__oafp_httpd_buf = []
+        return global.__oafp_httpd_buf.push(r)
+    }
     if (_outputFns.has(nOptions.__format)) {
         _outputFns.get(nOptions.__format)(r, nOptions)
     } else {
@@ -285,6 +290,11 @@ const _chartPathParse = (r, frmt, prefix, isStatic) => {
     return ""
 }
 const _print = m => _progressGuard(() => {
+    // out=httpd renders formats into a buffer instead of printing
+    if (isDef(global.__oafp_capture)) {
+        if ("undefined" !== typeof m) global.__oafp_capture.push(m)
+        return
+    }
     _eraseProgress()
     if ("undefined" !== typeof m) {
         if ("undefined" === typeof params.outfile) {
@@ -322,6 +332,129 @@ const _o$o = (a, b, c) => {
         var _s = $o(a, b, c, true)
         if (isDef(_s)) _print(_s)
     }
+}
+
+// Shared HTTP server setup for in=httpd and out=httpd. Options are read as params[prefix + name]:
+// port, host, path, user, pass, cors, keystore, keypass. handler(req, hs, headers) returns the reply.
+const _httpdServer = (prefix, handler) => {
+    ow.loadServer()
+    // route() loads this lazily after the server is already listening; preload it to shrink that window
+    ow.loadFormat()
+    var _g = k => params[prefix + k]
+    var _explicit = isDef(_g("port"))
+    var _port = _explicit ? Number(_g("port")) : findRandomOpenPort()
+    if (isNaN(_port)) _exit(-1, prefix + "port must be a number.")
+    var _host = String(_g("host") || "127.0.0.1")
+    var _path = isString(_g("path")) ? _g("path") : __
+    var _cors = toBoolean(_g("cors"))
+    var _user = _g("user")
+    var _tls  = isString(_g("keystore"))
+    var _hdrs = _cors ? { "Access-Control-Allow-Origin": "*" } : {}
+
+    var hs = ow.server.httpd.start(_port, _host, _tls ? _g("keystore") : __, _tls ? String(_g("keypass") || "") : __)
+    var _reply = req => {
+        if (isDef(_path) && req.uri != _path && !req.uri.startsWith(_path.replace(/\/+$/, "") + "/")) return hs.reply("Not found", "text/plain", 404, _hdrs)
+        return handler(req, hs, _hdrs)
+    }
+    ow.server.httpd.route(hs, {}, req => {
+        try {
+            // Preflight requests carry no credentials
+            if (_cors && req.method == "OPTIONS") return hs.reply("", "text/plain", 204, merge(_hdrs, { "Access-Control-Allow-Methods": "GET, HEAD, POST, PUT, PATCH, OPTIONS", "Access-Control-Allow-Headers": "*" }))
+            if (isDef(_user)) return ow.server.httpd.authBasic("oafp", hs, req,
+                (u, p) => u == String(_user) && p == String(_g("pass")),
+                (h, r) => _reply(r),
+                () => ({ data: "Unauthorized", mimetype: "text/plain", header: clone(_hdrs) }))
+            return _reply(req)
+        } catch(e) {
+            return hs.reply("Internal error", "text/plain", 500, _hdrs)
+        }
+    })
+    var _url = (_tls ? "https" : "http") + "://" + _host + ":" + _port + (isDef(_path) ? _path : "")
+    if (!_explicit) printErr("Listening on " + _url)
+    return {
+        hs  : hs,
+        port: _port,
+        url : _url,
+        // Let the last response flush before closing the server
+        stop: () => { sleep(200, true); ow.server.httpd.stop(hs) }
+    }
+}
+
+// Formats out=httpd can serve (with their MIME type): the ones that render only through _print,
+// without browsers, terminal width, colors or other side effects
+const _httpdFormats = new Map([
+    ["json", "application/json; charset=utf-8"], ["pjson", "application/json; charset=utf-8"],
+    ["ndjson", "application/x-ndjson"], ["ndslon", "text/plain; charset=utf-8"],
+    ["yaml", "text/yaml; charset=utf-8"], ["toon", "text/plain; charset=utf-8"], ["slon", "text/plain; charset=utf-8"],
+    ["csv", "text/csv; charset=utf-8"], ["dsv", "text/plain; charset=utf-8"],
+    ["md", "text/markdown; charset=utf-8"], ["mdtable", "text/markdown; charset=utf-8"], ["mdyaml", "text/markdown; charset=utf-8"],
+    ["xml", "application/xml; charset=utf-8"], ["pxml", "application/xml; charset=utf-8"],
+    ["html", "text/html; charset=utf-8"], ["openmetrics", "text/plain; version=0.0.4; charset=utf-8"],
+    ["toml", "text/plain; charset=utf-8"], ["ini", "text/plain; charset=utf-8"],
+    ["lines", "text/plain; charset=utf-8"], ["text", "text/plain; charset=utf-8"], ["raw", "text/plain; charset=utf-8"],
+    ["template", "text/plain; charset=utf-8"], ["tree", "text/plain; charset=utf-8"]
+])
+
+// Guards global.__oafp_capture and params, which the out=httpd renderer swaps while serving requests
+const _httpdLock = {}
+const _httpdPass = fn => isDef(global.__oafp_httpd) || params.format == "httpd" ? syncFn(fn, _httpdLock) : fn()
+
+// Renders a snapshot ({ data, params, cache }) in the given format, once per snapshot
+const _httpdRender = (snap, fmt) => {
+    if (isDef(snap.cache[fmt])) return snap.cache[fmt]
+    return syncFn(() => {
+        if (isDef(snap.cache[fmt])) return snap.cache[fmt]
+        var _params = params, _ansi = __conAnsi, _console = __conConsole
+        try {
+            params = Object.assign({}, snap.params, { format: fmt, out: fmt, output: fmt, htmlopen: false })
+            delete params.outfile
+            delete params.pipe
+            delete params.loopcls
+            __conAnsi = false
+            __conConsole = false
+            global.__oafp_capture = []
+            var _o = { __format: fmt }
+            if (_outputFns.has(fmt)) _outputFns.get(fmt)(snap.data, _o); else _o$o(snap.data, _o)
+            var _out = global.__oafp_capture.join("\n")
+            snap.cache[fmt] = _out.endsWith("\n") ? _out : _out + "\n"
+        } finally {
+            global.__oafp_capture = __
+            params = _params
+            __conAnsi = _ansi
+            __conConsole = _console
+        }
+        return snap.cache[fmt]
+    }, _httpdLock)
+}
+
+// Publishes the records buffered by a lineByLine pass
+const _httpdFlush = () => {
+    if (isUnDef(global.__oafp_httpd_buf)) return
+    var _b = global.__oafp_httpd_buf
+    global.__oafp_httpd_buf = __
+    _outputFns.get("httpd")(_b, { __format: "httpd" })
+}
+
+// Blocks while out=httpd serves: until httpdcount requests were answered or httpdtimeout ms went idle (0 = no limit)
+const _httpdWait = () => {
+    var _h = global.__oafp_httpd
+    if (isUnDef(_h)) return
+    var _count   = isDef(params.httpdcount) ? Number(params.httpdcount) : 0
+    var _timeout = isDef(params.httpdtimeout) ? Number(params.httpdtimeout) : 0
+    if (isNaN(_count) || isNaN(_timeout)) _exit(-1, "httpdcount and httpdtimeout must be numbers.")
+    var _n = 0
+    while (_count <= 0 || _n < _count) {
+        var _i = _timeout > 0 ? _h.queue.poll(_timeout, java.util.concurrent.TimeUnit.MILLISECONDS) : _h.queue.take()
+        if (isNull(_i)) break
+        _n++
+    }
+}
+
+const _httpdStop = () => {
+    var _h = global.__oafp_httpd
+    if (isUnDef(_h)) return
+    global.__oafp_httpd = __
+    _h.srv.stop()
 }
 
 const _getSec = (aM, aPath) => {

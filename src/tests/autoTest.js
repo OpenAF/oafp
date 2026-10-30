@@ -1257,6 +1257,62 @@
       ow.test.assert(t.exitcode != 0, true, "in=httpd fails on timeout")
    }
 
+   exports.testOutHTTPd = function() {
+      // Same port range trick as testInHTTPd: other tests draw ports from a different range
+      var findRandomOpenPort = () => {
+         for (var i = 0; i < 100; i++) {
+            var p = 20000 + Math.floor(Math.random() * 10000)
+            try { new java.net.ServerSocket(p, 1, java.net.InetAddress.getByName("127.0.0.1")).close(); return p } catch(e) {}
+         }
+         throw "No free port found"
+      }
+      ow.loadObj()
+      var port = findRandomOpenPort()
+      var run = extra => {
+         var out, pr = $do(() => $sh([getOpenAFPath() + "/oaf", "-f", "../oafp.source.js", "-e", "data='[{a:1,b:x},{a:2,b:y}]' in=slon out=httpd httpdport=" + port + " " + extra]).get(0)).then(v => { out = v })
+         return () => { $doWait(pr); return out }
+      }
+      var get = (method, path, headers, body) => {
+         var res, tries = 0
+         while (isUnDef(res) && tries++ < 60) {
+            try {
+               res = (new ow.obj.http()).exec("http://127.0.0.1:" + port + path, method, body, headers || {})
+            } catch(e) {
+               // Non-2xx replies are thrown with the response map in the message
+               var m = String(e), i = m.indexOf("response = ")
+               if (i > 0) res = jsonParse(m.substring(i + 11)); else sleep(500, true)
+            }
+         }
+         return res
+      }
+
+      var p = run("httpdcount=3 httpdcors=true httpduser=u httpdpass=p")
+      var auth = { Authorization: "Basic " + af.fromBytes2String(af.toBase64Bytes(af.fromString2Bytes("u:p"))) }
+      ow.test.assert(get("GET", "/").responseCode, 401, "out=httpd requires credentials when httpduser is set")
+      var r = get("GET", "/", auth)
+      ow.test.assert(r.responseCode, 200, "out=httpd accepts valid credentials")
+      ow.test.assert(compare(jsonParse(r.response), [ { a: 1, b: "x" }, { a: 2, b: "y" } ]), true, "out=httpd serves JSON by default")
+      ow.test.assert(isDef(r.responseCode) && String(r.contentType).indexOf("application/json") >= 0, true, "out=httpd sets the JSON content type")
+      r = get("GET", "/?format=yaml", auth)
+      ow.test.assert(r.response.indexOf("- a: 1") >= 0, true, "out=httpd honors ?format=")
+      r = get("GET", "/?format=csv", auth)
+      ow.test.assert(r.response.split("\n")[0].trim(), "a,b", "out=httpd renders CSV")
+      ow.test.assert(get("GET", "/?format=grid", auth).responseCode, 400, "out=httpd rejects unsupported formats")
+      ow.test.assert(get("POST", "/", merge(auth, { "Content-Type": "text/plain" }), "x").responseCode, 405, "out=httpd only accepts GET")
+      var o = p()
+      ow.test.assert(o.exitcode, 0, "out=httpd exits after httpdcount requests")
+
+      // Path filter and timeout
+      port = findRandomOpenPort()
+      p = run("httpdpath=/data httpdtimeout=4000 httpdcount=1")
+      ow.test.assert(get("GET", "/other").responseCode, 404, "out=httpd rejects other paths")
+      ow.test.assert(get("GET", "/data").responseCode, 200, "out=httpd serves the configured path")
+      ow.test.assert(p().exitcode, 0, "out=httpd exits when httpdcount is reached")
+      port = findRandomOpenPort()
+      var t = $sh([getOpenAFPath() + "/oaf", "-f", "../oafp.source.js", "-e", "data='{a:1}' in=slon out=httpd httpdport=" + port + " httpdtimeout=500"]).get(0)
+      ow.test.assert(t.exitcode, 0, "out=httpd exits on idle timeout")
+   }
+
    exports.testJSON2TOON = function() {
       var _f = io.createTempFile("testJSON2TOON", ".json")
       var data = { a: 123, b: true, c: [ 1, 2, 3 ] }

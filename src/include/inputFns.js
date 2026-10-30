@@ -462,21 +462,13 @@ var _inputFns = new Map([
     }],
     ["httpd", (r, options) => {
         _showTmpMsg()
-        ow.loadServer()
-        // route() loads this lazily after the server is already listening; preload it to shrink that window
-        ow.loadFormat()
         var _num = (v, def) => isDef(v) ? Number(v) : def
-        var _explicit = isDef(params.inhttpdport)
-        var _port    = _num(params.inhttpdport, __)
-        var _host    = String(params.inhttpdhost || "127.0.0.1")
-        var _path    = isString(params.inhttpdpath) ? params.inhttpdpath : __
         var _timeout = _num(params.inhttpdtimeout, 60000)
         var _count   = _num(params.inhttpdcount, 1)
         var _max     = _num(params.inhttpdmax, 10485760)
         var _status  = _num(params.inhttpdstatus, 200)
         var _answer  = isDef(params.inhttpdreply) ? String(params.inhttpdreply) : ""
-        if (isUnDef(_port)) _port = findRandomOpenPort()
-        if (isNaN(_port) || isNaN(_timeout) || isNaN(_count) || isNaN(_max) || isNaN(_status)) _exit(-1, "inhttpdport, inhttpdtimeout, inhttpdcount, inhttpdmax and inhttpdstatus must be numbers.")
+        if (isNaN(_timeout) || isNaN(_count) || isNaN(_max) || isNaN(_status)) _exit(-1, "inhttpdport, inhttpdtimeout, inhttpdcount, inhttpdmax and inhttpdstatus must be numbers.")
 
         // Parses the received body: explicit type, then Content-Type, then content sniffing
         var _detect = (body, ctype) => {
@@ -498,36 +490,29 @@ var _inputFns = new Map([
         }
 
         var _queue = new java.util.concurrent.LinkedBlockingQueue()
-        var hs = ow.server.httpd.start(_port, _host)
-        ow.server.httpd.route(hs, {}, req => {
-            try {
-                if (isDef(_path) && req.uri != _path && !req.uri.startsWith(_path.replace(/\/+$/, "") + "/")) return hs.reply("Not found", "text/plain", 404)
-                var _hdr = req.header || {}
-                if (Number(_hdr["content-length"] || 0) > _max) return hs.reply("Payload too large", "text/plain", 413)
-                var _files = req.files || {}, _body = ""
-                if (isString(_files.postData)) {
-                    _body = _files.postData
-                } else if (isString(_files.content)) {
-                    // PUT/PATCH bodies are spooled to a temporary file
-                    try {
-                        if (io.fileInfo(_files.content).size > _max) return hs.reply("Payload too large", "text/plain", 413)
-                        _body = io.readFileString(_files.content)
-                    } finally {
-                        io.rm(_files.content)
-                    }
+        var _srv = _httpdServer("inhttpd", (req, hs, hdrs) => {
+            var _hdr = req.header || {}
+            if (Number(_hdr["content-length"] || 0) > _max) return hs.reply("Payload too large", "text/plain", 413, hdrs)
+            var _files = req.files || {}, _body = ""
+            if (isString(_files.postData)) {
+                _body = _files.postData
+            } else if (isString(_files.content)) {
+                // PUT/PATCH bodies are spooled to a temporary file
+                try {
+                    if (io.fileInfo(_files.content).size > _max) return hs.reply("Payload too large", "text/plain", 413, hdrs)
+                    _body = io.readFileString(_files.content)
+                } finally {
+                    io.rm(_files.content)
                 }
-                var _p = Object.assign({}, req.params)
-                delete _p["NanoHttpd.QUERY_STRING"]
-                // Without a body the query/form parameters are the payload
-                if (_body.length == 0 && Object.keys(_p).length > 0) _body = stringify(_p, __, "")
-                if (_body.length > _max) return hs.reply("Payload too large", "text/plain", 413)
-                _queue.offer(stringify({ method: req.method, uri: req.uri, headers: _hdr, params: _p, body: _body }, __, ""))
-                return hs.reply(_answer, "text/plain", _status)
-            } catch(e) {
-                return hs.reply("Internal error", "text/plain", 500)
             }
+            var _p = Object.assign({}, req.params)
+            delete _p["NanoHttpd.QUERY_STRING"]
+            // Without a body the query/form parameters are the payload
+            if (_body.length == 0 && Object.keys(_p).length > 0) _body = stringify(_p, __, "")
+            if (_body.length > _max) return hs.reply("Payload too large", "text/plain", 413, hdrs)
+            _queue.offer(stringify({ method: req.method, uri: req.uri, headers: _hdr, params: _p, body: _body }, __, ""))
+            return hs.reply(_answer, "text/plain", _status, hdrs)
         })
-        if (!_explicit) printErr("Listening on http://" + _host + ":" + _port + (isDef(_path) ? _path : ""))
 
         var _n = 0
         try {
@@ -548,9 +533,7 @@ var _inputFns = new Map([
                 }
             }
         } finally {
-            // Let the last response flush before closing the server
-            sleep(200, true)
-            ow.server.httpd.stop(hs)
+            _srv.stop()
         }
     }],
     ["db", (r, options) => {
