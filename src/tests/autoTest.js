@@ -1155,6 +1155,108 @@
       ow.test.assert(compare(jsonParse(_s.stdout), data), true, "Problem with input/output base64 (simple)")
    }
 
+   exports.testOutHTTP = function() {
+      ow.loadServer()
+      var port = findRandomOpenPort(), received = []
+      var hs = ow.server.httpd.start(port, "127.0.0.1")
+      ow.server.httpd.route(hs, {}, req => {
+         var f = req.files || {}, body = f.postData
+         if (isUnDef(body) && isString(f.content)) { body = io.readFileString(f.content); io.rm(f.content) }
+         received.push({ method: req.method, uri: req.uri, ctype: req.header["content-type"], auth: req.header["authorization"], body: body })
+         return hs.reply(stringify({ ok: true }, __, ""), "application/json", 200)
+      })
+      try {
+         var _f = io.createTempFile("testOutHTTP", ".json")
+         io.writeFileJSON(_f, [ { a: 1 }, { a: 2 } ])
+         var url = "httpurl=http://127.0.0.1:" + port + "/in"
+         var _r = $sh([getOpenAFPath() + "/oaf", "-f", "../oafp.source.js", "-e", "file=" + _f + " input=json output=http " + url + " httpparams=\"{requestHeaders:{Authorization:'Bearer x'}}\""]).get(0)
+         ow.test.assert(compare(jsonParse(_r.stdout), { ok: true }), true, "out=http prints the server response")
+         ow.test.assert(received.length, 1, "out=http sends a single request for the whole array")
+         ow.test.assert(received[0].method, "POST", "out=http defaults to POST")
+         ow.test.assert(received[0].uri, "/in", "out=http uses the URL path")
+         ow.test.assert(received[0].ctype, "application/json", "out=http defaults to a JSON content type")
+         ow.test.assert(received[0].auth, "Bearer x", "out=http sends httpparams request headers")
+         ow.test.assert(compare(jsonParse(received[0].body), [ { a: 1 }, { a: 2 } ]), true, "out=http sends the output as the body")
+
+         received.length = 0
+         $sh([getOpenAFPath() + "/oaf", "-f", "../oafp.source.js", "-e", "file=" + _f + " input=json output=http " + url + " httpeach=true httpmethod=put httpformat=yaml httpquiet=true"]).get(0)
+         ow.test.assert(received.length, 2, "out=http httpeach sends one request per entry")
+         ow.test.assert(received[0].method, "PUT", "out=http honors httpmethod")
+         ow.test.assert(received[0].ctype, "application/yaml", "out=http honors httpformat")
+         ow.test.assert(received[0].body.trim(), "a: 1", "out=http formats each entry as YAML")
+
+         var _e = $sh([getOpenAFPath() + "/oaf", "-f", "../oafp.source.js", "-e", "file=" + _f + " input=json output=http httpurl=http://127.0.0.1:1/nope"]).get(0)
+         ow.test.assert(_e.exitcode != 0, true, "out=http fails when the request fails")
+      } finally {
+         ow.server.httpd.stop(hs)
+      }
+   }
+
+   exports.testInHTTPd = function() {
+      // Tests share a JVM and findRandomOpenPort releases the port before the subprocess binds it,
+      // so use a range that other tests do not draw from
+      var findRandomOpenPort = () => {
+         for (var i = 0; i < 100; i++) {
+            var p = 20000 + Math.floor(Math.random() * 10000)
+            try { new java.net.ServerSocket(p, 1, java.net.InetAddress.getByName("127.0.0.1")).close(); return p } catch(e) {}
+         }
+         throw "No free port found"
+      }
+      var port = findRandomOpenPort()
+      var run = (extra) => {
+         var out, pr = $do(() => $sh([getOpenAFPath() + "/oaf", "-f", "../oafp.source.js", "-e", "in=httpd inhttpdport=" + port + " inhttpdtimeout=120000 out=json " + extra]).get(0)).then(v => { out = v })
+         return () => { $doWait(pr); return out }
+      }
+      var send = (method, path, body, ctype, uri) => {
+         var res, tries = 0
+         while (isUnDef(res) && tries++ < 240) {
+            try {
+               var h = new ow.obj.http()
+               res = h.exec("http://127.0.0.1:" + port + path, method, body, { "Content-Type": ctype })
+            } catch(e) {
+               // Non-2xx replies are thrown with the response map in the message
+               var m = String(e), i = m.indexOf("response = ")
+               if (i > 0) res = jsonParse(m.substring(i + 11)); else sleep(500, true)
+            }
+            // A 5xx means the server is listening but not routing yet: the request was not consumed
+            if (isDef(res) && res.responseCode >= 500) { res = __; sleep(250, true) }
+         }
+         return res
+      }
+      ow.loadObj()
+
+      // JSON body via POST
+      var p = run("inhttpdreply=received")
+      var r = send("POST", "/hook", stringify({ a: 1, b: [ 1, 2 ] }, __, ""), "application/json")
+      var o = p()
+      ow.test.assert(isDef(r) && r.response, "received", "in=httpd replies with inhttpdreply")
+      ow.test.assert(compare(jsonParse(o.stdout), { a: 1, b: [ 1, 2 ] }), true, "in=httpd parses a JSON POST body")
+
+      // YAML body via PUT (spooled to a temporary file) and envelope
+      port = findRandomOpenPort()
+      p = run("inhttpdenvelope=true")
+      send("PUT", "/x/y", "k: v", "application/yaml")
+      var raw = p()
+      o = jsonParse(raw.stdout)
+      if (!isMap(o)) throw "in=httpd envelope test got no output: " + stringify(raw)
+      ow.test.assert(o.method, "PUT", "in=httpd envelope includes the method")
+      ow.test.assert(o.uri, "/x/y", "in=httpd envelope includes the uri")
+      ow.test.assert(o.body, "k: v", "in=httpd reads PUT bodies")
+
+      // Content type driven parsing, and a path filter
+      port = findRandomOpenPort()
+      p = run("inhttpdpath=/only")
+      var nf = send("POST", "/other", "{}", "application/json")
+      ow.test.assert(nf.responseCode, 404, "in=httpd rejects other paths")
+      send("POST", "/only", "k: 2", "application/yaml")
+      ow.test.assert(compare(jsonParse(p().stdout), { k: 2 }), true, "in=httpd parses YAML from the Content-Type")
+
+      // Timeout
+      port = findRandomOpenPort()
+      var t = $sh([getOpenAFPath() + "/oaf", "-f", "../oafp.source.js", "-e", "in=httpd inhttpdport=" + port + " inhttpdtimeout=500"]).get(0)
+      ow.test.assert(t.exitcode != 0, true, "in=httpd fails on timeout")
+   }
+
    exports.testJSON2TOON = function() {
       var _f = io.createTempFile("testJSON2TOON", ".json")
       var data = { a: 123, b: true, c: [ 1, 2, 3 ] }

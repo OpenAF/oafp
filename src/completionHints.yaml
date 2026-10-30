@@ -12,3 +12,21 @@ setop=:
   desc: Will identify which set contains each entry
 - name: setop=intersect
   desc: Will return the intersection of the two sets
+httpmethod=:
+- name: httpmethod=post
+  desc: Sends the output with a POST request
+- name: httpmethod=put
+  desc: Sends the output with a PUT request
+- name: httpmethod=patch
+  desc: Sends the output with a PATCH request
+- name: httpmethod=delete
+  desc: Sends the output with a DELETE request
+httpformat=:
+- name: httpformat=json
+  desc: Sends the output as JSON
+- name: httpformat=yaml
+  desc: Sends the output as YAML
+- name: httpformat=ndjson
+  desc: Sends the output as newline delimited JSON
+- name: httpformat=text
+  desc: Sends the output as plain text

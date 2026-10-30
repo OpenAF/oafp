@@ -219,6 +219,10 @@
       "Description": "A Java hsperfdata* file (requires file=hsperfdata_user/123)"
     },
     {
+      "Input type": "httpd",
+      "Description": "Receives the input from an HTTP request sent to a temporary local HTTP server (e.g. a webhook)"
+    },
+    {
       "Input type": "ini",
       "Description": "INI/Properties format"
     },
@@ -691,6 +695,10 @@
       "Description": "An HTML format"
     },
     {
+      "Output format": "http",
+      "Description": "Sends the output as the body of an HTTP request (POST, PUT, PATCH or DELETE)"
+    },
+    {
       "Output format": "idesc",
       "Description": "Interactive full-screen tree browser for maps, arrays and scalar values; expand/collapse, zoom, filter, queries, previews, bookmarks, comparison and export"
     },
@@ -972,6 +980,58 @@
       "Option": "hsperfmetadata",
       "Type": "Boolean",
       "Description": "With in=hsperf, returns {values, header, entries}, including header and per-counter metadata. Defaults to false; requires an updated OpenAF runtime."
+    }
+  ],
+  [
+    {
+      "Option": "inhttpdport",
+      "Type": "Number",
+      "Description": "The port to listen on (if not provided a free port is chosen and reported on stderr)"
+    },
+    {
+      "Option": "inhttpdhost",
+      "Type": "String",
+      "Description": "The address to bind to (defaults to 127.0.0.1; use 0.0.0.0 to accept remote connections)"
+    },
+    {
+      "Option": "inhttpdpath",
+      "Type": "String",
+      "Description": "If provided only requests to this path (or below) are accepted; others get a 404"
+    },
+    {
+      "Option": "inhttpdtimeout",
+      "Type": "Number",
+      "Description": "Milliseconds to wait for a request (defaults to 60000; 0 waits forever)"
+    },
+    {
+      "Option": "inhttpdcount",
+      "Type": "Number",
+      "Description": "Number of requests to process before stopping (defaults to 1; 0 for no limit until a timeout occurs)"
+    },
+    {
+      "Option": "inhttpdtype",
+      "Type": "String",
+      "Description": "The input type to parse the request body with (otherwise detected from the Content-Type and the body)"
+    },
+    {
+      "Option": "inhttpdmax",
+      "Type": "Number",
+      "Description": "Maximum request body size in bytes (defaults to 10485760); larger requests get a 413"
+    },
+    {
+      "Option": "inhttpdstatus",
+      "Type": "Number",
+      "Description": "The HTTP status code returned to the sender (defaults to 200)"
+    },
+    {
+      "Option": "inhttpdreply",
+      "Type": "String",
+      "Description": "The text returned to the sender (defaults to empty)"
+    },
+    {
+      "Option": "inhttpdenvelope",
+      "Type": "Boolean",
+      "Description": "If true the input is a map with method, uri, headers, params and body instead of just the parsed body"
     }
   ],
   [
@@ -1952,6 +2012,38 @@
       "Field": "space",
       "Type": "String",
       "Description": "Background character (default: ` `)"
+    }
+  ],
+  [
+    {
+      "Option": "httpurl",
+      "Type": "String",
+      "Description": "The URL to send the output to (required)"
+    },
+    {
+      "Option": "httpmethod",
+      "Type": "String",
+      "Description": "The HTTP method: post (default), put, patch or delete"
+    },
+    {
+      "Option": "httpformat",
+      "Type": "String",
+      "Description": "The body format: json (default), yaml, ndjson or text. Strings are sent as-is"
+    },
+    {
+      "Option": "httpparams",
+      "Type": "String/Map",
+      "Description": "A JSON/SLON map of OpenAF $rest options (e.g. requestHeaders, login, pass, timeout, retry)"
+    },
+    {
+      "Option": "httpeach",
+      "Type": "Boolean",
+      "Description": "If true and the input is an array, one request is made per entry"
+    },
+    {
+      "Option": "httpquiet",
+      "Type": "Boolean",
+      "Description": "If true the server response is not printed"
     }
   ],
   [

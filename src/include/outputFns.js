@@ -508,6 +508,39 @@ var _outputFns = new Map([
             _exit(-1, "Invalid ch parameter")
         }
     }],
+    ["http", (r, options) => {
+        if (!isString(params.httpurl)) _exit(-1, "For out=http you need to provide a httpurl=\"...\"")
+        var _method = String(params.httpmethod || "post").toLowerCase()
+        if (["post", "put", "patch", "delete"].indexOf(_method) < 0) _exit(-1, "httpmethod must be one of post, put, patch or delete")
+
+        var _formats = {
+            json  : { mime: "application/json",     fn: d => isString(d) ? d : stringify(d, __, "") },
+            yaml  : { mime: "application/yaml",     fn: d => isString(d) ? d : af.toYAML(d) },
+            ndjson: { mime: "application/x-ndjson", fn: d => isString(d) ? d : (isArray(d) ? d : [ d ]).map(e => stringify(e, __, "")).join("\n") },
+            text  : { mime: "text/plain",           fn: d => isString(d) ? d : stringify(d, __, "") }
+        }
+        var _fmt = String(params.httpformat || "json").toLowerCase()
+        if (isUnDef(_formats[_fmt])) _exit(-1, "httpformat must be one of " + Object.keys(_formats).join(", "))
+
+        var _hp = Object.assign({}, _fromJSSLON(_$(params.httpparams).or().isString().isMap().default("{}")))
+        if (isDef(_hp.secKey)) _hp = $sec().procMap(_hp)
+        _hp.requestHeaders = Object.assign({}, _hp.requestHeaders)
+        if (!Object.keys(_hp.requestHeaders).some(k => k.toLowerCase() == "content-type")) _hp.requestHeaders["Content-Type"] = _formats[_fmt].mime
+        if (isUnDef(_hp.throwExceptions)) _hp.throwExceptions = true
+
+        var _exe = data => {
+            var _res
+            try {
+                _res = $rest(_hp)[_method](params.httpurl, _formats[_fmt].fn(data))
+            } catch(e) {
+                _exit(-1, "out=http " + _method.toUpperCase() + " " + params.httpurl + " failed: " + (isMap(e) ? stringify(e, __, "") : String(e)))
+            }
+            if (!toBoolean(params.httpquiet) && isDef(_res) && !(isString(_res) && _res.length == 0) && !(isMap(_res) && Object.keys(_res).length == 0)) print(isString(_res) ? _res : stringify(_res, __, ""))
+        }
+
+        if (isArray(r) && toBoolean(params.httpeach)) r.forEach(_exe)
+        else _exe(r)
+    }],
     ["db", (r, options) => {
         if (!isArray(r) || r.length < 1) _exit(-1, "db is only supported for filled arrays/lists")
         params.dbtable = _$(params.dbtable, "outdbtable").isString().default("data")
