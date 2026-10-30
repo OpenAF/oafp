@@ -499,7 +499,6 @@ const _tryRawCodec = () => {
         isDef(params.idescrecipe) || isDef(params.jsonprefix) || toBoolean(params.jsondesc)) return false
     var gzip = params.format == "gb64json" || toBoolean(params.base64gzip)
     if (isDef(params.url) && String(params.urlmethod || "GET").toLowerCase() == "head") return false
-    if (isDef(params.insecure) && toBoolean(params.insecure)) ow.loadJava().setIgnoreSSLDomains()
     _withCodecSource(isString(params.data) ? params.data : "", (input, encoding) => {
         // File/raw text is decoded as before, then re-encoded in the runtime charset.
         var source = input

@@ -1,5 +1,32 @@
 (function() {
 
+   exports.testNetworkIsolation = function() {
+      var source = io.readFileString("../oafp.source.js")
+      var original = javax.net.ssl.SSLContext.getDefault()
+      var factory = javax.net.ssl.HttpsURLConnection.getDefaultSSLSocketFactory()
+      var trust = global.__httpX509TrustManager
+      var processExpr = () => undefined
+      var invoke = eval(source + "\noafp")
+      invoke({in:"json",data:"1",out:"key",__key:"network-test",insecure:true,noexit:true})
+      $unset("network-test")
+      ow.test.assert(javax.net.ssl.SSLContext.getDefault().equals(original), true, "Insecure invocation leaves TLS context unchanged")
+      ow.test.assert(javax.net.ssl.HttpsURLConnection.getDefaultSSLSocketFactory().equals(factory), true, "HTTPS factory restored")
+      ow.test.assert(global.__httpX509TrustManager, trust, "OpenAF trust restored")
+      var params = {inhttpdcount:1}, replies = [], received
+      var _showTmpMsg = () => {}
+      var _exit = (code, message) => { throw message }
+      var _$o = data => { received = data }
+      var _httpdServer = (prefix, handler) => {
+         var hs = {reply:(body, mime, status) => status}
+         for (var i = 0; i < 3; i++) replies.push(handler({method:"POST",uri:"/",header:{"content-type":"application/json"},files:{postData:"{}"}}, hs, {}))
+         return {stop:() => {}}
+      }
+      var handlers = eval(io.readFileString("../include/inputFns.js") + "\n_inputFns")
+      handlers.get("httpd")("", {})
+      ow.test.assert(replies, [200,503,503], "HTTP queue rejects excess pending requests")
+      ow.test.assert(received, {}, "Accepted HTTP request is processed")
+   }
+
    exports.testSetRegressions = function() {
       var params = {set:{a:"a",b:"b"}}
       var _fromJSSLON = value => value

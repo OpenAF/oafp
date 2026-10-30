@@ -6,6 +6,25 @@ if (isUnDef(params) || isDef(params.____ojob)) return
 // Process secBuckets
 if (isDef(params.secKey)) params = $sec().procMap(params)
 
+// Certificate bypass belongs to this invocation's HTTP clients, never JVM defaults.
+var _rest = global.$rest
+var $rest = opts => {
+    if (!toBoolean(params.insecure)) return _rest(opts)
+    ow.loadObj()
+    opts = Object.assign({}, opts)
+    var client = opts.httpClient ? Object.assign(Object.create(Object.getPrototypeOf(opts.httpClient)), opts.httpClient) : new ow.obj.http(__, __, __, __, __, __, __, {delayBuild:true})
+    var trust = new JavaAdapter(javax.net.ssl.X509TrustManager, {
+        checkClientTrusted: function() {}, checkServerTrusted: function() {},
+        getAcceptedIssuers: function() { return java.lang.reflect.Array.newInstance(java.security.cert.X509Certificate, 0) }
+    })
+    var ctx = javax.net.ssl.SSLContext.getInstance("TLS")
+    ctx.init(null, [trust], new java.security.SecureRandom())
+    var builder = isFunction(client.client.newBuilder) ? client.client.newBuilder() : client.client
+    client.client = builder.sslSocketFactory(ctx.getSocketFactory(), trust).build()
+    opts.httpClient = client
+    return _rest(opts)
+}
+
 // --- Util functions
 {{{srcUtilFns}}}
 {{{srcStreamFns}}}
@@ -567,7 +586,6 @@ var _run = () => {
         (!isDef(params.url) || String(params.urlmethod || "GET").toLowerCase() != "head") &&
         (!isString(params.file) || params.file.indexOf("::") < 0) &&
         !toBoolean(params._shebang) && !params.jsondesc && !params.jsonprefix) {
-        if (isDef(params.insecure) && toBoolean(params.insecure)) ow.loadJava().setIgnoreSSLDomains()
         _inputFns.get(params.type)(isString(params.data) ? params.data : "", options)
         delete params.__origr
         return
@@ -587,9 +605,6 @@ var _run = () => {
         params.jsonprefix = _$(params.jsonprefix, "jsonprefix").isString().default(__)
         params.jsondesc   = _$(toBoolean(params.jsondesc), "jsondesc").isBoolean().default(false)
 
-        if (typeof params.insecure !== "undefined" && toBoolean(params.insecure)) {
-            ow.loadJava().setIgnoreSSLDomains()
-        }
 
         if (isDef(params.file)) {
             if (params.file.indexOf("::") < 0 && !(io.fileExists(params.file))) {

@@ -1,5 +1,6 @@
 todo:
 - Load test
+- oafp::NetworkIsolation
 - oafp::SetRegressions
 - oafp::NestedFailures
 - oafp::JavaGC
@@ -420,3 +421,8 @@ jobs:
   deps: Load test
   args:
     func: "global.test.testJavaGC()"
+- name: oafp::NetworkIsolation
+  to: oJob Test
+  deps: Load test
+  args:
+    func: "global.test.testNetworkIsolation()"

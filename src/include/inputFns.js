@@ -489,7 +489,8 @@ var _inputFns = new Map([
             return "lines"
         }
 
-        var _queue = new java.util.concurrent.LinkedBlockingQueue()
+        // Bound retained request bodies independently of the consumer's processing speed.
+        var _queue = new java.util.concurrent.LinkedBlockingQueue(1)
         var _srv = _httpdServer("inhttpd", (req, hs, hdrs) => {
             var _hdr = req.header || {}
             if (Number(_hdr["content-length"] || 0) > _max) return hs.reply("Payload too large", "text/plain", 413, hdrs)
@@ -510,7 +511,7 @@ var _inputFns = new Map([
             // Without a body the query/form parameters are the payload
             if (_body.length == 0 && Object.keys(_p).length > 0) _body = stringify(_p, __, "")
             if (_body.length > _max) return hs.reply("Payload too large", "text/plain", 413, hdrs)
-            _queue.offer(stringify({ method: req.method, uri: req.uri, headers: _hdr, params: _p, body: _body }, __, ""))
+            if (!_queue.offer(stringify({ method: req.method, uri: req.uri, headers: _hdr, params: _p, body: _body }, __, ""))) return hs.reply("Busy", "text/plain", 503, hdrs)
             return hs.reply(_answer, "text/plain", _status, hdrs)
         })
 
