@@ -415,7 +415,7 @@ complete:
     desc: The Java GC log lines text format
     opts:
     - name: javagcjoin=
-      desc: If true it will return an array with each processed line.
+      desc: If true returns one array of parsed GC events; otherwise emits events incrementally.
   - name: in=javathread
     desc: The Java Thread stack dump lines text format
     opts:
@@ -897,7 +897,7 @@ complete:
 - name: indsvfields=
   desc: Comma separated column names. When provided, every non-comment line is data, including the first; no input header is consumed.
 - name: javagcjoin=
-  desc: If true it will return an array with each processed line.
+  desc: If true returns one array of parsed GC events; otherwise emits events incrementally.
 - name: javathreadpid=
   desc: Optional you can provider the local java process pid to try to get the thread stack trace (*)
 - name: hsperfmetadata=

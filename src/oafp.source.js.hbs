@@ -574,7 +574,7 @@ var _run = () => {
     }
     // Stream-capable handlers own their input; do not first buffer it in _res.
     if (!_version && isUnDef(params.url) &&
-        (["lines", "ndjson", "ndslon", "dsv", "csv"].indexOf(params.type) >= 0 ||
+        (["lines", "ndjson", "ndslon", "dsv", "csv", "javagc"].indexOf(params.type) >= 0 ||
          (params.type == "json" && toBoolean(params.stream)))) {
         _inputFns.get(params.type)(isString(params.data) ? params.data : "", options)
         delete params.__origr

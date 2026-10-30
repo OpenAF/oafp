@@ -521,3 +521,89 @@ const _codecInput = (res, options, gzip) => {
         return _codecs.use([source], () => _$o(_codecs.decodeToString(source, gzip), options))
     })
 }
+
+// Each GC pattern owns its capture mapping; parser state belongs to one input.
+const _javaGCParser = () => {
+    var bytes = value => ow.format.fromBytesAbbreviation(value + "B")
+    var fields = (result, match, start, names) => {
+        names.forEach((name, i) => { result[name] = bytes(match[start + i]) })
+    }
+    var timestamp = text => ow.format.toDate(text.replace(/:$/, ""), "yyyy-MM-dd'T'HH:mm:ss.SSSZ")
+    var legacy = (m, start, full, times) => {
+        var r = {timestamp:timestamp(m[1]), sinceStart:parseFloat(m[2]), gcType:m[3] + " " + m[4]}
+        fields(r,m,start,["PSYoungGenBeforeGC","PSYoungGenAfterGC","PSYoungGenTotal"])
+        start += 3
+        if (full) { fields(r,m,start,["ParOldGenBeforeGC","ParOldGenAfterGC","ParOldGenTotal"]); start += 3 }
+        fields(r,m,start,["heapBeforeGC","heapAfterGC","heapTotal"]); start += 3
+        if (full) { fields(r,m,start,["metaBeforeGC","metaAfterGC","metaTotal"]); start += 3 }
+        r.durationSecs = parseFloat(m[start++])
+        if (times) ["userTime","sysTime","realTime"].forEach(name => { r[name] = parseFloat(m[start++]) })
+        return r
+    }
+    var youngMultiline = m => legacy(m,6,false,true)
+    var young = m => legacy(m,5,false,false)
+    var youngTimes = m => legacy(m,5,false,true)
+    var full = m => legacy(m,5,true,false)
+    var fullTimes = m => legacy(m,5,true,true)
+    var generic = m => {
+        var r = {sinceStart:parseFloat(m[1]),gcType:m[2] + " " + m[3],durationSecs:parseFloat(m[7])}
+        fields(r,m,4,["heapBeforeGC","heapAfterGC","heapTotal"])
+        return r
+    }
+    var modern = m => {
+        var r = {gcId:parseInt(m[2]),gcType:m[3].trim() || "none"}
+        m[1].split("][").forEach(head => {
+            if (/^\d+\.\d+s$/.test(head)) r.sinceStart = parseFloat(head)
+            else if (/\d{4}-\d{2}-\d{2}T/.test(head)) r.timestamp = timestamp(head)
+        })
+        return r
+    }
+    var heap = m => {
+        var r = modern(m)
+        fields(r,m,4,["heapBeforeGC","heapAfterGC","heapTotal"])
+        r.durationSecs = parseFloat(m[7]) / 1000
+        return r
+    }
+    var allocation = m => {
+        var r = modern(m)
+        fields(r,m,5,["heapBeforeGC","heapAfterGC","heapTotal"])
+        r.durationSecs = parseFloat(m[8]) / 1000
+        return r
+    }
+    var meta = m => {
+        var r = modern(m)
+        fields(r,m,4,["metaUsedBeforeGC","metaTotalBeforeGC","metaUsedAfterGC","metaTotalAfterGC",
+            "nonClassUsedBeforeGC","nonClassTotalBeforeGC","nonClassUsedAfterGC","nonClassTotalAfterGC",
+            "classUsedBeforeGC","classTotalBeforeGC","classUsedAfterGC","classTotalAfterGC"])
+        return r
+    }
+    // Specific timed and allocation forms precede shorter alternatives.
+    var patterns = [
+        {pattern: /([^ ]+) (\d+\.\d+): \[(GC) \((.*?)\)(.+?)\[PSYoungGen: (\d+K)->(\d+K)\((.*?)\)\] (\d+K)->(\d+K)\((.*?)\), (\d+\.\d+) secs\] \[Times: user=(\d+\.\d+) sys=(\d+\.\d+), real=(\d+\.\d+) secs\]/s, read: youngMultiline},
+        {pattern: /([^ ]+) (\d+\.\d+): \[(GC) \((.*?)\) \[PSYoungGen: (\d+K)->(\d+K)\((.*?)\)\] (\d+K)->(\d+K)\((.*?)\), (\d+\.\d+) secs\] \[Times: user=(\d+\.\d+) sys=(\d+\.\d+), real=(\d+\.\d+) secs\]/, read: youngTimes},
+        {pattern: /([^ ]+) (\d+\.\d+): \[(GC) \((.*?)\) \[PSYoungGen: (\d+K)->(\d+K)\((.*?)\)\] (\d+K)->(\d+K)\((.*?)\), (\d+\.\d+) secs\]/, read: young},
+        {pattern: /([^ ]+) (\d+\.\d+): \[(Full GC) \((.*?)\) \[PSYoungGen: (\d+K)->(\d+K)\((.*?)\)\] \[ParOldGen: (\d+K)->(\d+K)\((.*?)\)\] (\d+K)->(\d+K)\((.*?)\), \[Metaspace: (\d+K)->(\d+K)\((.*?)\)\], (\d+\.\d+) secs\] \[Times: user=(\d+\.\d+) sys=(\d+\.\d+), real=(\d+\.\d+) secs\]/, read: fullTimes},
+        {pattern: /([^ ]+) (\d+\.\d+): \[(Full GC) \((.*?)\) \[PSYoungGen: (\d+K)->(\d+K)\((.*?)\)\] \[ParOldGen: (\d+K)->(\d+K)\((.*?)\)\] (\d+K)->(\d+K)\((.*?)\), \[Metaspace: (\d+K)->(\d+K)\((.*?)\)\], (\d+\.\d+) secs\]/, read: full},
+        {pattern: /(\d+\.\d+): \[(GC|Full GC) \((.*?)\)\s+(\d+K)->(\d+K)\((\d+K)\), (\d+\.\d+) secs\]/, read: generic},
+        {pattern: /^\[(.+)\]\s+GC\((\d+)\)\s*(Allocation Failure)\s*(.*?)\s+(\d+[KMGT])->(\d+[KMGT])\((\d+[KMGT])\)\s+(\d+\.\d+)ms/, read: allocation},
+        {pattern: /^\[(.+)\]\s+GC\((\d+)\)\s*(.*?)\s*(\d+[GMK])->(\d+[GMK])\((\d+[GMK])\)\s*(\d+\.\d+)ms/, read: heap},
+        {pattern: /^\[(.+)\]\s+GC\((\d+)\)\s*(.*?)\s*Metaspace:\s*(\d+[GMK])\((\d+[GMK])\)->(\d+[GMK])\((\d+[GMK])\)\s*NonClass:\s*(\d+[GMK])\((\d+[GMK])\)->(\d+[GMK])\((\d+[GMK])\)\s*Class:\s*(\d+[GMK])\((\d+[GMK])\)->(\d+[GMK])\((\d+[GMK])\)/, read: meta},
+    ]
+    return event => {
+        for (var i = 0; i < patterns.length; i++) {
+            var match = event.match(patterns[i].pattern)
+            if (match) return patterns[i].read(match)
+        }
+    }
+}
+const _javaGCFramer = () => {
+    var lines = []
+    var start = /^(\[?\d+|\d{4}-\d{2}-\d{2}T)/
+    var flush = emit => { if (lines.length) emit(lines.join("\n")); lines = [] }
+    var frame = (line, emit) => {
+        if (start.test(line)) { flush(emit); lines.push(line) }
+        else if (lines.length) lines.push(line)
+    }
+    frame.end = emit => flush(emit)
+    return frame
+}

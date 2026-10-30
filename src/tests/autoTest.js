@@ -1,4 +1,125 @@
 (function() {
+
+   exports.testSetRegressions = function() {
+      var params = {set:{a:"a",b:"b"}}
+      var _fromJSSLON = value => value
+      var transforms = eval(io.readFileString("../include/transformFns.js") + "\n_transformFns")
+      var eq = (a,b,msg) => ow.test.assert(a,b,msg)
+      var data = {a:[{id:1,"*":"existing"},{id:2,"*":"old"}],b:[{id:1,"*":"existing"},{id:3,"*":"new"}]}
+      var original = stringify(data)
+      params.setop = "diff"
+      eq(transforms.set(data),[{id:2,"*":"a"},{id:3,"*":"b"}],"Reserved marker cannot override membership")
+      eq(stringify(data),original,"Set leaves inputs unchanged")
+      params.setkeys = "id"
+      eq(transforms.set({a:[{id:1,"*":"a"}],b:[{id:1,"*":"b"}]}),[],"setkeys ignores non-key marker")
+      delete params.setkeys
+      var operations = {union:[1,1,2,3,3],diffa:[1,1],diffb:[3,3],diffab:[1,1,3,3],intersect:[2]}
+      Object.keys(operations).forEach(op => {
+         params.setop = op
+         eq(transforms.set({a:[1,1,2],b:[2,3,3]}),operations[op],"Preserve duplicate/order behavior: " + op)
+         eq(transforms.set({a:[],b:[]}),[],"Empty set: " + op)
+      })
+      params.setop = "diffab"
+      eq(transforms.set({a:[{z:[1,{b:2,a:1}]}],b:[{z:[1,{a:1,b:2}]}]}),[],"Nested canonical keys")
+      var nativeStringify = global.stringify, count = $atomic()
+      var counted = function() { count.inc(); return nativeStringify.apply(null,arguments) }
+      transforms = (function(stringify) { return eval(io.readFileString("../include/transformFns.js") + "\n_transformFns") })(counted)
+      transforms.set({a:Array.from({length:1000},(v,i)=>i),b:Array.from({length:1000},(v,i)=>i)})
+      eq(count.get(),2000,"One serialization per input element")
+   }
+
+   exports.testNestedFailures = function() {
+      ow.loadObj()
+      var params, output, keys = new java.util.concurrent.ConcurrentHashMap(), calls = new ow.obj.syncArray(), fail = {}
+      var _exit = (code, error) => { throw error }
+      var _fromJSSLON = value => value
+      var $get = key => Number(keys.get(key))
+      var $unset = key => keys.remove(key)
+      var _$o = value => { output = value }
+      var oafp = request => {
+         calls.add({id:request.id,noexit:request.noexit})
+         if (request.__key) keys.put(request.__key,request.id)
+         if (fail[request.id]) throw "failure-" + request.id
+      }
+      var handler = eval(io.readFileString("../include/inputFns.js") + "\n_inputFns.get('oafp')")
+      ;[true,false].forEach(seq => {
+         params = {inoafpseq:seq}; calls = new ow.obj.syncArray(); fail = {}; output = undefined
+         var requests = [{id:0},{id:1},{id:2}]
+         handler(requests,{})
+         ow.test.assert(output,[0,1,2],"Nested success ordering")
+         ow.test.assert(requests,[{id:0},{id:1},{id:2}],"Nested parameters unchanged")
+         fail = {0:true,2:true}; output = undefined; calls = new ow.obj.syncArray()
+         var error
+         try { handler(requests,{}) } catch(e) { error = String(e) }
+         ow.test.assert(error.indexOf("entry 0") >= 0,true,"Deterministic indexed failure")
+         ow.test.assert(isUnDef(output),true,"No successful aggregate on failure")
+         ow.test.assert(calls.length(),3,"Workers settled before failure")
+         ow.test.assert(calls.toArray().every(call => call.noexit === true),true,"Nested calls throw rather than exit")
+         ow.test.assert(Number(keys.size()),0,"Captured keys cleaned after failure")
+      })
+      var fixture = io.createTempFile("oafp-nested-", ".json")
+      try {
+         ["../oafp.source.js","../oafp.js"].forEach(script => {
+            ;[true,false].forEach(seq => {
+               io.writeFileJSON(fixture,[{in:"json",data:"1"},{in:"json",data:"2"}])
+               var args = "in=oafp out=json file=" + fixture + " inoafpseq=" + seq
+               var result = $sh([getOpenAFPath()+"/oaf","-f",script,"-e",args]).get(0)
+               ow.test.assert(jsonParse(result.stdout),[1,2],"Nested CLI success")
+               io.writeFileJSON(fixture,[{in:"json",data:"1"},{in:"json",file:fixture+".missing",noexit:false}])
+               result = $sh([getOpenAFPath()+"/oaf","-f",script,"-e",args]).get(0)
+               ow.test.assert(result.exitcode != 0,true,"Nested failure has nonzero CLI status")
+               ow.test.assert(result.stderr.indexOf("entry 1") >= 0,true,"Nested CLI error identifies child")
+               ow.test.assert(result.stdout.trim(),"","Nested CLI emits no aggregate on failure")
+            })
+         })
+      } finally { io.rm(fixture) }
+   }
+
+   exports.testJavaGC = function() {
+      ow.loadFormat()
+      var processExpr = () => undefined
+      var __flags = clone(global.__flags); __flags.OAFP = {libs:[]}
+      var eq = (a,b,msg) => ow.test.assert(a,b,msg)
+      var parser = eval(io.readFileString("../include/streamFns.js") + "\n_javaGCParser()")
+      var stamp = "2015-05-26T14:25:13.123+0000: "
+      var young = "1.234: [GC (Allocation Failure) [PSYoungGen: 1024K->256K(2048K)] 4096K->3328K(8192K), 0.005 secs]"
+      var times = " [Times: user=0.01 sys=0.02, real=0.03 secs]"
+      var full = "1.234: [Full GC (Ergonomics) [PSYoungGen: 1024K->0K(2048K)] [ParOldGen: 4096K->2048K(8192K)] 5120K->2048K(10240K), [Metaspace: 100K->90K(1024K)], 0.020 secs]"
+      var heap = "[1.234s][info][gc] GC(0) Pause Young (Normal) (G1 Evacuation Pause) 100M->10M(256M) 5.000ms"
+      var meta = "[1.234s][info][gc,metaspace] GC(0) Metaspace: 100K(200K)->90K(200K) NonClass: 60K(120K)->50K(120K) Class: 40K(80K)->40K(80K)"
+      var fixtures = [stamp+young,stamp+young+times,stamp+young.replace(" [PSYoungGen", "\n [PSYoungGen")+times,stamp+full,stamp+full+times,
+         "1.234: [GC (Allocation Failure) 4096K->3328K(8192K), 0.005 secs]",heap,meta,
+         "[1.234s][info][gc] GC(0) Allocation Failure extra 100M->10M(256M) 5.000ms"]
+      fixtures.forEach((text,i) => {
+         var r = parser(text)
+         eq(isMap(r),true,"GC fixture parsed: " + i)
+         if (i != 7) eq(r.durationSecs,i == 3 || i == 4 ? 0.02 : 0.005,"GC duration: " + i)
+         if (i < 3 || i == 5) { eq(r.heapBeforeGC,4194304,"Young heap before"); eq(r.heapAfterGC,3407872,"Young heap after") }
+         if (i == 3 || i == 4) { eq(r.ParOldGenAfterGC,2097152,"Old generation"); eq(r.metaAfterGC,92160,"Legacy metaspace") }
+         if (i == 1 || i == 2 || i == 4) eq([r.userTime,r.sysTime,r.realTime],[0.01,0.02,0.03],"Timing fields")
+         if (i == 6 || i == 8) { eq(r.heapBeforeGC,104857600,"Modern heap"); eq(r.heapTotal,268435456,"Modern capacity"); eq(isUnDef(r.metaUsedBeforeGC),true,"Heap is not metaspace") }
+         if (i == 7) { eq(r.metaUsedAfterGC,92160,"Modern metaspace"); eq(r.classTotalAfterGC,81920,"Class capacity"); eq(isUnDef(r.durationSecs),true,"No fabricated duration") }
+      })
+      var directory = io.createTempDir("oafp-gc-"), input = directory + "/input", result = directory + "/result"
+      var data = fixtures.join("\n"), expected = fixtures.map(parser)
+      io.writeFileString(input,data)
+      try {
+         ["../oafp.source.js","../oafp.js"].forEach(script => {
+            var run = eval(io.readFileString(script) + "\noafp")
+            ;[{data:data},{file:input},{cmd:"cat " + input}].forEach(source => {
+               run(merge({in:"javagc",out:"json",javagcjoin:true,outfile:result,noexit:true,__inception:true},source))
+               eq(io.readFileJSON(result),jsonParse(stringify(expected)),"GC joined source parity")
+            })
+            io.writeFileString(result, "")
+            run({in:"javagc",out:"ndjson",file:input,outfile:result,outfileappend:true,noexit:true,__inception:true})
+            eq(io.readFileString(result).trim().split(/\r?\n/).map(text => jsonParse(text)),jsonParse(stringify(expected)),"GC nonjoined EOF flush")
+            var stdin = $sh(["sh","-c","cat " + input + " | " + getOpenAFPath() + "/oaf -f " + script + " -e \"in=javagc out=json javagcjoin=true\""]).get(0)
+            eq(stdin.exitcode,0,"GC stdin succeeds")
+            eq(jsonParse(stdin.stdout),jsonParse(stringify(expected)),"GC stdin parity and EOF flush")
+         })
+      } finally { io.rm(directory) }
+   }
+
    exports.testBase64Streaming = function() {
       var processExpr = () => undefined
       var __flags = clone(global.__flags); __flags.OAFP = {libs:[]}

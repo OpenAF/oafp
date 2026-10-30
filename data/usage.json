@@ -957,7 +957,7 @@
     {
       "Option": "javagcjoin",
       "Type": "Boolean",
-      "Description": "If true it will return an array with each processed line."
+      "Description": "If true returns one array of parsed GC events; otherwise emits events incrementally."
     }
   ],
   [

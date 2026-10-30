@@ -1,5 +1,8 @@
 todo:
 - Load test
+- oafp::SetRegressions
+- oafp::NestedFailures
+- oafp::JavaGC
 - oafp::Base64Streaming
 - oafp::CompletionData
 - oafp::EnvsNoCmd
@@ -374,3 +377,22 @@ jobs:
   deps: Load test
   args:
     func: "global.test.testBase64Streaming()"
+
+
+- name: oafp::SetRegressions
+  to: oJob Test
+  deps: Load test
+  args:
+    func: "global.test.testSetRegressions()"
+
+- name: oafp::NestedFailures
+  to: oJob Test
+  deps: Load test
+  args:
+    func: "global.test.testNestedFailures()"
+
+- name: oafp::JavaGC
+  to: oJob Test
+  deps: Load test
+  args:
+    func: "global.test.testJavaGC()"

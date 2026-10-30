@@ -549,7 +549,7 @@ var _transformFns = {
     "set": _r => {
         var _d = _fromJSSLON(params.set)
 
-        if (!isMap(_d) && isUnDef(_d.a) && isUnDef(_d.b)) _exit(-1, "set.a path and set.b path are required.")
+        if (!isMap(_d)) _exit(-1, "set.a path and set.b path are required.")
         if (isUnDef(pForEach)) _exit(-1, "This version of OpenAF does not support the set transform")
         if (!isString(_d.a)) _exit(-1, "set.a path is not a string.")
         if (!isString(_d.b)) _exit(-1, "set.b path is not a string.")
@@ -563,36 +563,25 @@ var _transformFns = {
             ow.loadObj()
             var _ks = params.setkeys.split(",").map(r => r.trim())
             toOrdStr  = r => stringify(isObject(r) ? _sortTransformKeys(ow.obj.filterKeys(_ks, r)) : r, __, "")
-            toOrdStrs = r => pForEach(r, toOrdStr).reduce((pV, cV) => pV.concat(cV), [])
+            toOrdStrs = r => pForEach(r, toOrdStr)
         } else {
             toOrdStr  = r => stringify(isObject(r) ? _sortTransformKeys(r) : r, __, "")
-            toOrdStrs = r => pForEach(r, toOrdStr).reduce((pV, cV) => pV.concat(cV), [])
+            toOrdStrs = r => pForEach(r, toOrdStr)
         }
 
+        var keysA = toOrdStrs(_d1), keysB = toOrdStrs(_d2)
+        var ca = new Set(keysA), cb = new Set(keysB)
         switch(params.setop) {
-        case "union"    :
-            let ca = new Set(toOrdStrs(_d1))
-            return _d1.concat(_d2.filter(r => !ca.has(toOrdStr(r))))
-        case "diffa"    :
-            let cb2 = new Set(toOrdStrs(_d2))
-            return _d1.filter(r => !cb2.has(toOrdStr(r)))
-        case "diffb"    :
-            let cb3 = new Set(toOrdStrs(_d1))
-            return _d2.filter(r => !cb3.has(toOrdStr(r)))
-        case "diffab"   :
-            let cb4 = new Set(toOrdStrs(_d1))
-            let cb5 = new Set(toOrdStrs(_d2))
-            return _d1.filter(r => !cb5.has(toOrdStr(r))).concat(_d2.filter(r => !cb4.has(toOrdStr(r))))
-        case "diff"     :
-            let cb6 = new Set(toOrdStrs(_d1))
-            let cb7 = new Set(toOrdStrs(_d2))
-            return            _d1.map(r => Object.assign({ '*': cb7.has(toOrdStr(r)) ? __ : "a" }, r))
-                      .concat(_d2.map(r => Object.assign({ '*': cb6.has(toOrdStr(r)) ? __ : "b" }, r)))
-                      .filter(r => isDef(r['*']))
+        case "union": return _d1.concat(_d2.filter((r, i) => !ca.has(keysB[i])))
+        case "diffa": return _d1.filter((r, i) => !cb.has(keysA[i]))
+        case "diffb": return _d2.filter((r, i) => !ca.has(keysB[i]))
+        case "diffab":
+            return _d1.filter((r, i) => !cb.has(keysA[i])).concat(_d2.filter((r, i) => !ca.has(keysB[i])))
+        case "diff":
+            return _d1.filter((r, i) => !cb.has(keysA[i])).map(r => Object.assign({}, r, { '*': "a" }))
+                .concat(_d2.filter((r, i) => !ca.has(keysB[i])).map(r => Object.assign({}, r, { '*': "b" })))
         case "intersect":
-        default         :
-            let cb1 = new Set(toOrdStrs(_d2))
-            return _d1.filter(r => cb1.has(toOrdStr(r)))
+        default: return _d1.filter((r, i) => cb.has(keysA[i]))
         }
     },
     "forcearray": _r => {
