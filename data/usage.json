@@ -2526,7 +2526,17 @@
     {
       "Option": "hprofmode",
       "Type": "String",
-      "Description": "records (default) or summary. Requires file."
+      "Description": "records (default), summary, index, object, find, refs or path. records/summary/index require file."
+    },
+    {
+      "Option": "hprofindex",
+      "Type": "String",
+      "Description": "New directory for index mode; existing disk-backed HPROF index directory for queries."
+    },
+    {
+      "Option": "hprofid",
+      "Type": "String",
+      "Description": "Hexadecimal object ID for object, refs and path modes."
     },
     {
       "Option": "javareport",
@@ -2567,6 +2577,13 @@
       "Option": "counterdelta",
       "Type": "Map",
       "Description": "Transform options: identity, timestamp and counters (array of dotted paths)."
+    }
+  ],
+  [
+    {
+      "Option": "inparams",
+      "Type": "Boolean",
+      "Description": "Resolve supported input parameters from one request map; explicit invocation values win. Defaults to false."
     }
   ]
 ]

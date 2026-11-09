@@ -1,4 +1,82 @@
 (function() {
+   // Exercise request resolution before real input dispatch without external services.
+   exports.testInputParams = function() {
+      var source = io.readFileString("../oafp.source.js.hbs").split("// Resolve opt-in request parameters before defaults and source dispatch.")[1].split("// Process secBuckets")[0]
+      var resolve = function(value) {
+         var params = value
+         eval(source)
+         return params
+      }
+      var original = { in: "javadiag", inparams: true, data: { javapid: 123, javaoptions: { limit: 1, isolated: false } }, javapid: 456, javaoptions: { limit: 2 } }
+      var result = resolve(original)
+      ow.test.assert(result.javapid, 456, "Explicit PID wins")
+      ow.test.assert(result.javaoptions.limit, 2, "Explicit nested option wins")
+      ow.test.assert(result.javaoptions.isolated, false, "False request option preserved")
+      ow.test.assert(original.data.javaoptions.limit, 1, "Caller request unchanged")
+      ow.test.assert(resolve({ in: "jmx", inparams: true, data: 'jmxpid: 123\njmxop: query\ndata: java.lang:*' }).data, "java.lang:*", "YAML query payload")
+      var file = io.createTempFile("request-map-", ".json")
+      try {
+         io.writeFileJSON(file, { file: "heap.gz", hprofmode: "summary" })
+         ow.test.assert(resolve({ in: "hprof", inparams: true, file: file }).file, "heap.gz", "Request source consumed")
+      } finally { io.rm(file) }
+      ow.test.assert(resolve({ in: "javadiag", inparams: true, data: { javaoptions: { isolated: false, limit: 1 } }, javaoptions: "(limit: 2)" }).javaoptions.isolated, false, "Serialized CLI option map merges")
+      var requests = {
+         javadiag: { javapid: 123 }, hprof: { hprofindex: "index", hprofmode: "find" },
+         jcmd: { javapid: 123, data: "GC.heap_info" }, httpd: { inhttpdport: 0 },
+         llmmodels: { llmenv: "TEST_MODEL" }, javas: { javasinception: false },
+         jmx: { jmxpid: 123 }, javathread: { javathreadpid: 123 },
+         hsperf: { file: "perfdata" }, jfr: { file: "recording.jfr" },
+         xls: { file: "book.xls", inxlsrow: 1 }, ls: { data: ".", lsrecursive: false }
+      }
+      Object.keys(requests).forEach(function(type) {
+         var resolved = resolve({ in: type, inparams: true, data: requests[type] })
+         Object.keys(requests[type]).forEach(function(key) {
+            ow.test.assert(resolved[key], requests[type][key], type + " request forwarding: " + key)
+         })
+      })
+      ow.test.assert(resolve({ in: "jcmd", inparams: true, data: '(javapid: 123, data: "GC.heap_info")' }).data, "GC.heap_info", "SLON command payload")
+      ;[{ in: "json", data: {} }, { in: "javadiag", data: [] }, { in: "javadiag", data: { out: "raw" } }].forEach(function(value) {
+         value.inparams = true
+         var rejected = false
+         try { resolve(value) } catch(e) { rejected = true }
+         ow.test.assert(rejected, true, "Invalid request rejected")
+      })
+   }
+
+   // Verify graph command dispatch, required inputs and streaming record compatibility.
+   exports.testHPROFCommands = function() {
+      var params = {}, calls = [], output
+      var _fromJSSLON = value => value
+      var _$o = value => { output = value }
+      eval(io.readFileString("../include/javaFns.js"))
+      var _javaAPI = name => function() {
+         var args = Array.from(arguments)
+         calls.push({ name: name, args: args })
+         if (name === "parseHPROF") args[1]({ id: "0x1", type: "root" })
+         return { api: name }
+      }
+      var handlers = eval(io.readFileString("../include/inputFns.js") + "\n_inputFns")
+      var modes = { index: "hprofIndex", object: "hprofObject", find: "hprofFind", refs: "hprofReferences", path: "hprofPath", summary: "hprofSummary" }
+      Object.keys(modes).forEach(mode => {
+         params = { hprofmode: mode, hprofindex: "index", hprofid: "0x123", file: "dump.gz", javaoptions: { maxVisited: 7 } }
+         handlers.get("hprof")("", {})
+         var last = calls[calls.length - 1]
+         ow.test.assert(last.name, modes[mode], "Graph mode dispatch: " + mode)
+         ow.test.assert(last.args[last.args.length - 1].maxVisited, 7, "Query bounds forwarded")
+         ow.test.assert(output.api, modes[mode], "Query output")
+      })
+      ow.test.assert(_javaReport({ target: "0x1", found: false, path: [], truncated: true, limitReached: "maxVisited" }).observations[0].data.limitReached, "maxVisited", "Graph reports preserve search bounds")
+      params = { hprofmode: "records", file: "dump.gz" }
+      handlers.get("hprof")("", {})
+      ow.test.assert(output.id, "0x1", "Record streaming preserved")
+      ;[{ hprofmode: "path", hprofindex: "index" }, { hprofmode: "index", file: "dump.gz" }, { hprofmode: "find" }, { hprofmode: "invalid" }].forEach(request => {
+         params = request
+         var rejected = false
+         try { handlers.get("hprof")("", {}) } catch(e) { rejected = true }
+         ow.test.assert(rejected, true, "Incomplete/invalid graph request rejected")
+      })
+   }
+
    exports.testJavaEvidence = function() {
 var params = {}, _fromJSSLON = x => x
 eval(io.readFileString('../include/javaFns.js'))

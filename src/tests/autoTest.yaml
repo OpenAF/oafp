@@ -1,7 +1,9 @@
 todo:
 - oafp::StreamRemoveDups
 - Load test
+- oafp::InputParams
 - oafp::JavaEvidence
+- oafp::HPROFCommands
 - oafp::GridLiteralObj
 - oafp::NetworkIsolation
 - oafp::SetRegressions
@@ -446,3 +448,15 @@ jobs:
   deps: Load test
   args:
     func: "global.test.testJavaEvidence()"
+
+- name: oafp::HPROFCommands
+  to: oJob Test
+  deps: Load test
+  args:
+    func: "global.test.testHPROFCommands()"
+
+- name: oafp::InputParams
+  to: oJob Test
+  deps: Load test
+  args:
+    func: "global.test.testInputParams()"

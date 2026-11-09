@@ -83,6 +83,10 @@ var _javaReport = evidence => {
         r.evidence.push({ ref: ref, timestamp: row && row.timestamp, source: row && row.source, target: row && row.target })
         if (!d) { r.gaps.push({ ref: ref, reason: "Empty evidence" }); return }
         if (d.errors) d.errors.forEach(e => r.gaps.push({ ref: ref, reason: e }))
+        var graph = (typeof d.found === "boolean" && isArray(d.path)) || isArray(d.references) ||
+            (isArray(d.objects) && isDef(d.scanned)) || (d.id && d.type) ||
+            (d.complete === true && isDef(d.references) && isDef(d.roots))
+        if (graph) r.observations.push({ ref: ref, type: "heapGraph", data: d, meaning: "Object/reference evidence; no retained-size or dominator calculation" })
         if (d.histogram) r.observations.push({ ref: ref, type: "histogram", classes: d.histogram.slice(0, limit), sizeMeaning: d.payloadBytes ? "serialized payload" : "source-defined bytes; never retained size" })
         if (d.matches) r.observations.push({ ref: ref, type: "oomMessages", matches: d.matches.slice(0, limit) })
         if (d.sections) r.observations.push({ ref: ref, type: "snapshot", sections: d.sections })
@@ -109,7 +113,7 @@ var _javaReport = evidence => {
                 }
             }
         }
-        if (!d.sections && !d.histogram && !d.matches && !d.threads && !(d.name && d.fields) && !isDef(d.durationSecs))
+        if (!graph && !d.sections && !d.histogram && !d.matches && !d.threads && !(d.name && d.fields) && !isDef(d.durationSecs))
             r.gaps.push({ ref: ref, reason: "No supported summary for this evidence shape; preserve source for analysis" })
     })
     if (pauses.length) {
@@ -172,4 +176,21 @@ var _counterDelta = row => {
     }
     _javaPrevious[identity] = { timestamp: timestamp, counters: counters }
     return result
+}
+
+// HPROF graph queries use an existing index without reading stdin or buffering the heap.
+var _javaHPROF = () => {
+    var mode = params.hprofmode || "records", o = _javaOptions()
+    if (["records", "summary", "index", "object", "find", "refs", "path"].indexOf(mode) < 0) throw new Error("Unsupported hprofmode: " + mode)
+    if (["records", "summary", "index"].indexOf(mode) >= 0 && !isString(params.file)) throw new Error("hprof " + mode + " requires file (plain or gzip)")
+    if (["records", "summary"].indexOf(mode) < 0 && (!isString(params.hprofindex) || !params.hprofindex.length)) throw new Error("hprof " + mode + " requires hprofindex directory")
+    if (["object", "refs", "path"].indexOf(mode) >= 0 && !isString(params.hprofid)) throw new Error("hprof " + mode + " requires hprofid hexadecimal object ID")
+    switch (mode) {
+    case "summary": return _javaAPI("hprofSummary")(params.file, o)
+    case "index": return _javaAPI("hprofIndex")(params.file, params.hprofindex, o)
+    case "object": return _javaAPI("hprofObject")(params.hprofindex, params.hprofid, o)
+    case "find": return _javaAPI("hprofFind")(params.hprofindex, o)
+    case "refs": return _javaAPI("hprofReferences")(params.hprofindex, params.hprofid, o)
+    case "path": return _javaAPI("hprofPath")(params.hprofindex, params.hprofid, o)
+    }
 }

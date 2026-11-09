@@ -14,9 +14,10 @@ var _inputFns = new Map([
     ["javastacks", (r, options) => _$o(_javaStacks(_readInputString(r)), options)],
     ["javaoom", (r, options) => _$o(_javaOOM(_readInputString(r)), options)],
     ["hprof", (r, options) => {
-        if (!isDef(params.file)) throw new Error("hprof requires file (plain or gzip)")
-        if (params.hprofmode === "summary") _$o(_javaAPI("hprofSummary")(params.file, _javaOptions()), options)
-        else _javaAPI("parseHPROF")(params.file, record => { _$o(record, options, true) }, _javaOptions())
+        if (!isDef(params.hprofmode) || params.hprofmode === "records") {
+            if (!isString(params.file)) throw new Error("hprof records requires file (plain or gzip)")
+            _javaAPI("parseHPROF")(params.file, record => { _$o(record, options, true) }, _javaOptions())
+        } else _$o(_javaHPROF(), options)
     }],
 
     ["?"    , (_res, options) => {

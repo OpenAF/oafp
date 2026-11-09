@@ -3,6 +3,70 @@ var _params = processExpr(" ")
 const oafp = params => {
 if (isUnDef(params) || isDef(params.____ojob)) return 
 
+// Resolve opt-in request parameters before defaults and source dispatch.
+if (toBoolean(params.inparams)) {
+    var requestType = params.input || params.type || params.in
+    var requestKeys = {
+        javadiag: "javapid javadiagop javaoptions javafile jcmdcommand javabundledir",
+        hprof: "file hprofmode hprofindex hprofid javaoptions",
+        jcmd: "javapid jcmdcommand javaoptions",
+        httpd: "inhttpdport inhttpdhost inhttpdpath inhttpdtimeout inhttpdcount inhttpdmax inhttpdstatus inhttpdreply inhttpdtype inhttpdenvelope",
+        llmmodels: "llmenv llmoptions",
+        javas: "javasinception",
+        jmx: "jmxop jmxurl jmxpid jmxuser jmxpass jmxprovider",
+        javathread: "javathreadpid",
+        hsperf: "file cmd hsperfmetadata",
+        jfr: "file cmd jfrjoin jfrdesc javaoptions",
+        xls: "file cmd inxlssheet inxlsdesc inxlsevalformulas inxlscol inxlsrow xlssheet xlsevalformulas xlscol xlsrow",
+        ls: "file lsposix lsrecursive lsext"
+    }
+    if (!Object.prototype.hasOwnProperty.call(requestKeys, requestType)) throw new Error("inparams is unsupported for input " + requestType)
+    var request = params.data
+    if (isUnDef(request) && isDef(params.file)) request = io.readFileString(params.file)
+    if (isUnDef(request) && isDef(params.cmd)) request = $sh(params.cmd).get(0).stdout
+    if (isUnDef(request)) {
+        var requestLines = []
+        io.pipeLn(function(line) { requestLines.push(line); return false })
+        request = requestLines.join("\n")
+    }
+    if (isString(request)) {
+        var requestText = request
+        try { request = af.fromJSSLON(requestText) } catch(ignore) { request = requestText }
+        if (isString(request) || isUnDef(request)) request = af.fromYAML(requestText)
+    }
+    if (!isMap(request)) throw new Error("inparams requires one parameter map")
+    var allowed = requestKeys[requestType].split(" ").concat(["data"])
+    Object.keys(request).forEach(function(key) {
+        if (allowed.indexOf(key) < 0) throw new Error("Unsupported inparams key for " + requestType + ": " + key)
+    })
+    // Merge option maps without modifying either caller-owned object.
+    var mergeRequest = function(base, explicit) {
+        var result = clone(base)
+        Object.keys(explicit).forEach(function(key) {
+            if (["__proto__", "constructor", "prototype"].indexOf(key) >= 0) throw new Error("Invalid parameter key")
+            result[key] = isMap(result[key]) && isMap(explicit[key]) ? mergeRequest(result[key], explicit[key]) : clone(explicit[key])
+        })
+        return result
+    }
+    var explicitRequest = clone(params)
+    delete explicitRequest.file
+    delete explicitRequest.cmd
+    delete explicitRequest.data
+    // CLI option maps arrive as strings; normalize them before recursive merging.
+    request = clone(request)
+    ;["javaoptions", "llmoptions"].forEach(function(key) {
+        ;[request, explicitRequest].forEach(function(value) {
+            if (isString(value[key])) {
+                var parsed = af.fromJSSLON(value[key])
+                if (isMap(parsed)) value[key] = parsed
+            }
+        })
+    })
+    params = mergeRequest(request, explicitRequest)
+    delete params.inparams
+    if (isUnDef(params.data)) params.data = ""
+}
+
 // Process secBuckets
 if (isDef(params.secKey)) params = $sec().procMap(params)
 
