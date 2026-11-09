@@ -1,8 +1,70 @@
 // Util functions
+var _streamDedupSeen, _streamDedupTransform = false
+// Fingerprint storage is local to an input pass. Budget estimates include Set/string overhead.
+const _streamDedupClose = () => {
+    var store = _streamDedupSeen
+    _streamDedupSeen = __
+    if (isUnDef(store)) return
+    try {
+        if (store.query) store.query.close()
+    } finally {
+        try { if (store.insert) store.insert.close() }
+        finally {
+            try { if (store.db) store.db.close() }
+            finally {
+                if (store.file) {
+                    [store.file, store.file + ".mv.db", store.file + ".trace.db"].forEach(file => {
+                        if (io.fileExists(file)) io.rm(file)
+                    })
+                }
+            }
+        }
+    }
+}
+const _streamDedupAdd = fingerprint => {
+    if (isUnDef(_streamDedupSeen)) {
+        var percent = isDef(params.removedupsmem) ? Number(params.removedupsmem) : 5
+        if (!isFinite(percent) || percent < 0 || percent > 100) throw "removedupsmem must be a percentage from 0 to 100"
+        _streamDedupSeen = { seen: new Set(), budget: java.lang.Runtime.getRuntime().maxMemory() * percent / 100 }
+    }
+    var store = _streamDedupSeen, runtime = java.lang.Runtime.getRuntime()
+    if (!store.db && (store.seen.size * 256 >= store.budget ||
+        runtime.totalMemory() - runtime.freeMemory() >= runtime.maxMemory() * 0.8)) {
+        store.file = String(io.createTempFile("oafp-dedup-", ""))
+        // Fixed-size database cache; the primary key supplies indexed membership checks.
+        var credentials = new java.util.Properties()
+        credentials.setProperty("user", "sa")
+        credentials.setProperty("password", "")
+        store.db = new Packages.org.h2.Driver().connect("jdbc:h2:" + store.file + ";CACHE_SIZE=1024;DB_CLOSE_ON_EXIT=FALSE", credentials)
+        var statement = store.db.createStatement()
+        try { statement.execute("CREATE TABLE fingerprints (hash VARCHAR(64) PRIMARY KEY)") }
+        finally { statement.close() }
+        store.insert = store.db.prepareStatement("INSERT INTO fingerprints VALUES (?)")
+        store.query = store.db.prepareStatement("SELECT 1 FROM fingerprints WHERE hash = ?")
+        store.seen.forEach(hash => {
+            store.insert.setString(1, hash)
+            store.insert.executeUpdate()
+        })
+        store.seen = __
+    }
+    if (!store.db) {
+        if (store.seen.has(fingerprint)) return false
+        store.seen.add(fingerprint)
+        return true
+    }
+    store.query.setString(1, fingerprint)
+    var result = store.query.executeQuery(), exists
+    try { exists = result.next() } finally { result.close() }
+    if (exists) return false
+    store.insert.setString(1, fingerprint)
+    store.insert.executeUpdate()
+    return true
+}
 var _activeTransforms
 const _transform = r => {
     var keys = _activeTransforms || Object.keys(_transformFns).filter(key => isDef(params[key]))
     for (var i = 0; i < keys.length; i++) {
+        if (_streamDedupTransform && keys[i] == "removedups") continue
         if (keys[i] == "sortmapkeys" && toBoolean(params.sortmapkeys) && isArray(r) && r.length > 128) {
             var sorted = [], processor = _recordProcessor(_sortTransformKeys, value => sorted.push(value), true)
             try { r.forEach(processor.add); processor.done() } catch(e) {
@@ -136,6 +198,9 @@ const _$o = (r, options, lineByLine) => {
             __conAnsi = false
         }
     }
+    var previousDedupTransform = _streamDedupTransform
+    _streamDedupTransform = lineByLine === true
+    try {
     if (jq) {
         r = _$f(r, nOptions)
         if (typeof r === "undefined") { _clearTmpMsg(); return }
@@ -156,6 +221,13 @@ const _$o = (r, options, lineByLine) => {
         } else {
             r = _transform(r)
         }
+    }
+
+    } finally { _streamDedupTransform = previousDedupTransform }
+    if (lineByLine === true && toBoolean(params.removedups)) {
+        if (typeof r === "undefined") return
+        var fingerprint = String(sha256(stringify(_sortTransformKeys(r), __, true)))
+        if (!_streamDedupAdd(fingerprint)) return
     }
 
     if (isDef(params.outputkey)) r = $$({}).set(params.outputkey, r)

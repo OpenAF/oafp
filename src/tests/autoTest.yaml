@@ -1,5 +1,8 @@
 todo:
+- oafp::StreamRemoveDups
 - Load test
+- oafp::JavaEvidence
+- oafp::GridLiteralObj
 - oafp::NetworkIsolation
 - oafp::SetRegressions
 - oafp::NestedFailures
@@ -421,8 +424,25 @@ jobs:
   deps: Load test
   args:
     func: "global.test.testJavaGC()"
+- name: oafp::GridLiteralObj
+  to: oJob Test
+  deps: Load test
+  args:
+    func: "global.test.testGridLiteralObj()"
 - name: oafp::NetworkIsolation
   to: oJob Test
   deps: Load test
   args:
     func: "global.test.testNetworkIsolation()"
+
+- name: oafp::StreamRemoveDups
+  to: oJob Test
+  deps: Load test
+  args:
+    func: "global.test.testStreamRemoveDups()"
+
+- name: oafp::JavaEvidence
+  to: oJob Test
+  deps: Load test
+  args:
+    func: "global.test.testJavaEvidence()"

@@ -13,5 +13,6 @@
     [".sql", "sql"],
     [".toml", "toml"],
     [".jwt", "jwt"],
-    [".jfr", "jfr"]
+    [".jfr", "jfr"],
+    [".hprof", "hprof"]
 ]

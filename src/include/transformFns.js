@@ -75,6 +75,8 @@ var _mapDiff = (a, b) => {
 }
 
 var _transformFns = {
+    "counterdelta": r => { if (isDef(params.counterdelta)) return _counterDelta(r) },
+    "javareport": r => { if (toBoolean(params.javareport)) return _javaReport(r) },
     "transforms"    : _r => {
         if (toBoolean(params.transforms)) {
             var _t = Object.keys(_transformFns).filter(r => r != 'transforms').sort()

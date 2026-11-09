@@ -1,4 +1,35 @@
 (function() {
+   exports.testJavaEvidence = function() {
+var params = {}, _fromJSSLON = x => x
+eval(io.readFileString('../include/javaFns.js'))
+var assert = (v, msg) => { if (!v) throw new Error(msg) }
+assert(_javaOOM('before\njava.lang.OutOfMemoryError: Java heap space\nafter').matches.length === 1, 'OOM match')
+assert(_javaStacks('"worker" #1\n java.lang.Thread.State: RUNNABLE\n    at Test.run(Test.java:1)').threads[0].frames.length === 1, 'frames')
+params.counterdelta = {identity:'id',timestamp:'ts',counters:['n']}
+assert(_counterDelta({id:'a',ts:'2026-01-01T00:00:00Z',n:'9007199254740993'}).baseline, 'baseline')
+assert(_counterDelta({id:'a',ts:'2026-01-01T00:00:01Z',n:'9007199254740995'}).delta.n === '2', 'exact delta')
+assert(_counterDelta({id:'a',ts:'2026-01-01T00:00:02Z',n:'1'}).baseline, 'reset')
+assert(_javaReport([{durationSecs:0.1,gcType:'Pause'}]).observations[0].count === 1, 'GC report')
+var profile = _javaReport([{name:'jdk.ObjectAllocationOutsideTLAB',duration:'PT0.1S',fields:{allocationSize:'12',stackTrace:{frames:[]}}},{name:'jdk.ObjectAllocationOutsideTLAB',duration:'PT0.2S',fields:{allocationSize:'13',stackTrace:{frames:[]}}}])
+assert(profile.observations[0].groups[0].observedBytes === '25', 'Observed allocation weights')
+assert(profile.observations[0].groups[0].count === 2, 'Profile stack grouping')
+assert(!isDef(_javaSelected({password:'hidden',metric:2}).password), 'exclude secret')
+assert(_javaStacks('{"threadDump":{}}').format === 'json', 'JSON thread source preserved')
+var dir = io.createTempFile('java-evidence-bundle-', '')
+io.rm(dir)
+params.javabundledir = dir
+try {
+    var manifest = _javaBundle({kind:'oom',matches:[{message:'OutOfMemoryError'}]})
+    params.javadiagop = 'bundle'
+    assert(_javaCollect().kind === 'oom', 'bundle round trip')
+    io.writeFileString(dir + '/report.md', 'tampered')
+    var rejected = false
+    try { _javaCollect() } catch(e) { rejected = String(e).indexOf('checksum') >= 0 }
+    assert(rejected, 'tampered bundle rejected')
+} finally { io.rm(dir) }
+
+
+   }
 
    exports.testNetworkIsolation = function() {
       var source = io.readFileString("../oafp.source.js")
@@ -528,6 +559,7 @@
             this.getSheetNames = () => ["Sheet1"]
             this.close = () => { xlsClosed = true }
          }
+         eval(io.readFileString("../include/javaFns.js"))
          eval(io.readFileString("../include/inputFns.js"))
          params = {file:fixture(".xlsx.gz","binary fixture"),inxlsdesc:"true"}
          _inputFns.get("xls")("",{})
@@ -557,6 +589,28 @@
       } finally { files.forEach(file => io.rm(file)) }
    }
 
+   exports.testGridLiteralObj = function() {
+      var file = io.createTempFile("oafp-grid-", ".json")
+      try {
+         io.writeFileJSON(file, {a:3,b:5,n:{a:7},m:[[1,2,3],[3,2,1]]}, "")
+         var grid = "[[(title:Bars,type:bar,obj:'int a:red:A b:blue:B -max:10')|(title:Fn,type:func,obj:'return 40+2')]|" +
+                    "[(title:Md,type:md,obj:'**literal**')|(type:chart,path:n,obj:'int a:green:NA -vsize:6')]|" +
+                    "[(title:Heat,type:heatmap,path:m)|(title:Tree)]]"
+         ;["../oafp.source.js","../oafp.js"].forEach(script => {
+            var result = $sh([getOpenAFPath()+"/oaf","-f",script,"-e","in=json out=grid file=" + file + " grid=\"" + grid + "\""]).get(0)
+            var out = String(result.stdout).replace(/\x1b\[[0-9;]*m/g, "")
+            ow.test.assert(result.exitcode, 0, "Grid exit status: " + script)
+            ow.test.assert(out.indexOf("Err:") < 0, true, "Grid cells render without errors: " + script)
+            ow.test.assert(out.indexOf("A: ") >= 0 && out.indexOf("B: ") >= 0, true, "Grid bar keeps literal obj: " + script)
+            ow.test.assert(out.indexOf("42") >= 0, true, "Grid func keeps literal obj: " + script)
+            ow.test.assert(out.indexOf("literal") >= 0, true, "Grid md keeps literal obj: " + script)
+            ow.test.assert(out.indexOf("> n ") >= 0 && out.indexOf("NA") >= 0, true, "Grid chart path narrows series data: " + script)
+            ow.test.assert(out.indexOf("> Heat ") >= 0, true, "Grid heatmap renders: " + script)
+            ow.test.assert(out.indexOf("[object Object]") < 0, true, "Grid never stringifies maps: " + script)
+         })
+      } finally { io.rm(file) }
+   }
+
    exports.testDevScope = function() {
       var processExpr = () => undefined
       // OpenAF uses an empty string while its console is being initialized.
@@ -566,7 +620,7 @@
       var output = []
       var print = value => output.push(String(value))
       var template = io.readFileString("../oafp.source.js.hbs")
-      ;["Util", "Stream", "Idesc", "InputLine", "Transform", "Output", "Input"].forEach(name => {
+      ;["Util", "Stream", "Idesc", "Java", "InputLine", "Transform", "Output", "Input"].forEach(name => {
          var file = name.charAt(0).toLowerCase() + name.substring(1) + "Fns"
          template = template.replace("{{{src" + name + "Fns}}}", 'eval(io.readFileString("../include/' + file + '.js"))')
       })
@@ -1465,6 +1519,39 @@
 
    // Transforms
    // ----------
+   exports.testStreamRemoveDups = function() {
+      var file = io.createTempFile("dedup", ".ndjson")
+      try {
+         io.writeFileString(file, '{"a":1,"b":2}\n{"a":3}\n{"b":2,"a":1}\n')
+         ;["../oafp.source.js", "../oafp.js"].forEach(script => {
+         ;["", " removedupsmem=0", " removedupsmem=0.000001"].forEach(extra => {
+            var result = $sh([getOpenAFPath() + "/oaf", "-f", script, "-e", "in=ndjson out=ndjson removedups=true file=" + file + extra]).get(0)
+            var rows = result.stdout.trim().split(/\r?\n/).map(value => jsonParse(value))
+            ow.test.assert(rows, [{a:1,b:2},{a:3}], "Stream dedup in memory and on disk: " + extra)
+         })
+         })
+         var helper = io.readFileString("../include/utilFns.js")
+         helper = helper.substring(0, helper.indexOf("var _activeTransforms"))
+         var exercise = new Function("params", helper + `
+            try {
+               _streamDedupAdd("a")
+               _streamDedupSeen.budget = 0
+               _streamDedupAdd("b")
+               var file = _streamDedupSeen.file
+               ow.test.assert(_streamDedupAdd("a"), false, "Migrated fingerprints remain present")
+               ow.test.assert(io.fileExists(file + ".mv.db"), true, "Spill database exists")
+               throw {file:file}
+            } catch(e) {
+               if (!e.file) throw e
+               return e.file
+            } finally { _streamDedupClose() }
+         `)
+         var spilled = exercise({})
+         ow.test.assert(io.fileExists(spilled + ".mv.db"), false, "Spill database removed after failure")
+         ow.test.assert(io.fileExists(spilled), false, "Temporary base removed")
+      } finally { io.rm(file) }
+   }
+
    exports.testMerge = function() {
       var _f = io.createTempFile("testMerge", ".ndjson")
       var data1 = { a: 123, b: true, c: [ 1, 2, 3 ] }

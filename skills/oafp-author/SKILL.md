@@ -15,6 +15,8 @@ Use `src/docs/USAGE.md` for option names, values, defaults and companion options
 
 For stateless decision requests, consult [oafp-decide](../oafp-decide/SKILL.md); for validation, inference or sample generation, consult [oafp-json-schema](../oafp-json-schema/SKILL.md). If those companions are unavailable, use the corresponding documentation listed in the discovery guide.
 
+For JVM evidence collection and reports, consult [oafp-java-diagnostics](../oafp-java-diagnostics/SKILL.md).
+
 ## Choose the execution model
 
 | Requested work | Use | Read when needed |

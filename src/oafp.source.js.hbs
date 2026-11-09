@@ -29,6 +29,7 @@ var $rest = opts => {
 {{{srcUtilFns}}}
 {{{srcStreamFns}}}
 {{{srcIdescFns}}}
+{{{srcJavaFns}}}
 // ---
 
 // Process params
@@ -275,6 +276,8 @@ if ("undefined" == typeof params.file && "undefined" == typeof params.cmd && "un
 
 if (typeof params.debug !== "undefined") params.debug = toBoolean(params.debug)
 if (isDef(params["-debug"])) params.debug = true
+// Only show error stacks when debug is enabled
+__flags.OAF_ERRSTACK = (params.debug === true)
 if (isDef(params["-p"])) params.pause = true
 
 // Verify the data param
@@ -592,7 +595,7 @@ var _run = () => {
     }
     // Stream-capable handlers own their input; do not first buffer it in _res.
     if (!_version && isUnDef(params.url) &&
-        (["lines", "ndjson", "ndslon", "dsv", "csv", "javagc", "httpd"].indexOf(params.type) >= 0 ||
+        (["lines", "ndjson", "ndslon", "dsv", "csv", "javagc", "httpd", "javadiag", "jcmd", "hprof"].indexOf(params.type) >= 0 ||
          (params.type == "json" && toBoolean(params.stream)))) {
         _inputFns.get(params.type)(isString(params.data) ? params.data : "", options)
         delete params.__origr
@@ -669,7 +672,7 @@ var _run = () => {
                             var text = new java.lang.StringBuilder(), firstLine = true
                             io.pipeLn(r => {
                                 if (isDef(_inputLineFns[params.type])) {
-                                    if (!_inputLineFns[params.type](_transform(r), clone(options))) return false
+                                    if (!_inputLineFns[params.type](toBoolean(params.removedups) ? r : _transform(r), clone(options))) return false
                                 }
                                 if (!firstLine) text.append("\n")
                                 text.append(r)
@@ -732,7 +735,11 @@ var _run = () => {
 
 // Verify debug
 var _runInput = _run
-_run = () => _withIDescSample(_runInput)
+_run = () => {
+    _streamDedupSeen = __
+    try { return _withIDescSample(_runInput) }
+    finally { _streamDedupClose() }
+}
 
 if (params.debug) {
     //__initializeCon()
@@ -741,6 +748,8 @@ if (params.debug) {
 
 try {
 if (isNumber(params.loop)) {
+    var _loopStarted = now(), _loopPasses = 0
+    ;["loopcount", "loopduration"].forEach(k => { if (isDef(params[k]) && (!isFinite(Number(params[k])) || Number(params[k]) <= 0 || (k === "loopcount" && Number(params[k]) % 1 !== 0))) throw new Error(k + " must be positive") })
     while(1) {
         if (toBoolean(params.loopcls)) {
             if (isDef(params.outfile) && isDef(global.__oafp_streams[params.outfile])) {
@@ -750,7 +759,10 @@ if (isNumber(params.loop)) {
         }
         _httpdPass(() => _withProgress(_run))
         _httpdFlush()
-        sleep(params.loop * 1000, true)
+        _loopPasses++
+        if ((isDef(params.loopcount) && _loopPasses >= Number(params.loopcount)) || (isDef(params.loopduration) && now() - _loopStarted >= Number(params.loopduration) * 1000)) break
+        sleep(isDef(params.loopduration) ? Math.min(params.loop * 1000, Math.max(0, Number(params.loopduration) * 1000 - (now() - _loopStarted))) : params.loop * 1000, true)
+        if (isDef(params.loopduration) && now() - _loopStarted >= Number(params.loopduration) * 1000) break
         // Ensure params have a fresh copy
         if (isDef(bkprms)) params = clone(bkprms)
     }

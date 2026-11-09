@@ -182,7 +182,7 @@
     },
     {
       "Option": "debug",
-      "Description": "If true prints debugging messages"
+      "Description": "If true prints debugging messages and enables error stack traces (OAF_ERRSTACK)"
     }
   ],
   [
@@ -229,6 +229,26 @@
     {
       "Input type": "javas",
       "Description": "Tries to list java processes running locally (javasinception=true to include itself). Adds the hsperf file path when the process id matches ow.java.getLocalJavaPIDs()"
+    },
+    {
+      "Input type": "hprof",
+      "Description": "Streaming HotSpot heap records; hprofmode=summary returns histogram metadata"
+    },
+    {
+      "Input type": "jcmd",
+      "Description": "Explicit JVM diagnostic command with javapid and jcmdcommand"
+    },
+    {
+      "Input type": "javadiag",
+      "Description": "Java capabilities, snapshots and explicit capture operations"
+    },
+    {
+      "Input type": "javastacks",
+      "Description": "Full text or JSON thread dumps"
+    },
+    {
+      "Input type": "javaoom",
+      "Description": "OOM messages and bounded surrounding log excerpts"
     },
     {
       "Input type": "javagc",
@@ -529,6 +549,11 @@
       "Description": "Performs a regression (linear, log, exp, poly or power) over a provided list/array of numeric values"
     },
     {
+      "Option": "removedupsmem",
+      "Type": "Number",
+      "Description": "Streaming dedup memory budget as a percentage of JVM max heap (default 5, range 0–100). Zero uses a temporary disk index immediately."
+    },
+    {
       "Option": "removedups",
       "Type": "Boolean",
       "Description": "Removes duplicate array entries, retaining the first occurrence. Map key order is ignored recursively; array order and the distinction between arrays and maps are preserved."
@@ -688,7 +713,7 @@
     },
     {
       "Output format": "grid",
-      "Description": "A multiple output ascii grid (useful together with 'loop')"
+      "Description": "A multi-widget terminal dashboard (charts, bars, sparklines, heatmaps, bullets, status matrices, timelines, tables, ...) laid out as a grid (useful together with 'loop')"
     },
     {
       "Output format": "html",
@@ -1981,34 +2006,34 @@
     {
       "Option": "grid",
       "Type": "String",
-      "Description": "A JSON/SLON configuration structured as an array of row arrays. Each row array contains one map per column cell (see column cell options below)."
+      "Description": "A JSON/SLON configuration structured as an array of row arrays. Each row array contains one map per column cell (see cell fields below)."
     }
   ],
   [
     {
       "Field": "title",
       "Type": "String",
-      "Description": "Label displayed as a bold header above the cell content. Auto-set from `path` if not provided."
+      "Description": "Label displayed as a bold header (`> title ───`) above the cell content. Defaults to `path` when provided (or `Chart _chrt<row>.<col>` for `chart`/`bar` cells without `path`)."
     },
     {
       "Field": "type",
       "Type": "String",
-      "Description": "Rendering type: `tree` (default for maps/arrays), `map`, `table`, `chart`, `bar`, `area`, `text`, `md`, `func`, or `empty`"
+      "Description": "Widget type (see **Widget types** below). Defaults to `tree` for maps/arrays and `text` otherwise. `empty` leaves the cell blank."
     },
     {
       "Field": "path",
       "Type": "String",
-      "Description": "JMESPath expression to select data from the pipeline input (use `@` for root). Auto-sets `title` if not provided."
+      "Description": "JMESPath expression selecting the cell data from the input (use `@` for the root). For `chart`/`bar` cells it narrows the data the series paths in `obj` are evaluated against."
     },
     {
       "Field": "obj",
       "Type": "String",
-      "Description": "Data or format string to render. For `chart`: same format as `chart=`; for `bar`: same format as `bar=`; for `func`: JS function body with `mx` (height) and `my` (width) args returning a string."
+      "Description": "Literal cell content: the format string for `chart`/`bar`, a JS function body for `func`, or a literal text/markdown string. For other types `path` takes precedence over `obj`. When neither `path` nor `obj` is provided, the whole input is used."
     },
     {
       "Field": "cmd",
       "Type": "String",
-      "Description": "Shell command whose JSON stdout is used as cell data instead of the pipeline input."
+      "Description": "Shell command whose stdout (JSON is parsed; otherwise text) is used as the cell data instead of the pipeline input."
     },
     {
       "Field": "xspan",
@@ -2019,28 +2044,108 @@
       "Field": "yspan",
       "Type": "Number",
       "Description": "Number of rows this cell spans (default: 1)."
+    },
+    {
+      "Field": "options",
+      "Type": "Map",
+      "Description": "Extra options passed directly to the widget renderer (see per-type options below), e.g. `options:(valueFormat:bytes)`."
     }
   ],
   [
     {
-      "Field": "max",
-      "Type": "Number",
-      "Description": "Maximum value for the bar scale"
+      "Type": "tree",
+      "Cell data (from `path`/input, or `obj`)": "Map or array (default for maps/arrays)",
+      "Renderer options": ""
     },
     {
-      "Field": "min",
-      "Type": "Number",
-      "Description": "Minimum value for the bar scale"
+      "Type": "map",
+      "Cell data (from `path`/input, or `obj`)": "Map rendered as a rectangle map",
+      "Renderer options": ""
     },
     {
-      "Field": "indicator",
-      "Type": "String",
-      "Description": "Bar fill character (default: `━`)"
+      "Type": "table",
+      "Cell data (from `path`/input, or `obj`)": "Array of maps",
+      "Renderer options": ""
     },
     {
-      "Field": "space",
-      "Type": "String",
-      "Description": "Background character (default: ` `)"
+      "Type": "text",
+      "Cell data (from `path`/input, or `obj`)": "String (default for non-map/array data)",
+      "Renderer options": ""
+    },
+    {
+      "Type": "md",
+      "Cell data (from `path`/input, or `obj`)": "Markdown string",
+      "Renderer options": ""
+    },
+    {
+      "Type": "chart",
+      "Cell data (from `path`/input, or `obj`)": "`obj` with a line-chart definition: `\"<unit> <path[:color][:legend]> ... [-min:<n>] [-max:<n>] [-hsize:<n>] [-vsize:<n>]\"` (same syntax as `chart=`, see **Chart output options**). Accumulates one sample per refresh.",
+      "Renderer options": "`-min`, `-max`, `-hsize`, `-vsize` inside `obj`"
+    },
+    {
+      "Type": "bar",
+      "Cell data (from `path`/input, or `obj`)": "`obj` with a horizontal bars definition: `\"<unit> <path[:color][:legend]> ... [-min:<n>] [-max:<n>]\"`. Units: `int`, `dec1`, `dec2`, `dec3`, `dec`, `bytes`, `si` (no `dec4`).",
+      "Renderer options": "`min`, `max`, `indicator` (fill char, default `━`), `space` (background char, default ` `)"
+    },
+    {
+      "Type": "area",
+      "Cell data (from `path`/input, or `obj`)": "A single number; accumulates one sample per refresh and plots it as a filled area chart. The history is keyed by the cell `title` (use distinct titles for distinct area cells).",
+      "Renderer options": ""
+    },
+    {
+      "Type": "func",
+      "Cell data (from `path`/input, or `obj`)": "`obj` with a JS function body receiving `mx` (cell height) and `my` (cell width) and returning a string",
+      "Renderer options": ""
+    },
+    {
+      "Type": "sparkline",
+      "Cell data (from `path`/input, or `obj`)": "Number array, or array of series maps `{ data: [...], name, color }` (one line per series)",
+      "Renderer options": "`label`, `showMinMax` (default false), `color`"
+    },
+    {
+      "Type": "histogram",
+      "Cell data (from `path`/input, or `obj`)": "Number array (bucketed automatically using Sturges' formula)",
+      "Renderer options": "`buckets`, `vertical` (default false), `color`, `labels` (default true), `showCount` (default true)"
+    },
+    {
+      "Type": "heatmap",
+      "Cell data (from `path`/input, or `obj`)": "Number matrix (array of arrays); or map `{ values: [[...]], xLabels: [...], yLabels: [...] }`; or a map keyed by date (`YYYY-MM-DD`), time (`HH:mm`) or date-time (`YYYY-MM-DDTHH:mm`) strings with numeric values for a time-bucketed view (see below)",
+      "Renderer options": "`legend` (default false), `xLabels`, `yLabels`; time-bucketed: `xAxis`, `yAxis`, `aggregate`, `weekStart`, `from`, `to`, `empty`, `dayLabels`"
+    },
+    {
+      "Type": "bullet",
+      "Cell data (from `path`/input, or `obj`)": "Map or array of maps `{ value, target, min, max, ranges: [...], label, unit }` (a plain number is treated as `value`)",
+      "Renderer options": "`min`, `max` (default max(100, value)), `target`, `ranges`, `label`, `unit`, `showValue` (default true), `valueFormat` (`raw`, `si` or `bytes`), `color`, `targetColor`, `rangeColor`, `goodColor`"
+    },
+    {
+      "Type": "scatter",
+      "Cell data (from `path`/input, or `obj`)": "Array of `[x, y]` pairs or `{ x, y, symbol, color }` maps",
+      "Renderer options": "`xMin`, `xMax`, `yMin`, `yMax`, `xLabel`, `yLabel`"
+    },
+    {
+      "Type": "boxplot",
+      "Cell data (from `path`/input, or `obj`)": "Number array, or array of series maps `{ values: [...], label }` (one boxplot per series)",
+      "Renderer options": "`min`, `max`, `showOutliers` (default true), `label`"
+    },
+    {
+      "Type": "timeline",
+      "Cell data (from `path`/input, or `obj`)": "Array of events `{ label, start, end, status, color }` (`start`/`end` as dates, ISO strings or epoch ms; `status`: `ok`/`up`/`success`, `warn`/`warning`, `error`/`fail`/`down`)",
+      "Renderer options": "`from`, `to`, `labels` (default true)"
+    },
+    {
+      "Type": "statusMatrix",
+      "Cell data (from `path`/input, or `obj`)": "Matrix of status strings, or map `{ values: [[...]], xLabels: [...], yLabels: [...] }` (statuses: `ok`/`up`/`success`, `warn`/`warning`, `error`/`fail`/`down`, `unknown`)",
+      "Renderer options": "`xLabels`, `yLabels`, `symbols` (map of status to symbol, e.g. `symbols:(ok:'+',error:'x')`)"
+    },
+    {
+      "Type": "progress",
+      "Cell data (from `path`/input, or `obj`)": "A number (0 to 100) or a map `{ value, max, min }`",
+      "Renderer options": ""
+    },
+    {
+      "Type": "empty",
+      "Cell data (from `path`/input, or `obj`)": "Nothing (blank cell)",
+      "Renderer options": ""
     }
   ],
   [
@@ -2390,6 +2495,78 @@
     {
       "Help": "help=readme",
       "Description": "Returns this document"
+    }
+  ],
+  [
+    {
+      "Option": "javapid",
+      "Type": "String",
+      "Description": "Explicit positive PID or self (collector JVM)."
+    },
+    {
+      "Option": "javadiagop",
+      "Type": "String",
+      "Description": "capabilities, snapshot (default), histogram, threads, nmt, heapdump, jfr, bundle."
+    },
+    {
+      "Option": "javaoptions",
+      "Type": "Map",
+      "Description": "OpenAF diagnostic/parser options; also accepts a JSON/SLON string."
+    },
+    {
+      "Option": "javafile",
+      "Type": "String",
+      "Description": "Explicit target-filesystem destination for heapdump."
+    },
+    {
+      "Option": "jcmdcommand",
+      "Type": "String",
+      "Description": "One explicit diagnostic command; out=jcmd accepts the input string."
+    },
+    {
+      "Option": "hprofmode",
+      "Type": "String",
+      "Description": "records (default) or summary. Requires file."
+    },
+    {
+      "Option": "javareport",
+      "Type": "Boolean",
+      "Description": "Transform supplied evidence into a structured report."
+    },
+    {
+      "Option": "javareportkind",
+      "Type": "String",
+      "Description": "Report label: gc, oom, profile, all (default)."
+    },
+    {
+      "Option": "javareportformat",
+      "Type": "String",
+      "Description": "out=javareport renders Markdown by default; json selects JSON."
+    },
+    {
+      "Option": "javatop",
+      "Type": "Number",
+      "Description": "Maximum classes, stack groups and event examples; default 50."
+    },
+    {
+      "Option": "javabundledir",
+      "Type": "String",
+      "Description": "out=javabundle creates a new local directory; in=javadiag javadiagop=bundle reopens it."
+    },
+    {
+      "Option": "loopcount",
+      "Type": "Number",
+      "Description": "Positive integer maximum loop passes."
+    },
+    {
+      "Option": "loopduration",
+      "Type": "Number",
+      "Description": "Positive maximum elapsed seconds; does not interrupt an active pass."
+    },
+    {
+      "Option": "counterdelta",
+      "Type": "Map",
+      "Description": "Transform options: identity, timestamp and counters (array of dotted paths)."
     }
   ]
 ]

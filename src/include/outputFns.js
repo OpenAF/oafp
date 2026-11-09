@@ -1,4 +1,7 @@
 var _outputFns = new Map([
+    ["jcmd", (r, options) => _print(_javaCommand(r))],
+    ["javareport", (r, options) => { var report = _javaReport(r); _print(params.javareportformat === "json" ? stringify(report) : _javaMarkdown(report)) }],
+    ["javabundle", (r, options) => _print(stringify(_javaBundle(r)))],
     ["idesc", (r, options) => _idescOutput(r)],
     ["?" , (r, options) => {
         r = Array.from(_outputFns.keys()).filter(r => r != '?').sort()
@@ -343,7 +346,8 @@ var _outputFns = new Map([
     }],   
     ["grid" , (r, options) => {
         if (isUnDef(params.grid)) _exit(-1, "For out=grid you need to provide a grid=...")
-        let _f = _fromJSSLON(_$(params.grid, "grid").or().isString().isMap().isArray().$_())
+        // Clone so that a map/array grid definition isn't mutated between loop iterations
+        let _f = clone(_fromJSSLON(_$(params.grid, "grid").or().isString().isMap().isArray().$_()))
 
         if (isArray(_f) && _f.length > 0 && isArray(_f[0])) {
             _f.forEach((y, yi) => {
@@ -360,17 +364,19 @@ var _outputFns = new Map([
                             _rd = r
                         }
                         if (x.type == "chart" || x.type == "bar") {
+                            // path narrows the data the chart/bar series paths are evaluated against
+                            if (isDef(x.path)) _rd = $path(_rd, x.path)
                             var _n = "_chrt" + (yi+1) + "." + (xi+1)
                             x.obj = (x.type == "chart" ? _n + " " : "") + _chartPathParse(_rd, x.obj, _n)
-                            if (isUnDef(x.title)) x.title = "Chart " + _n
-                        }
-                        if (isDef(x.path)) {
+                            if (isUnDef(x.title)) x.title = (isDef(x.path) ? x.path : "Chart " + _n)
+                        } else if (isDef(x.path)) {
                             x.obj = $path(_rd, x.path)
                             if (isUnDef(x.title)) x.title = x.path
-                        } else {
-                            if (isString(_rd)) 
+                        } else if (isUnDef(x.obj)) {
+                            // only fall back to the input data when no literal obj was provided
+                            if (isString(_rd))
                                 x.obj = _rd
-                            else if (isObject(_rd) && x.type != "chart")
+                            else if (isObject(_rd))
                                 x.obj = $path(_rd, "@")
                         }
                     } else {

@@ -9,6 +9,16 @@ if (typeof _resolveLLMEnvName === "undefined") {
 }
 
 var _inputFns = new Map([
+    ["jcmd", (r, options) => _$o(_javaCommand(isDef(params.jcmdcommand) ? params.jcmdcommand : r), options)],
+    ["javadiag", (r, options) => _$o(_javaCollect(), options)],
+    ["javastacks", (r, options) => _$o(_javaStacks(_readInputString(r)), options)],
+    ["javaoom", (r, options) => _$o(_javaOOM(_readInputString(r)), options)],
+    ["hprof", (r, options) => {
+        if (!isDef(params.file)) throw new Error("hprof requires file (plain or gzip)")
+        if (params.hprofmode === "summary") _$o(_javaAPI("hprofSummary")(params.file, _javaOptions()), options)
+        else _javaAPI("parseHPROF")(params.file, record => { _$o(record, options, true) }, _javaOptions())
+    }],
+
     ["?"    , (_res, options) => {
         _res = Array.from(_inputFns.keys()).filter(r => r != '?').sort()
         _$o(_res, options)
@@ -589,7 +599,7 @@ var _inputFns = new Map([
                                     }
                                     _r[_rs.getMetaData().getColumnName(i)] = _v
                                 }
-                                _$o(_r, options)
+                                _$o(_r, options, true)
                             }
                         } catch(e) {
                             _exit(-1, "Error streaming SQL: " + e.message)
@@ -948,9 +958,9 @@ var _inputFns = new Map([
 
         var parse = source => {
             if (params.jfrjoin) {
-                _$o(ow.java.parseJFR(source, __, params.jfrdesc), options)
+                _$o(ow.java.parseJFR(source, __, params.jfrdesc, _javaOptions()), options)
             } else {
-                ow.java.parseJFR(source, event => _$o(event, options), params.jfrdesc)
+                ow.java.parseJFR(source, event => _$o(event, options), params.jfrdesc, _javaOptions())
             }
         }
         if (isDef(params.file) && isUnDef(params.cmd)) _withInputFilePath(parse)
