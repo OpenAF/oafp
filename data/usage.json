@@ -331,6 +331,10 @@
       "Description": "Takes an OpenAF scripting code or OpenAF scripting file to execute and use the result as input"
     },
     {
+      "Input type": "files",
+      "Description": "Processes a newline-separated list of local filepaths concurrently; see Parallel file lists"
+    },
+    {
       "Input type": "oafp",
       "Description": "Takes a JSON/SLON/YAML map input as parameters for calling a sub oafp process (arrays will call multiple oafp processes; inoafpseq=true will process sequentially)"
     },
@@ -2584,6 +2588,23 @@
       "Option": "inparams",
       "Type": "Boolean",
       "Description": "Resolve supported input parameters from one request map; explicit invocation values win. Defaults to false."
+    }
+  ],
+  [
+    {
+      "Option": "filesin",
+      "Type": "String",
+      "Description": "Input format for each listed file; defaults to extension detection"
+    },
+    {
+      "Option": "filesworkers",
+      "Type": "Number",
+      "Description": "Positive worker count; defaults to at most four cores"
+    },
+    {
+      "Option": "filessource",
+      "Type": "String",
+      "Description": "Optional literal field containing the listed filepath"
     }
   ]
 ]

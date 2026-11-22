@@ -1,4 +1,5 @@
 todo:
+- oafp::FileList
 - oafp::StreamRemoveDups
 - Load test
 - oafp::InputParams
@@ -460,3 +461,9 @@ jobs:
   deps: Load test
   args:
     func: "global.test.testInputParams()"
+
+- name: oafp::FileList
+  to: oJob Test
+  deps: Load test
+  args:
+    func: "global.test.testFileList()"

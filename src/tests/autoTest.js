@@ -1,4 +1,50 @@
 (function() {
+   exports.testFileList = function() {
+      var dir = io.createTempDir("files-test-")
+      try {
+         io.writeFileJSON(dir + "/a.json", [{id:1}, {id:2}])
+         io.writeFileString(dir + "/list", dir + "/a.json\n" + dir + "/a.json\n")
+         var result = $sh([getOpenAFPath()+"/oaf", "-f", "../oafp.js", "-e", "file="+dir+"/list in=files out=ndjson"]).get(0)
+         ow.test.assert(result.exitcode, 0, "File list succeeds")
+         var rows = result.stdout.trim().split(/\r?\n/).map(r => jsonParse(r))
+         ow.test.assert(rows.length, 4, "Duplicate paths contribute all records")
+         var invoke = extra => $sh([getOpenAFPath()+"/oaf", "-f", "../oafp.js", "-e", "file="+dir+"/list in=files " + extra]).get(0)
+         var csv = invoke("out=csv")
+         ow.test.assert(csv.stdout.trim().split(/\r?\n/).length, 5, "CSV has one header and four rows")
+         var sourced = invoke("out=ndjson filessource=source")
+         ow.test.assert(jsonParse(sourced.stdout.trim().split(/\r?\n/)[0]).source, dir+"/a.json", "Source metadata")
+         var combined = invoke("out=json")
+         ow.test.assert(jsonParse(combined.stdout).length, 4, "One combined JSON array")
+         ;["ndslon", "ndcslon", "raw", "lines"].forEach(format => {
+            var result = invoke("out=" + format)
+            ow.test.assert(result.exitcode, 0, format + " succeeds")
+            ow.test.assert(result.stdout.trim().split(/\r?\n/).length, 4, format + " emits four records")
+         })
+         var dsv = invoke("out=dsv dsvsep=; dsvfields=id")
+         ow.test.assert(dsv.stdout.trim().split(/\r?\n/).length, 5, "DSV emits a single header")
+         ow.test.assert(dsv.stdout.trim().split(/\r?\n/)[0], '\"id\"', "DSV uses explicit fields")
+         var yaml = invoke("out=yaml")
+         var documents = yaml.stdout.split(/(?:^|\n)---\r?\n/).filter(text => text.trim().length > 0)
+         ow.test.assert(documents.length, 4, "YAML emits four documents")
+         documents.forEach(text => ow.test.assert(isMap(af.fromYAML(text)), true, "YAML document parses"))
+         var saved = invoke("out=json outfile="+dir+"/combined.json")
+         ow.test.assert(saved.exitcode, 0, "JSON outfile succeeds")
+         ow.test.assert(io.readFileJSON(dir+"/combined.json").length, 4, "JSON outfile is one array")
+         io.writeFileString(dir+"/list", "")
+         ow.test.assert(jsonParse(invoke("out=json").stdout), [], "Empty JSON output is an array")
+         io.writeFileString(dir+"/list", dir+"/missing\n"+dir+"/a.json\n")
+         var partial = invoke("out=ndjson")
+         ow.test.assert(partial.stdout.trim().split(/\r?\n/).length, 2, "Missing file allows remaining input")
+         ow.test.assert(partial.stderr.indexOf("missing") >= 0, true, "Diagnostic identifies failed file")
+         ow.test.assert(partial.exitcode != 0, true, "File failure returns nonzero")
+         var partialJSON = invoke("out=json")
+         ow.test.assert(partialJSON.exitcode != 0, true, "JSON file failure returns nonzero")
+         ow.test.assert(jsonParse(partialJSON.stdout).length, 2, "JSON is closed after file failure")
+
+
+      } finally { io.rm(dir) }
+   }
+
    // Exercise request resolution before real input dispatch without external services.
    exports.testInputParams = function() {
       var source = io.readFileString("../oafp.source.js.hbs").split("// Resolve opt-in request parameters before defaults and source dispatch.")[1].split("// Process secBuckets")[0]

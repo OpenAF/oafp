@@ -239,6 +239,7 @@ const _$o = (r, options, lineByLine) => {
         r = browser.current()
     }
 
+    if (isFunction(params.__recordSink)) return params.__recordSink(r)
     _clearTmpMsg()
     if (isUnDef(nOptions.__format)) nOptions.__format = getEnvsDef("OAFP_OUTPUT", nOptions.__format, "ctree")
     if (lineByLine && nOptions.__format == "idesc" && isDef(_idescSample)) return _idescSample.add(r)
@@ -606,4 +607,55 @@ const _withProgress = fn => {
             _progressVisible = true
         }), 150)
     } finally { _clearTmpMsg() }
+}
+
+// Shared DSV rendering for ordinary output and the file-list writer.
+const _renderDSV = (r, params) => {
+        if (isUnDef(params.dsvsep))     params.dsvsep = ","
+        if (isUnDef(params.dsvquote))   params.dsvquote = '\\"'
+        if (isUnDef(params.dsvfields))  params.dsvfields = __
+        if (isUnDef(params.dsvuseslon)) params.dsvuseslon = false
+        if (isUnDef(params.dsvnl))      params.dsvnl = "\n"
+        if (isUnDef(params.dsvheader))  params.dsvheader = true
+
+        if (isString(params.dsvfields)) params.dsvfields = params.dsvfields.split(",").map(f => f.trim())
+        params.dsvuseslon = toBoolean(params.dsvuseslon)
+
+        if (isMap(r)) {
+            r = [ r ]
+        }
+        if (isArray(r)) {
+            var _out = []
+            // Use one schema for the entire table, regardless of each row's key order.
+            var _fields = isArray(params.dsvfields) ? params.dsvfields : (r.length > 0 ? Object.keys(r[0]) : [])
+            if (toBoolean(params.dsvheader) && r.length > 0) {
+                _out.push(_fields.map(f => '"' + String(f).replace(/"/g, '""') + '"').join(params.dsvsep))
+                if (params.dsvnl.length > 0) _out.push(params.dsvnl)
+            }
+
+            r.forEach((row, i) => {
+                if (i > 0) _out.push(params.dsvnl)
+                var _row = pForEach(_fields, k => {
+                    var v = row[k]
+                    if (isString(v)) {
+                        v = v.replace(/"/g, '""')
+                        v = `"${v}"`
+                    } else if (isNull(v)) {
+                        v = ""
+                    } else if (isArray(v) || isMap(v)) {
+                        v = params.dsvuseslon ? af.toSLON(v) : stringify(v, __, "")
+                        v = v.replace(/"/g, params.dsvquote)
+                        v = `"${v}"`
+                    }
+                    return v
+                })
+                _out.push(_row.join(params.dsvsep))
+            })
+            if (params.dsvnl.length > 0 && _out.length > 0 && _out[_out.length - 1] != params.dsvnl && r.length > 1) {
+                _out.push(params.dsvnl)
+            }
+        } else {
+            _exit(-1, "For out=dsv, input needs to be an array or map.")
+        }
+        return _out.join("")
 }
